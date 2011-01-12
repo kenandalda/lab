@@ -1,0 +1,81 @@
+<form action="" method="post">
+<table><tr><td>
+<select name="some_name" id="some_name" ecui="id:sel;type:select">
+	<option value="option">option</option>
+	<option value="option">option</option>
+	<option value="option">option</option>
+	<option value="option">option</option>
+</select>
+</td><td>
+<div ecui="type:control;id:cal-trigger;bdate:;edate:;" 
+	style="background:url(/static/js/ui/calendar/css/img/calendar-bgs.gif) no-repeat scroll -81px 0;width:22px;height:21px"></div>
+<input id="DateSD" type="hidden" name="startDate" value="">
+<input id="DateED" type="hidden" name="endDate" value="">
+</td></tr>
+</table>
+<br />
+<input type="submit" value="提交" />
+</form>
+
+<script type="text/javascript" charset="utf-8">
+	(function (core, lib) {
+		var sel = core.get("sel");
+		var trigger = core.get("cal-trigger");
+		var calEl = document.createElement("div");
+
+		/* 生成日历对象 */
+		calEl.innerHTML = '<div ecui="type:range-calendar;begindate:' 
+			+ (lib.g("DateSD").value ? lib.g("DateSD").value : 'false')
+			+ ';enddate:'
+			+ (lib.g("DateED").value ? lib.g("DateED").value : 'false') 
+			+ '" style="position:absolute"></div>';
+		document.body.appendChild(calEl);
+		core.init(calEl);	
+
+		var cal = trigger._cCal = calEl.childNodes[0].getControl();
+
+		cal.hide();
+
+		 /* 日历图标点击 */
+		trigger.onclick = function() {
+			var cal = this._cCal;
+			var isShow = cal.isShow();
+			var pos = core.dom.getPosition(sel.getOuter());
+
+			if (!isShow) {
+				cal.setPosition(pos.left, pos.top + sel.getOuter().offsetHeight + 2);
+				core.mask(0.05);
+				cal.show();
+				core.setFocused(cal);
+			}
+			else {
+				core.mask();
+				cal.hide();
+			}
+		};
+
+		/* 失焦/点击取消按钮时隐藏日历 */
+		cal.onblur = function() {
+			if (this.isShow()) {
+				core.mask();
+				this.hide();
+			}
+		}
+		cal.oncancel = function() {
+			core.mask();
+			this.hide()
+		};
+
+		/* 确定按钮 */
+		cal.onconfirm = function() {
+			var bInput = this._uBeginCalendar._cInput;
+			var eInput = this._uEndCalendar._cInput;
+			
+			this._sBDate = lib.g("DateSD").value = bInput.getValue();
+			this._sEDate = lib.g("DateED").value = eInput.getValue();			
+
+			core.mask();
+			this.hide();
+		}
+	})(ecui, baidu);	
+</script>

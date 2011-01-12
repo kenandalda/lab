@@ -1,0 +1,58 @@
+	<div id="tablectnr">
+			#set ($lstTitles=[
+				{"chn":"日期","eval":'$!item.date',"width":"8%"},
+				{"chn":"CRM帐号","eval":'<a href="$fMultiReport?multiReportType=2&">$!utils.escapeInH($!item.crmAccount)</a>',"width":"9%","sort":true},
+				{"chn":"管理员","eval":'$!item.managerCrmAccount',"width":"16%"},
+				{"chn":"总任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.allTaskCount)</a>',"width":"40%"},
+				{"chn":"已完成任务数xx","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.finishedTaskCount)</a>',"width":"40%"},
+				{"chn":"待处理任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.unProcessTaskCount)</a>',"width":"40%"},
+				{"chn":"待后续任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.waitProcessTaskCount)</a>',"width":"50%"},
+				{"chn":"已完成任务数xx","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.finishedTaskCount)</a>',"width":"40%"},
+				{"chn":"待处理任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.unProcessTaskCount)</a>',"width":"40%"},
+				{"chn":"待后续任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.waitProcessTaskCount)</a>',"width":"50%"},
+				{"chn":"已完成任务数xx","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.finishedTaskCount)</a>',"width":"40%"},
+				{"chn":"待处理任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.unProcessTaskCount)</a>',"width":"40%"},
+				{"chn":"待后续任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.waitProcessTaskCount)</a>',"width":"50%"},
+				{"chn":"已完成任务数xx","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.finishedTaskCount)</a>',"width":"40%"},
+				{"chn":"待处理任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.unProcessTaskCount)</a>',"width":"40%"},
+				{"chn":"待后续任务数","eval":'<a href="$fWorkTaskTreatQuery?">$!utils.escapeInH($!item.waitProcessTaskCount)</a>',"width":"50%"},
+				{"chn":"完成率","eval":'$!item.allFinishedRate',"width":"9%"},
+				{"chn":"操作","eval":'<a href="$fMultiReport?multiReportType=3&managerCrmAccount=$!utils.escapeInH($!item.managerCrmAccount)">查看类型分布</a>',"width":"9%"}
+			])
+			#set ($lstTitles2=[
+				{"chn":"日期","eval":'$!item.date',"width":"100px"},
+				{"chn":"CRM帐号","eval":'<a href="$fMultiReport?multiReportType=2&">$!utils.escapeInH($!item.crmAccount)</a>',"width":"100px","sort":true},
+				{"chn":"管理员","eval":'$!item.managerCrmAccount',"width":"100px"}
+				])
+			#set ($fOptions = {"url":"$!fMultiReport","hasOp":true, "checkbox":"date", "checkboxVal":"allTaskCount"})
+			#table ($lstTitles $everydayReportVo.reportList $fOptions)
+			#table ($lstTitles2 $everydayReportVo.reportList $fOptions)
+
+
+			<h4>Hardwired Table</h4>
+			#set($dummyRange=[1..10])
+			<table ecui="type:ecom-table;vScroll:false" style="height:300px">
+			<tr>
+				#foreach($dummy in $dummyRange)
+				<th style="width:20%">表头-$dummy</th>
+				#end
+			</tr>
+			#if(!$nodata)
+				#foreach($dummy in $dummyRange)
+				<tr>
+					#foreach($dummy in $dummyRange)
+					<td style="height:20px;">单元格-$dummy</td>
+					#end
+				</tr>
+				#end
+			#else
+				<tr>
+
+					#foreach($dummy in $dummyRange)
+					<td style="height:0px"></td>
+					#end
+
+				</tr>
+			#end
+			</table>
+	</div>

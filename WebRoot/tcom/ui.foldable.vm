@@ -1,0 +1,45 @@
+#**
+* @desc 可折叠容器宏
+* @param {String} title 容器标题
+* @param {Boolean} initFold 初始时是否折叠, 默认展开
+* @param {Map} options 其他参数
+*   @param {String} icon 图标样式(a-e)
+*   @param {String} id 内部包含容器的id
+*   @param {String} ecId 控件id
+*   @param {String} asyncUrl 异步内容的url
+*
+* @demo 1 普通
+*    #startFoldable("开户详情")
+*         <!-- 此处为具体内容 -->
+*    #endFoldable
+*
+* @demo 2 自定义标题
+*    #startFoldable
+*         <!-- label中的innerHTML的优先级高于宏参数中的title -->
+*         <label><a href="#" style="float:right">查看审核记录</a>审核记录</label>
+*         <!-- 此处为具体内容 -->
+*    #endFoldable
+*
+* @demo 3 异步 
+*    #startFoldable("开户详情" "" {"asyncUrl": "/order/accountDetailModule.action"})
+*    #endFoldable
+*#
+#macro (startFoldable $title $initFold $options)
+    <div class="area-w air"></div><div class="area-v"></div>
+	<div class="area">
+        <div ecui="type:foldable;title:$!title;
+            #if($options.ecId)id:$options.ecId#end
+            #if($options.asyncUrl)asyncUrl:$options.asyncUrl;#end
+            #if($initFold.getClass().getName()=="java.lang.Boolean")initFold:$initFold#end" 
+            class="icon-#if($options.icon)$options.icon#{else}e#end" 
+            #if($options.id)id="$options.id"#end>
+            <div class="ec-foldable-content ec-foldable-content" 
+                style="#if($initFold == true)visibility:hidden;position:absolute#end"> 
+                #if($options.asyncUrl)请稍候...#end
+#end
+#macro (endFoldable)
+            </div>
+        </div>
+	</div>
+	<div class="area-v"></div><div class="area-w"></div>
+#end

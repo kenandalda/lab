@@ -1,0 +1,5 @@
+<div ecui="type:listbox;id:lb">
+	#foreach($i in [1..5])
+	<li>option-$velocityCount</li>		
+	#end
+</div>

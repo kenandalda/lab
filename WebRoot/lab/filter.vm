@@ -1,0 +1,40 @@
+<div ecui="type:sub-filter;text:二级行业;id:foo"></div>
+<div ecui="type:sub-filter;text:广告形式;id:bar"></div>
+
+<script type="text/javascript" charset="utf-8">
+    var foo = ecui.get("foo"),
+        bar = ecui.get("bar"),
+        content = foo.$getSection("Content");
+
+    // 生成foo内容
+    foo.generateContent = function () {
+        return "fsdfwefewfew<div>sdfefwM</div>"+
+            "全选<input ecui='type:checkbox;id:cb1' type='checkbox' name=''/><br/>"+
+            "选项1<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项3<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项4<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项5<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>";
+    };
+
+    // 生成bar内容
+    bar.generateContent = function () {
+        return "bar<div>sdfefwM</div>"+
+            "全选<input ecui='type:checkbox;id:cb1' type='checkbox' name=''/><br/>"+
+            "选项1<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项3<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项4<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>"+
+            "选项5<input ecui='type:checkbox;superior:cb1' type='checkbox' name='fewew'/>";
+    };
+
+    // 确定点击
+    content.$getSection("Confirm").onclick = function () {
+        alert("xxx");
+    };
+
+    // 取消点击
+    content.$getSection("Cancel").onclick = function () {
+        alert("yyy");
+        this.getParent().hide();
+    };
+
+</script>

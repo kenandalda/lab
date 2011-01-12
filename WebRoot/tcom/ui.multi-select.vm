@@ -1,0 +1,36 @@
+#**
+ * 多选下拉框
+ * @desc
+ * @param   {String} name   表单名称
+ * @param   {List<Map>}  list    可选项列表(text, value)
+ * @param   {Map}   options 选项 
+ *      ecId    {String}    控件id
+ *      selectedList    {List}  已选择项目(value值列表)
+ *      customStr   {String}    自定义元素属性
+ *      specialList {List}      需要特殊标识的项目(value值列表)
+ *      disabled {Boolean}   初始时是否禁用
+ *
+ * @demo #multipleSelect("rejectReason" $reasonList {"selectedList": ["007", "008"]})
+ *#
+#macro (multipleSelect $name $list $options)
+#if($options.ecId)
+    #set($msId = $options.ecId)
+#else
+    #if($msId)
+        #set($msId = $msId + 1)
+    #else
+        #set($msId = 0)
+    #end
+#end
+<div ecui="type:multi-select;msId:$msId;
+    id:ms_$msId;
+    #if($options.disabled)disabled:$options.disabled;#end
+    "
+    #if($options.customStr)$!options.customStr#end>
+    #foreach($item in $list)
+    <div class="#if($options.specialList.contains($item.value))special-item #end">$item.text<input type="checkbox" name="$name" style="display:none" value="$item.value" 
+            #if($options.selectedList && $options.selectedList.contains($item.value)) checked="checked" #end/>
+    </div>
+    #end
+</div>
+#end

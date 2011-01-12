@@ -1,0 +1,26 @@
+## 折叠容器
+
+    #startFoldable("异步" "" {"asyncUrl":"table.tbcb.vm"})  
+    #endFoldable
+
+
+    #startFoldable("异步" true {"asyncUrl":"table.tbcb.vm"})  
+    #endFoldable
+
+    #startFoldable("折叠容器$i" true {})  
+            <label><a href="#" style="float:right">ifwfwfew- $i</a>折叠容器$i</label>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+    #endFoldable
+
+    #startFoldable("折叠容器警方联手的开发均为俄方巍峨" "" {})  
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            <label><a href="#" style="float:right">ifwfwfew- $i</a>折叠容器$i</label>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+            fewjlfkewjfjwe;fewfwefewfwefwe<br/>
+    #endFoldable

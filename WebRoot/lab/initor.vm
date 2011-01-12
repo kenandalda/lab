@@ -1,0 +1,281 @@
+<div class="j i_ui_calendar" style="width:80px">
+    <input type="text" name="xxx" value="">
+</div>
+<div id="productModifiedDiv" style="display: block;">
+				<p id="orderInfoDtoproductSelectedP" class="j i_prosel">
+			<label><input type="radio" value="0" id="productSearch" name="orderInfoDto.productSelected" class="j i_proswitch">搜索推广</label>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<label><input type="radio" value="1"  id="productHeat" name="orderInfoDto.productSelected" class="j i_proswitch">火爆地带</label>
+			
+			<label style="margin-left: 10px;">
+				<input type="radio"  value="2" id="productNetunion" name="orderInfoDto.productSelected" class="j i_proswitch">网盟推广
+			</label>
+			<span class="tip-r"></span>
+		</p>
+		
+		<div class="mess-query air">
+			<div class="area-w"></div><div class="area-v"></div>
+			<div class="area"><div id="productListPanel" class="area-inner">
+		
+			<div style="display: none;" id="productSearchDiv">
+				<table width="95%">
+					<tbody><tr>
+						<td width="65px">预存款<span class="bright">*</span></td>
+						<td>
+							<input type="text" class="j i_focus i_valid_number" invalid="searchPopDtopreSumErrSpan" trim="yes" message="只能是数字（小数点后最多两位）" id="searchPre"  name="orderInfoDto.searchPopDto.preSum" value="345"> 元&nbsp;&nbsp;<span id="searchPopDtopreSumErrSpan" class="tip-r"></span></td>
+						<td width="65px">&nbsp;</td><td>&nbsp;</td>
+					</tr>
+					<tr>
+						<td>建站费</td>
+						<td><input type="text" message="只能是数字（小数点后最多两位）" invalid="orderProductInfoSearchPopbuildWebFeeErrSpan" trim="yes" id="buildWebFee" name="orderInfoDto.searchPopDto.orderProductInfoSearchPop.buildWebFee" value="120"> 元&nbsp;&nbsp;<span id="orderProductInfoSearchPopbuildWebFeeErrSpan" class="tip-r"></span></td>
+						<td>服务费</td>
+						<td>
+							<input type="text"  message="只能是数字（小数点后最多两位）" invalid="orderProductInfoSearchPopserviceFeeErrSpan" trim="yes" name="orderInfoDto.searchPopDto.orderProductInfoSearchPop.serviceFee" id="serviceFee" value="100"> 元&nbsp;&nbsp;<span id="orderProductInfoSearchPopserviceFeeErrSpan" class="tip-r"></span></td>
+					</tr>
+					<tr>
+						<td>优惠比率</td>
+						<td>
+							<input type="text"  message="只能小于100的数字（小数点儿后最多5位）" invalid="orderProductInfoSearchPopfavRateErrSpan" trim="yes" id="favRate" name="orderInfoDto.searchPopDto.orderProductInfoSearchPop.favRate" value="20"> %&nbsp;&nbsp;<span id="orderProductInfoSearchPopfavRateErrSpan" class="tip-r"></span></td>
+						<td>&nbsp;</td><td>&nbsp;</td>
+					</tr>
+					<tr>
+						<td>帐户金额</td>
+						<td><span id="productSearchAccountSumSpan">23424</span> 元
+							<input type="hidden" id="productSearchAccountSumHidden" value="23424" name="orderInfoDto.searchPopDto.accountSum"><span class="tip-r"></span></td>
+						<td>优惠金额</td><td><span id="searchPopDtoorderProductInfoSearchPopfavSumSpan">400</span> 元
+						<input type="hidden" value="400" id="searchPopDtoorderProductInfoSearchPopfavSum" name="orderInfoDto.searchPopDto.orderProductInfoSearchPop.favSum">
+								<span class="tip-r"></span>
+						</td>
+					</tr>
+				</tbody></table>
+			</div>
+		
+			<div style="display:none" id="productHeatDiv">
+				<table width="97%">
+					<tbody><tr>
+						<td width="65px">预存款<span class="bright">*</span></td>
+						<td width="380px">
+							<input type="text" invalid="orderInfoDtoheatAreaDtopreSumErrSpan" trim="yes" message="只能是数字（小数点后最多两位）" id="heatPre"  name="orderInfoDto.heatAreaDto.preSum" value="4566" pattern="\d+(\.\d{1,2})?"> 元&nbsp;&nbsp;<span id="orderInfoDtoheatAreaDtopreSumErrSpan" class="tip-r"></span></td>
+						<td width="65px">帐户金额</td><td><span id="productHeatAccountSumSpan">5676</span> 元<input type="hidden" id="productHeatAccountSumHidden" name="orderInfoDto.heatAreaDto.accountSum" value="5676">&nbsp;&nbsp;<span class="tip-r"></span></td>
+						<td style="text-align: right;"><a class="j i_confirm" hidefocus="" href="#">添加</a></td>
+					</tr>
+				</tbody></table>
+				<div><span class="tip-r"></span></div>
+				
+												
+								
+								<div id="heatSubDiv57735" class="mess-query air">
+					<div class="area-w"></div><div class="area-v"></div>
+					<div class="area"><div class="area-inner">
+						<input type="hidden" name="orderInfoDto.heatAreaDto.id" value="57735">
+						<table width="100%">
+							<tbody><tr>
+								<td width="65px">推广词<span class="bright">*</span></td>
+								<td width="40%"><input type="text" maxlength="50" invalid="heatAreaDtopopWordErrSpan57735" trim="yes" message="必填项" name="orderInfoDto.heatAreaDto.popWord" value="医药" minlen="1">&nbsp;&nbsp;<span spanname="heatAreaDtopopWordErrSpan" id="heatAreaDtopopWordErrSpan57735" class="tip-r"></span></td>
+								<td width="65px">期限<span class="bright">*</span></td>
+																<td>			<select id="coopTypeList57735"  name="orderInfoDto.heatAreaDto.coopTimeType">
+					<option value=""></option>
+					<option value="30">一个月</option>
+					<option value="90">三个月</option>
+					<option selected="selected" value="180">半年</option>
+					<option value="365">一年</option>
+					<option value="">其它</option>
+				</select>
+	 <input type="text" invalid="orderInfoDtoheatAreaDtocoopTimeErrSpan57735" trim="yes" message="只能是正数" disabled="" size="4" name="orderInfoDto.heatAreaDto.coopTime" value="180" pattern="\d+" minvalue="1"> 天&nbsp;&nbsp;<span spanname="orderInfoDtoheatAreaDtocoopTimeErrSpan" id="orderInfoDtoheatAreaDtocoopTimeErrSpan57735" class="tip-r"></span></td>
+							</tr>
+							<tr>
+								<td>推广位<span class="bright">*</span></td>
+								<td><input type="text" maxlength="50" invalid="heatAreaDtopopPositionErrSpan57735" trim="yes" message="必填项" name="orderInfoDto.heatAreaDto.popPosition" value="第而个" minlen="1">&nbsp;&nbsp;<span spanname="heatAreaDtopopPositionErrSpan" id="heatAreaDtopopPositionErrSpan57735" class="tip-r"></span></td>
+								<td>展现方式</td>
+																<td>			<select name="orderInfoDto.heatAreaDto.displayType">
+					<option value="1">固定位置</option>
+					<option selected="selected" value="2">轮廓</option>
+				</select>
+	</td>
+							</tr>
+							<tr>
+								<td valign="top">推广描述<span class="bright">*</span></td>
+								<td><textarea class="j i_focus-red-true" invalid="heatAreaDtopopDescErrSpan57735" trim="yes" message="必填项，100字以内" rows="4" cols="50" name="orderInfoDto.heatAreaDto.popDesc" minlen="1" maxlen="100">就这样描述，很强大</textarea>&nbsp;&nbsp;<span spanname="heatAreaDtopopDescErrSpan" id="heatAreaDtopopDescErrSpan57735" class="tip-r"></span></td>
+								<td>&nbsp;</td>
+								<td style="text-align: right; vertical-align: bottom;"><a  hidefocus="" href="#">删除</a></td>
+							</tr>							
+						</tbody></table>
+					</div></div>
+					<div class="area-v"></div><div class="area-w"></div>
+				</div>
+							<div id="heatSubDiv1283572170642" class=" mess-query air">
+					<div class="area-w"></div><div class="area-v"></div>
+					<div class="area"><div class="area-inner">
+						<input type="hidden" name="orderInfoDto.heatAreaDto.id" value="">
+						<table width="100%">
+							<tbody><tr>
+								<td width="65px">推广词<span class="bright">*</span></td>
+								<td width="40%"><input type="text" maxlength="50" invalid="heatAreaDtopopWordErrSpan1283572170642" trim="yes" message="必填项" name="orderInfoDto.heatAreaDto.popWord" value="医药" minlen="1">&nbsp;&nbsp;<span spanname="heatAreaDtopopWordErrSpan" id="heatAreaDtopopWordErrSpan1283572170642" class="tip-r"></span></td>
+								<td width="65px">期限<span class="bright">*</span></td>
+																<td>			<select id="coopTypeList1283572170642"  name="orderInfoDto.heatAreaDto.coopTimeType">
+					<option value=""></option>
+					<option value="30">一个月</option>
+					<option value="90">三个月</option>
+					<option selected="selected" value="180">半年</option>
+					<option value="365">一年</option>
+					<option value="">其它</option>
+				</select>
+	 <input class="j i_focus" type="text" invalid="orderInfoDtoheatAreaDtocoopTimeErrSpan1283572170642" trim="yes" message="只能是正数" size="4" name="orderInfoDto.heatAreaDto.coopTime" value="180" pattern="\d+" minvalue="1"> 天&nbsp;&nbsp;<span spanname="orderInfoDtoheatAreaDtocoopTimeErrSpan" id="orderInfoDtoheatAreaDtocoopTimeErrSpan1283572170642" class="tip-r"></span></td>
+							</tr>
+							<tr>
+								<td>推广位<span class="bright">*</span></td>
+								<td><input type="text" maxlength="50" invalid="heatAreaDtopopPositionErrSpan1283572170642" trim="yes" message="必填项" name="orderInfoDto.heatAreaDto.popPosition" value="第而个" minlen="1">&nbsp;&nbsp;<span spanname="heatAreaDtopopPositionErrSpan" id="heatAreaDtopopPositionErrSpan1283572170642" class="tip-r"></span></td>
+								<td>展现方式</td>
+																<td>			<select name="orderInfoDto.heatAreaDto.displayType">
+					<option value="1">固定位置</option>
+					<option selected="selected" value="2">轮廓</option>
+				</select>
+	</td>
+							</tr>
+							<tr>
+								<td valign="top">推广描述<span class="bright">*</span></td>
+								<td><textarea class="j i_focus-blue" invalid="heatAreaDtopopDescErrSpan1283572170642" trim="yes" message="必填项，100字以内" rows="4" cols="50" name="orderInfoDto.heatAreaDto.popDesc" minlen="1" maxlen="100">就这样描述，很强大</textarea>&nbsp;&nbsp;<span spanname="heatAreaDtopopDescErrSpan" id="heatAreaDtopopDescErrSpan1283572170642" class="tip-r"></span></td>
+								<td>&nbsp;</td>
+								<td style="text-align: right; vertical-align: bottom;"><a  class="j i_confirm" hidefocus="" href="#">删除</a></td>
+							</tr>							
+						</tbody></table>
+					</div></div>
+					<div class="area-v"></div><div class="area-w"></div>
+				</div></div>
+			
+			<div style="display: none;" id="productNetunionDiv">
+				<table width="95%">
+					<tbody><tr>
+						<td width="65px">预存款<span class="bright">*</span></td>
+						<td>
+						<input type="text" class="j i_valid_number" id="netUnionPre" name="orderInfoDto.netUnionPopDto.preSum" value=""> 元&nbsp;&nbsp;
+						<span id="netUnionPopDtoPreSumTip" class="tip-r"></span>
+						</td>
+						<td width="65px">&nbsp;</td><td>&nbsp;</td>
+					</tr>
+					<tr>
+						<td>建站费</td>
+						<td>
+							<input type="text" name="orderInfoDto.netUnionPopDto.orderProductInfoNetUnionPop.buildWebFee" id="netUnionBuildType" message="只能是数字（小数点后最多两位）" invalid="netUnionPopDtoBuildFeeTip" trim="yes" value=""> 元&nbsp;&nbsp;
+							<span id="netUnionPopDtoBuildFeeTip" class="tip-r">
+									
+							</span>
+						</td>
+						<td>服务费</td>
+						<td>
+							<input class="j i_focus" type="text"  id="netUnionServiceFee" message="只能是数字（小数点后最多两位）" invalid="netUnionFeeErrSpan" trim="yes" name="orderInfoDto.netUnionPopDto.orderProductInfoNetUnionPop.serviceFee" value=""> 元&nbsp;&nbsp;
+							<span id="netUnionFeeErrSpan" class="tip-r">
+								</span>
+						</td>
+					</tr>
+					<tr>
+						<td>优惠比率</td>
+						<td>
+							
+							<input class="j i_focus" type="text"  id="netUnionFavRate" message="只能小于100的数字（小数点后最多五位）" invalid="netUnionFavRateErrSpan" trim="yes" name="orderInfoDto.netUnionPopDto.orderProductInfoNetUnionPop.favRate" value=""> %&nbsp;&nbsp;
+							<span id="netUnionFavRateErrSpan" class="tip-r">
+								
+							</span>
+						</td>
+						<td>&nbsp;</td><td>&nbsp;</td>
+					</tr>
+					<tr>
+						<td>帐户金额</td>
+						<td>
+							<span id="productNetunionAccountSumSpan"></span> 元
+							<input class="j i_focus i_valid_number" type="text" value="" id="productNetunionAccountSumHidden" name="orderInfoDto.netUnionPopDto.accountSum">
+							<span class="tip-r"></span></td>
+						<td>优惠金额</td>
+						<td>
+							<span id="productNetunionFavSum">
+								</span> 元
+							<input class="j i_focus" type="hidden" value="" name="orderInfoDto.netUnionPopDto.orderProductInfoNetUnionPop.favSum" id="productNetunionFavSumHidden">
+							<span class="tip-r"></span>
+						</td>
+					</tr>
+				</tbody></table>
+			</div>
+			</div></div>
+			<div class="area-v"></div><div class="area-w"></div>
+		</div>
+		
+		</div>
+<script type="text/javascript" charset="utf-8">
+    Rigel = {}; // 全局命名空间
+    Lab = {}; // 页面级别命名控件
+
+    // 初始化ecui控件, 这个占用的时间比较多
+/* 取消注释看效果
+    Rigel.init_ui_calendar = function() {
+        ecui.create("ecom-calendar-edit", {element:this});         
+    };
+*/
+    Rigel.init_confirm = function() {
+        this.style.backgroundColor = "yellow";
+        this.onclick = function() {
+            confirm("xxxxx");
+        };
+    };
+
+    // 验证
+    Rigel.init_valid_number = function() {
+        var re = /^[0-9]*$/;
+        this.onblur = function() {
+            if (!re.test(this.value)) {
+                this.style.border = "2px solid red";
+                this.style.backgroundColor = "yellow";
+            }
+            else {
+                this.style.border = "";
+                this.style.backgroundColor = "";
+            }
+        };
+    };
+
+    // 可以带参数, ex: class="j i_focus-red-true"
+    Lab.init_focus = function(color, highlight) {
+        var highlight = highlight && eval(highlight);
+        this.onfocus = function() {
+            highlight && (this.style.backgroundColor = "yellow");
+            this.style.border = "2px solid " + (color || "orange");
+        };
+        this.onblur = function() {
+            highlight && (this.style.backgroundColor = "#FFF");
+            this.style.border = "";
+        };
+    };
+
+    // 按不同的radiobutton显示区块
+    Lab.init_proswitch = function() {
+
+        var dom = baidu.dom,
+            g = dom.g,
+            hide = dom.hide,
+            show = dom.show;
+
+        this.onclick = function() {
+            hide(g("productSearchDiv"));
+            hide(g("productHeatDiv"));
+            hide(g("productNetunionDiv"));
+            show(g(this.getAttribute("id") + "Div"));
+        }
+    };
+
+    Lab.init_prosel = function(index) {
+        var dom = baidu.dom,
+            g = dom.g,
+            hide = dom.hide,
+            show = dom.show;
+
+        var curRadio = this.getElementsByTagName("input")[parseInt(index, 10) || 0];
+        curRadio.checked = true;
+        show(g(curRadio.id + "Div"));
+    }; 
+
+    // 初始化
+    baidu.dom.ready(function() {
+        var t = new Date();
+         new Initor().go(document.body);   
+         alert("初始化时间:" + (new Date() - t) + "ms");
+    });
+</script>

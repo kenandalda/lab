@@ -1,0 +1,129 @@
+#**
+ * @desc : 用于配置请求的action地址
+ *#
+
+## 配置工程的上下文路径
+#set($projectContext = "$!link.getContextPath()")
+
+## 配置静态资源请求的路径
+#set($staticRoot = "$projectContext/static")
+
+## 如下是demo，书写action时可以采用下面格式
+#set($demo = {
+    "demoQuery"  : "$projectContext/demo/demoQuery.action",
+    "demoSet"    : "$projectContext/demo/demoSet.action",
+    "demoDelete" : "$projectContext/demo/demoDelete.action"
+})
+
+## 如下开始配置业务路径
+#set($sysadmin = {
+	"delAssignWorkload" : "$projectContext/workload/delAssignWorkload.action",
+	"saveAssignWorkload" : "$projectContext/workload/saveAssignWorkload.action",
+	"downloadContractTemplate" : "$projectContext/contract/downloadContractTemplate.action",
+	"deleteContractTemplate" : "$projectContext/contract/deleteContractTemplate.action",
+	"uploadContractTemplate" : "$projectContext/contract/uploadContractTemplate.action",
+    
+    "addDicInfo" : "$projectContext/sysadmin/addDicInfo.action",
+    "uptDicInfo" : "$projectContext/sysadmin/uptDicInfo.action",
+    "delDicInfo" : "$projectContext/sysadmin/delDicInfo.action",
+
+    "addGiftApplyReason" : "$projectContext/sysadmin/addGiftApplyReason.action",
+    "uptGiftApplyReason" : "$projectContext/sysadmin/uptGiftApplyReason.action",
+    "delGiftApplyReason" : "$projectContext/sysadmin/delGiftApplyReason.action",
+
+    "addGiftArea" : "$projectContext/sysadmin/addGiftArea.action",
+    "uptGiftArea" : "$projectContext/sysadmin/uptGiftArea.action",
+    "delGiftArea" : "$projectContext/sysadmin/delGiftArea.action",
+
+    "addGiftName" : "$projectContext/sysadmin/addGiftName.action",
+    "uptGiftName" : "$projectContext/sysadmin/uptGiftName.action",
+    "delGiftName" : "$projectContext/sysadmin/delGiftName.action",
+
+    "addGiftType" : "$projectContext/sysadmin/addGiftType.action",
+    "delGiftType" : "$projectContext/sysadmin/delGiftType.action",
+    "showGiftType" : "$projectContext/sysadmin/showGiftType.action",
+    "queryGiftType" : "$projectContext/sysadmin/queryGiftType.action",
+
+    "uptAssociation" : "$projectContext/sysadmin/uptAssociation.action",
+    "delAssociation" : "$projectContext/sysadmin/delAssociation.action",
+
+    "queryContractSerialAcronym" : "$projectContext/sysadmin/queryContractSerialAcronym.action",
+    "uptContractSerialAcronym" : "$projectContext/sysadmin/uptContractSerialAcronym.action",
+
+    "delAssistantAssociate" : "$projectContext/sysadmin/delAssistantAssociate.action",
+    "saveAssistantAssociate" : "$projectContext/sysadmin/saveAssistantAssociate.action"
+})
+
+#set($bcom = {
+	"qureyModifyRecord" : "$projectContext/order/viewCustModfyRecord.action",
+	"queryOrderActive" : "$projectContext/order/queryOrderActive.action"
+})
+
+#set($order = {
+	"reAssignOrderHisSearchQuery": "$projectContext/adjustorder/doReAssignOrderHisSearch.action",
+	"reAssignOrderSearchQuery": "$projectContext/adjustorder/doReAssignOrderSearch.action",
+	"giftSearchQuery":			"$projectContext/order/doGiftSearch.action",
+	"contractSearchQuery":		"$projectContext/order/doContractSearch.action",
+	"listContractCopyReturnQuery":"$projectContext/contract/doListContractCopyReturn.action",
+	"submitOrder" : "$projectContext/order/submitOrder.action",
+	"getGiftListByAddr" : "$projectContext/giftapply/getGiftListByAddr.action",
+	"rejectSubmit" : "$projectContext/manageraudit/rejectSubmit.action"
+})
+
+#set($fWorkflowAction = {
+	"taskDelegationTrace":		"$projectContext/taskdelegation/getDelegationTaskTraces.action",
+	"taskDelegationTraceQuery": "$projectContext/taskdelegation/getDelegationTaskTracesList.action",
+	"layupTaskSearch":			"$projectContext/workflow/layUpTaskSearch.action",
+	"layupTaskSearchQuery":		"$projectContext/workflow/layUpTaskSearchQuery.action",
+	"layUpTaskActivity":		"$projectContext/workflow/layUpTaskActivity.action",
+	"taskDelegationSearch":		"$projectContext/taskdelegation/getTodoTaskInfos.action",
+	"taskDelegationSearchQuery":"$projectContext/taskdelegation/getTodoTaskInfosList.action"
+})
+
+#set($fTodoAction = {
+	"query":					"$projectContext/todo/"
+})
+
+
+#set($finance = {
+    "dupInvoice": "$projectContext/finance/validationInvoiceNum.action?orderId=$!orderId",
+    "fund_form": "http://tc-sf-ra04.tc.baidu.com:8095/fp-mgr/finance/fund_form",
+    "addMoneyAudit": "$projectContext/finance/addMoneyAudit.action",
+    "fund_list":"http://tc-sf-ra04.tc.baidu.com:8095/fp-mgr/request/list",
+    "titleModManageAudit":"$projectContext/finance/modTileOfInvoiceApproveAudit.action"
+})
+
+
+## 批处理action
+#set($batOpActionName={
+  "105" : ["${projectContext}/finance/batchConfirmReceiveMoney.action","批量确认已收款"],
+  "123" : ["${projectContext}/orderprint/batchOrderPrint.action","批量打印"],
+  "125" : ["${projectContext}/orderprint/batchOrderPrint.action","批量打印"],
+  "101":  ["${projectContext}/finance/batchMakeOutInvoice.action","批量开发票"],
+  "102":  ["${projectContext}/finance/batchMakeOutInvoice.action","批量补开发票"]
+})
+#set($printBatOpActionName={
+  "1" : ["${projectContext}/orderprint/batchOrderPrint.action","批量打印"],
+  "2" : ["${projectContext}/orderprint/batchOrderPrint.action","批量打印"]
+})
+
+#set($qualityAudit = {
+	"qualificationAudit": "$projectContext/qualityaudit/qualificationAudit.action"
+})
+
+#set($virtualwithdrawals = {
+	"submitOrder":"$projectContext/virtualwithdrawals/startProcess.action",
+	"modifyOrder":"$projectContext/virtualwithdrawals/reSubmitOrder.action"
+})
+
+#set($preAudit = {
+	"rejectMod":"$projectContext/preaudit/preAuditRejectModOrder.action"
+})
+
+
+
+#*
+ * 适配
+ *#
+## 发票判重地址
+#set($dupInvoiceAction = $finance.dupInvoice)

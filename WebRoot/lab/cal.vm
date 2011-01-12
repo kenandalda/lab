@@ -1,0 +1,91 @@
+<div class="area-w"></div><div class="area-v"></div>
+    	<div class="area query" style="zoom:normal">
+    		<!--<input type="text" ecui="type:edit"/>-->
+    		<form id="query" action="" method="post">
+    			<table><tr><td>
+            #*
+            ##日期  
+            #singleCal ("selectDay" "" {"range":"now-5y"})
+    		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo"} )
+    		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo", "range":"now-5y"} )
+    		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo", "range":"now-5y"} )
+            *#
+        <!--<div ecui="type:ecom-calendar;range:2y-3y;id:cal1" style="float:left"></div>-->
+        <!-- {{{
+        <div ecui="type:ecom-calendar-edit;range:20090104-20100826;id:caledit" >
+            <input type="text" readonly="readonly" name="some_name" value="2010-01-09">
+        </div>
+        <div ecui="type:ecom-calendar-edit;range:20080104-20080826;id:caledit2" >
+            <input type="text" readonly="readonly" name="some_name" value="2008-01-09">
+        </div>
+        <div ecui="type:ecom-calendar-edit;range:5y-5y;id:caleditb" >
+            <input type="text" readonly="readonly" name="some_name" value="">
+        </div>
+        <div ecui="type:ecom-calendar-edit;range:5y-5y;id:caledit3;calType:range">
+            <input type="text" readonly="readonly" name="some_name" value=""/>
+            <input type="text" style="display:none" readonly="readonly" name="dateFrom" value="2010-08-08"/>
+            <input type="text" style="display:none" readonly="readonly" name="dateTo" value="2010-08-22"/>
+        </div>
+        <div ecui="type:ecom-calendar-edit;begin-range:1y-1y;end-range:1y-1y;id:caledit4;calType:range">
+            <input type="text" readonly="readonly" name="some_name" value="">
+            <input type="text" style="display:none" readonly="readonly" name="dateFrom" value=""/>
+            <input type="text" style="display:none" readonly="readonly" name="dateTo" value=""/>
+        </div>
+        <div ecui="type:ecom-calendar-edit;range:2y-6y;id:caledit5;calType:range">
+            <input type="text" readonly="readonly" name="some_name" value="">
+        </div>
+        }}} -->
+        <!--<div ecui="type:single-calendar;range:now-10y" style="float:left"></div>-->
+        <!--<div ecui="type:range-calendar;range:now-5y" style="float:left"></div>-->
+            <!--
+               -<input name="xxx" ecui="type:calendar-edit;calendartype:single;capture:false;id:scal;date:" readonly="readonly" />
+               -<input name="yyy" ecui="type:calendar-edit;calendartype:range;capture:false;id:rcal;" readonly="readonly" />
+               -->
+
+               <div ecui="type:ecom-calendar-edit;cal-type:range;range:2y-3y;id:cal1;loose:true" style="float:left" class="ec-ecom-blue-calendar">
+                    <input type="text" readonly="readonly" name="some_name" value="2010-01-09">
+               </div>
+    			<input type="submit" value="submit"/>
+    			<input type="reset" value="reset"/>
+    			</td>
+    			</tr>
+    			</table>
+    		</form>
+    	</div>
+    	<div class="area-v"></div><div class="area-w"></div>
+    	<div class="air"></div>
+       
+        <div id="name1">
+            sdflsfdkjwe
+        </div>
+        <input type="text" name="input" value="a">
+        <select name="some_name" id="some_name1">
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+        </select>
+        <select name="some_name" id="some_name">
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+        </select>
+<script type="text/javascript" charset="utf-8">
+   /* 
+    baidu.dom.ready(function() {
+        ecui.get();
+        ecui.get("rcal")._cCalendar.onblur = function() {
+            ecui.ui.CalendarEdit.prototype.oncalblur.call(this);    
+            alert("blur");
+        };
+    });
+    */
+</script>
+<!-- vim:set fdm=marker: -->

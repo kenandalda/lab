@@ -1,0 +1,98 @@
+<form id="loc" action="" method="post">
+    <input type="text" name="foo" value=""/><br/>
+    #set($cbList = [
+        {"text":"foo", "value":"1"},
+        {"text":"bar", "value":"2"},
+        {"text":"foobar", "value":"3"}
+    ])
+    单选 #list("foo-radio" $switchList "0" "radio")    <br/>
+    多选 #list("foo-checkbox" $cbList "0" "checkbox")    <br/>
+    <select name="foo-select" id="foo-select">
+        <option value="0">option-0</option>    
+        <option value="1">option-1</option>    
+        <option value="2">option-2</option>    
+        <option value="3">option-3</option>    
+    </select>
+    <select multiple="multiple" size="4" name="foo-select-multiple" style="height:60px" id="foo-select-multiple">
+        <option value="0">ms-option-0</option>    
+        <option value="1">ms-option-1</option>    
+        <option value="2">ms-option-2</option>    
+        <option value="3">ms-option-3</option>    
+    </select>
+    <br/>
+    <input type="submit" value="go"/>
+    <input type="hidden" name="localDataId"/>
+</form>
+
+<h4>storageId 记录</h4>
+
+<form id="log">
+    <textarea name="out" style="display:none"></textarea>
+</form>
+<div id="logTxt"></div>
+
+#storageInit()
+
+<script>
+    var ls = ecui.get("localStorage");
+    var dataForm = baidu.g("loc");
+    var logForm = baidu.g("log");
+
+    /*
+    ls.restore = function(storageId, curForm) {
+        var data = ecui.util.parse(this.getMovie().restore(storageId.substring(3)));
+        console.log(data);
+    };
+    */
+
+    dataForm.onsubmit = function() {
+        try {
+            var params = {};
+            var formStorageId = ls.save(this);
+
+            logForm.out.value = logForm.out.value + " " + formStorageId;
+            var logStorageId = ls.save(logForm);
+
+            this.localDataId.value = formStorageId;
+            baidu.cookie.set("logsid", logStorageId);
+        } catch (e) {
+            console.log(e);
+        }
+
+        //return false;
+    };    
+
+    function restoreThis(anchor) {
+        ls.restore(anchor.previousSibling.nodeValue, baidu.g("loc"));    
+    }
+
+    function deleteThis(anchor) {
+        var lsid = anchor.previousSibling.previousSibling.nodeValue;
+        logForm.out.value = logForm.out.value.replace(new RegExp("\\s\*" + lsid), "");
+        baidu.cookie.set("logsid", ls.save(logForm));
+        anchor.parentNode.style.display = "none";
+    }
+
+    window.onload = function() {
+        ecui.get();
+        var logsid = baidu.cookie.get("logsid");
+        var opBtn = [
+            "<a href='javascript:;' onclick='restoreThis(this)'>恢复</a>",
+            "<a href='javascript:;' onclick='deleteThis(this)'>删除</a>"
+        ].join(" ");
+
+        if (logsid) {
+            try {
+                ls.restore(logsid, logForm);
+            }
+            catch (e) {
+                console.log(e);    
+            }
+            baidu.g("logTxt").innerHTML 
+            = "<div>" 
+                + baidu.string.trim(logForm.out.value).split(" ").join(opBtn + "</div><div>")
+                + opBtn + "</div>";
+        }
+    }
+
+</script>

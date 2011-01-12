@@ -1,0 +1,29 @@
+#**
+* @desc : 浮动层开头部分代码
+* @param {String} ecId ecui控件Id，在ecFloater.show(ecId)调用使用
+* @param {String} title 浮动层标题名称
+* @param {Number} width 浮动层的宽度值
+* @param {Number} height 浮动层的高度值
+* @demo
+* #startFloater("floater1" "标题" 500 300)
+* 浮动层里面的HTML代码
+* #endFloater
+*#
+
+#macro (startFloater $ecId $title $width $height)
+    <div ecui="
+        type:form;
+        id:$!ecId;
+        title-auto:width;
+        h-scroll:false;
+        hide:true;
+        " class="floater" style="width:$!{width}px;height:$!{height}px;position:absolute;visibility:hidden">
+        <label>$!utils.escapeInH($title)</label>
+        <div class="floater-content">
+            <div class="floater-inner">
+#end
+#macro (endFloater)
+            </div><!--floater-inner-->
+        </div>
+    </div>
+#end

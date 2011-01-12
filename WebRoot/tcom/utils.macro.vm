@@ -1,0 +1,130 @@
+#**
+ * @desc : 用于定义公共宏
+ *  1) 大于50行的宏建议放置到单独文件(如：表格宏定义在table.macro.vm文件中)
+ *#
+
+## [macro] ------------------ 表格宏 ----------------------------
+#parse("/tcom/ui.table.vm")
+
+## [macro] ------------------ 日历宏 --------------------------------
+#parse("/tcom/ui.calendar.vm")
+
+## [macro] ------------------ tab宏 --------------------------------
+#parse("/tcom/ui.tab.vm")
+
+## [macro] ------------------ 可折叠容器宏 --------------------------------
+#parse("/tcom/ui.foldable.vm")
+
+## [macro] ------------------ 多选下拉框宏 --------------------------------
+#parse("/tcom/ui.multi-select.vm")
+
+## [macro] ------------------ 浮动层宏 ------------------------------
+#parse("/tcom/ui.floater.vm")
+
+## [macro] ------------------ 树组件宏 ------------------------------
+#parse("/tcom/ui.tree.vm")
+
+
+## [macro] ------------------ 选择框 --------------------------------
+
+#**
+ * @desc : 适用于数据确定的下拉列表、单选组、多选组，数据类型为List型
+ * @param {String} name 表单项name属性值
+ * @param {List} data 填充表单项value和label属性的值
+ * @param {String} curVal 当前选中值
+ * @param {String} flag 哪个类型的表单项(radio/select/checkbox)
+ * @param {String} attrs 表单项其它的属性
+ *#
+#set($fieldIndex = 0)
+#macro (list $name $data $curVal $flag $attrs)
+	#if($flag == "select")
+		<select #if($name)name="$name"#end #evaluate($attrs)>
+		#foreach($item in $data)
+			<option value="$!item.value" #if($curVal.toString() == $!item.value.toString())selected="selected"#end>$!utils.escapeInH($item.text)</option>
+		#end
+		</select>
+	#elseif($flag == "checkbox")
+		#foreach($item in $data)
+		<input id="fieldIndex_${fieldIndex}" type="checkbox" #if($name)name="$name"#end value="$!item.value" #evaluate($attrs) #if($!item.isChecked)checked="checked"#end><label for="fieldIndex_${fieldIndex}">$!utils.escapeInH($item.text)</label>
+		#set($fieldIndex = $fieldIndex + 1)
+		#end
+	#elseif($flag == "radio")
+		#foreach($item in $data)
+		<input id="fieldIndex_${fieldIndex}" type="radio" #if($name)name="$name"#end value="$!item.value" #evaluate($attrs) #if($!item.value.toString() == $curVal.toString())checked="checked"#end><label for="fieldIndex_${fieldIndex}">$!utils.escapeInH($item.text)</label>
+		#set($fieldIndex = $fieldIndex + 1)
+		#end
+	#end
+#end
+
+## [macro] ------------------ 层级下拉框 ---------------------------
+
+#**
+ * @desc : 层级下拉框 
+ * @param {String} fName 下拉框fName属性值
+ * @param {List} fData 填充下拉框value和label属性及层级关系的值
+ * @param {String} fCurVal 当前选中值
+ * @param {String} fAttrs 表单项其它的属性
+ *#
+#macro (levelSelect $fName $fData $fCurVal $fAttrs)
+<select #if($!fName)name="$fName"#end #evaluate($fAttrs)>
+    #set($result = {})
+    #foreach ($item in $fData)
+        #set ($floor = 0)
+        #if ($!item.parentId)
+            #set($floor = $result.get($!item.parentId) + 1)
+        #end
+    
+        $!result.put($!item.value, $floor)
+        <option value="$!item.value" #if($fCurVal && $fCurVal == $!item.value)selected="selected"#end>
+            #if($floor > 0)#evaluate("\#foreach($i in [1..$floor])&nbsp;\#end")#end $!utils.escapeInH($item.text)
+        </option>
+    #end
+</select>
+#end
+
+## [macro] ------------------ 统一出错提示 --------------------------
+
+#**
+ * @desc : 统一引入错误提示
+ *#
+#macro (globalMsg)
+    #if($errors && $errors.globalMsg)
+    <div class="mess floor">
+    	<div class="area-w"></div><div class="area-v"></div>
+    	<div class="area">
+        <div class="error-msg">$!errors.globalMsg</div>
+    	</div>
+    	<div class="area-v"></div><div class="area-w"></div>
+    </div>
+    #end
+#end
+
+#*
+ * 错误信息
+ *#
+#macro (errorMessage)
+    #if($!actionErrors.size() > 0 || $!actionMessages.size() > 0 || $!fieldErrors.size() > 0)
+    <div class="mess air">
+        <div class="area-w"></div><div class="area-v"></div>
+        <div class="area icon-warning">
+            #if ($!actionErrors.size() > 0)
+                #foreach($item in $!actionErrors)
+                    $item &nbsp;&nbsp;
+                #end
+            #end
+            #if ($!actionMessages.size() > 0)
+                #foreach($item in $!actionMessages)
+                    $item &nbsp;&nbsp;
+                #end
+            #end
+            #if ($!fieldErrors.size() > 0)
+                #foreach($item in $!fieldErrors)
+                    $item &nbsp;&nbsp;
+                #end
+            #end
+        </div>
+        <div class="area-v"></div><div class="area-w"></div>
+    </div>
+    <div class="air"></div>
+    #end
+#end

@@ -1,0 +1,55 @@
+#**
+ * 标签页 
+ * @desc 标签页容器
+ * @param    {Map}   options 选项
+ *   ecId    {String}    [选填]ecId
+ *   current    {Number}   [选填]默认显示标签页序号(从0开始), 此参数会被startTabContent宏中的current覆盖 
+ *
+ * TODO 默认隐藏不需要的
+ * TODO 去掉一层div
+ *
+ * @demo
+ *    #startTab()
+ *        #startTabContent("标签1")     
+ *            标签1的内容
+ *        #endTabContent
+ *        #startTabContent("标签2")     
+ *            标签2的内容
+ *        #endTabContent
+ *        #startTabContent("标签3" {"current":true})     
+ *            标签3的内容
+ *        #endTabContent
+ *        #startTabContent("标签4")     
+ *            标签4的内容
+ *        #endTabContent
+ *    #endTab
+ *#
+
+#macro(startTab $options)
+<div ecui="type:tab;
+    #if($options.ecId)id:$options.ecId;#end
+    #if($options.current)current:$options.current;#end">
+#end
+#macro(endTab)
+</div>
+#end
+
+#macro(startTabContent $label $options)
+<div ecui="
+    #if($options.current)current:$!options.current;#end 
+    #if($options.href)href:true;#end"
+    style="#if(!$options.current)visibility:hidden;position:absolute#end
+            #if($options.onlyTitle)font-size:0;line-height:0#end">
+    <label #if($options.href)data-href="$options.href"#end>$label</label>
+    #if(!$options.onlyTitle)
+    <div class="area-w"></div><div class="area-v"></div>
+    <div class="area">
+    #else
+    </div>
+    #end
+#end
+#macro(endTabContent)
+	</div>
+	<div class="area-v"></div><div class="area-w"></div>
+</div>
+#end

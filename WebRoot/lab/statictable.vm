@@ -1,0 +1,104 @@
+#set ($lstTitles=[
+		{"chn":"CRM帐号","eng":"account", "eval":'<a href="#">$!utils.escapeInH($!item.crmAccount)</a>',"sort":true, "width":"100px"},
+		{"chn":"总任务数","eval":'<a href="#">$!utils.escapeInH($!item.allTaskCount)</a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'<a href="#">$!utils.escapeInH($!item.finishedTaskCount)</a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'$!item.allFinishedRate', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'<a href="#">$!utils.escapeInH($!item.unProcessTaskCount)</a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'<a href="#">$!utils.escapeInH($!item.waitProcessTaskCount)</a>', "width":"100px"},
+		{"chn":"管理员","eval":'$!item.managerCrmAccount  ', "width":"100px"},
+		{"chn":"操作","eval":'<a href="#">查布</a>', "width":"100px"}
+	])
+
+	#set ($fOptions = {"checkbox":"crmAccount", "hasOp":true, "width":"800px", "page":$page})
+
+#table($lstTitles $page.dataList $fOptions)
+
+#liteTable($lstTitles $page.dataList2)
+
+<input type="button" name="testCellData" value="getCellData" onclick="getCellData()"/>
+<input type="button" name="testUpdateData" value="testUpdateData" onclick="updateData()"/>
+
+<script type="text/javascript" charset="utf-8">
+    baidu.dom.ready(function() {
+        ecui.get();
+        var t = ecui.get("lst_0"),
+            getText = ecui.dom.getText;
+        t._uTable.constructor.Row.prototype.getCellData = function() {
+            var ret = [],
+                cols = this.getCols();
+
+            for (var i = 0, o, p; o = cols[i++];) {
+                o = o.getOuter();
+                if ((p = o.getElementsByTagName("a")).length) {
+                    p = getText(p[0]);
+                }
+                else if ((p = o.getElementsByTagName("input")).length) {
+                    // p = p[0].value;
+                    continue;
+                }
+                else {
+                    p = getText(o.getElementsByTagName("div")[0]);
+                }
+                ret.push(p);
+            }
+
+            return ret;
+        };
+    });
+    
+function getCellData() {
+    var ret = []
+    ecui.get("lst_0").eachRow(function(n, i, cb) {
+        ret.push(this.getCellData());     
+    });
+    // console.log(ret);
+    return ret;
+}
+
+function updateData() {
+    // debugger;
+    ecui.get("lst_1").update(getCellData());
+}
+
+
+// 刷新简单列表的数据
+(function () {
+    var core = ecui,
+        lib = baidu,
+        ui = core.ui,
+        blank = core.util.blank;
+
+        UI_TABLE = ui.Table,
+        UI_TABLE_CLASS = UI_TABLE.prototype;
+        
+    UI_TABLE_CLASS.removeRows = function() {
+        this.paint = blank;
+
+        for (var i = 0, len = this.getRows().length; i < len; i++) {
+            try {
+                this.removeRow(0);
+            }
+            catch (e) {}
+        }
+
+        delete this.paint;
+        // this.paint();
+    };
+
+    UI_TABLE_CLASS.addRows = function(data) {
+        this.paint = blank;
+
+        for (var i = 0, o; o = data[i++];) {
+            o !== undefined && this.addRow(o);
+        }
+
+        delete this.paint;
+        // this.paint();
+    };
+
+    UI_TABLE_CLASS.update = function(data) {
+        this.removeRows();    
+        this.addRows(data);
+    };
+})();
+</script>

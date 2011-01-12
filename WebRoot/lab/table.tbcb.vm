@@ -1,0 +1,20 @@
+#parse('/tcom/ui.table.vm')
+#set ($lstTitles=[
+		{"chn":"日期","eval":'$item.date',"width":"80px"},
+		{"chn":"CRM帐号","eng":"account", "eval":'&lt;a href="#">$item.crmAccount&lt;/a>',"sort":true, "width":"100px"},
+		{"chn":"总任务数","eval":'&lt;a href="#">$item.allTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'&lt;a href="#">$item.finishedTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'$item.allFinishedRate', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'&lt;a href="#">$item.unProcessTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'&lt;a href="#">$item.waitProcessTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"日期","eval":'$item.date',"width":"80px"},
+		{"chn":"总任务数","eval":'&lt;a href="#">$item.allTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'&lt;a href="#">$item.finishedTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'$item.allFinishedRate', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'&lt;a href="#">$item.unProcessTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'&lt;a href="#">$item.waitProcessTaskCount&lt;/a>', "width":"100px"},
+		{"chn":"管理员","eval":'$item.managerCrmAccount', "width":"100px"}
+	])
+	#set ($fOptions = {"checkbox":"account", "hasOp":true, "width":"1000px", "page":$page})
+
+    #tableData($lstTitles $page.dataList $fOptions)

@@ -1,0 +1,59 @@
+
+<form action="" method="post" accept-charset="utf-8">
+    <div name="fooselect" ecui="type:multi-select;id:multi;name:multiselect" style="width:100px">
+        #foreach($i in [1..20])
+        <!--<div ecui="#if($i % 3 == 0)selected:selected;#{end}value:val_$i">选项 $i</div>-->
+        <div ecui="name:multi;value:v-$i;#if($i%3==0)checked:true#end">选项$i</div>
+        #end
+    </div>
+
+    #set($reasonList = [])
+    #foreach($i in [1..15])
+        $reasonList.add($reasonList.size(), 
+            {"text":"选项 $i", "value":"00$i"})
+    #end
+    ##multipleSelect("rejectReason" $reasonList {"selectedList": ["007", "008"], "specialList": ["001", "002"]})
+
+    <input type="submit" value="提交">
+    <input type="reset" value="重置">
+    <div id="dfsfw">
+
+        <select name="some_name" id="some_name">
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+        </select>
+
+        <select name="some_name" id="some_name">
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+            <option value="option">option</option>
+        </select>
+
+    </div>
+</form>
+#set ($lstTitles=[
+		{"chn":"CRM帐号","eng":"account", "eval":'<a href="#">$!utils.escapeInH($!item.crmAccount)</a>',"sort":true, "width":"100px"},
+		{"chn":"总任务数","eval":'<a href="#">$!utils.escapeInH($!item.allTaskCount)</a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'<a href="#">$!utils.escapeInH($!item.finishedTaskCount)</a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'$!item.allFinishedRate', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'<a href="#">$!utils.escapeInH($!item.unProcessTaskCount)</a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'<a href="#">$!utils.escapeInH($!item.waitProcessTaskCount)</a>', "width":"100px"},
+		{"chn":"管理员","eval":'$!item.managerCrmAccount  ', "width":"100px"},
+		{"chn":"操作","eval":'<a href="#">查布</a>', "width":"100px"}
+	])
+
+	#set ($fOptions = {"checkbox":"account", "hasOp":true, "width":"800px", "page":$page})
+
+##table($lstTitles $page.dataList $fOptions)
+<!--
+<div name="fooselect" ecui="type:listbox;id:lb" style="float:right">
+    #foreach($i in [1..20])
+    <div #if($i % 3 == 0)ecui="selected:selected"#end>选项 $i</div>
+    #end
+</div>
+-->

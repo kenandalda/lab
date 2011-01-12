@@ -1,0 +1,23 @@
+<div ecui="type:tab;id:imgscroll;selected:3" class="ec-img-scroll">
+    #foreach($i in [1..35])<label style="">img $i</label>#end
+</div>
+<script type="text/javascript" charset="utf-8">
+var control = ecui.get("imgscroll");
+
+control.setSelected = function (item) {
+   ecui.ui.Tab.prototype.setSelected.call(this, item);
+   if ('number' == typeof item) {
+        item = this.getItems()[item];
+   }
+   var items = this.getItems(),
+       diff = baidu.array.indexOf(items, item) - this.$getLeftMostIndex() - 3;
+   if (diff != 0 && (this.$getSection("Prev").isShow() || this.$getSection('Next').isShow())) {
+        this.move(diff);
+   }
+};
+
+control.onitemclick = function (event, index) {
+    console.log(index);
+};
+
+</script>

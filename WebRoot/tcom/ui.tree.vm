@@ -1,0 +1,43 @@
+#macro (tree $type $name $data $option)
+	#set($len = $data.size() - 1)
+	#set($res = {})
+	#if($len >= 0)
+		#set($item = $data.get(0))
+		$!res.put($item.id, -1)
+	#end
+	<div ecui="
+		type:#if($type == '')tree#{else}${type}-tree#end;
+		name:$!name;
+		value:$!item.id;
+		#if($item.isChecked)checked:true;#end
+		#if($option && $optin.id)id:$option.id;#end
+		fold:#if($option && ($optin.fold || $option.fold == false))$option.fold#{else}true;#end">
+		#if($len >= 0)
+			<label>$!utils.escapeInH($item.text)</label>
+		#end
+		#if($len > 1)
+			#foreach($index in [1..$len])
+				#set($item = $data.get($index))
+				#set($floor = $res.get($item.parentId) + 1)
+				#set($temp = $!res.put($item.id, $floor))
+				#set($temp = $index + 1)
+				#if($temp < $data.size())
+					#set($next = $data.get($temp))
+					#set($temp = $res.get($next.parentId) + 1)
+					#set($floor = $floor - $temp)
+				#else
+					#set($next = '')
+				#end
+				#if($next && $item.id == $next.parentId)
+					<div value="$item.id" #if($item.isChecked)checked="true"#end>
+					<label>$!utils.escapeInH($item.text)</label>
+				#else
+					<div value="$item.id" #if($item.isChecked)checked="true"#end>$!utils.escapeInH($item.text)</div>
+					#if(!$next || $item.parentId != $next.parentId)
+						#if($floor > 0)#foreach($i in [1..$floor])</div>#end#end
+					#end
+				#end	
+			#end
+		#end
+	</div>
+#end

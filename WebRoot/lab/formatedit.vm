@@ -1,0 +1,11 @@
+<input ecui="id:fooedit;type:format-edit;keyMask:0-9-;pattern:..\-....\-...." name="test" class="ec-edit"/>
+<input type="button" onclick="ecui.get('fooedit').validate()"/>
+<script type="text/javascript" charset="utf-8">
+	ecui.get("fooedit").onerror = function(err) {
+		console.log(err);
+	}
+	ecui.get("fooedit").change = function() {
+		ecui.ui.FormatEdit.prototype.change.call(this);
+		this.validate();
+	}
+</script>

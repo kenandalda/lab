@@ -1,0 +1,57 @@
+<div>
+	<h3>节假日管理</h3>
+	#*
+	#foreach($i in [1..12])
+	<div style="float:left">
+		<h4 style="width:211px">2010年$i月</h4>
+		<div ecui="type:calendar;forholiday:true;year:2010;month:$i"></div>
+	</div>
+	#end
+	*#
+	<div id="holiday"></div>
+	<script>
+	(function() {
+
+		var year = "$!year" || 2010;
+			months = 12, 
+			i = 0;
+
+		setTimeout(function() {
+			var header = "<div>" + year + "年" + (++i) + "月</div>";
+			var container = ecui.dom.create('<div style="float:left;">' + header + '</div>', baidu.g("holiday"));
+			var cal = ecui.create("calendar", {"forholiday":true,"year":year,"month":i,"parent":container});
+			
+			if (i < months) {
+				setTimeout(arguments.callee, 0);
+			}
+		}, 100);
+
+
+		
+	})();
+	</script>
+	<script>
+	holidayTools.onyearchange = function(year, selectedDates) {
+		var yearSelect = baidu.g("yearSelect");
+		yearSelect.options[yearSelect.selectedIndex].removeAttribute("selected");
+		baidu.array.each(yearSelect.options, function(n, i) {
+				(n.value == year) && (n.selected = "selected");
+		});
+		console.log(selectedDates);
+	};
+	</script>
+	<div style="clear:both">
+		<input type="button" value="&laquo;上一年" onclick="holidayTools.setYear(-1)"/>
+		<select onchange="holidayTools.setYear(this.value)" id="yearSelect">
+			#foreach($y in [2000..2020])
+			<option value="$y" #if($y=="2010")selected="selected"#end>$y</option>
+			#end
+		</select>
+		<input type="button" value="下一年&raquo;" onclick="holidayTools.setYear(1)"/>
+		<input type="button" value="获得选中日期(在firebug中查看)" onclick="console.log(holidayTools.getSelectedDates())"/>
+		<input type="button" value="清空选择" onclick="holidayTools.clearAll()"/>
+	</div>
+	<div style="clear:both"></div>
+	<h3>非节假日管理的日历</h3>
+		<!--<div ecui="type:calendar" style="float:left"></div>-->
+</div>

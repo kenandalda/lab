@@ -1,0 +1,28 @@
+{
+    "flag":"$!flag",
+    "data": {
+        "head": "$!head",
+        "body": [
+           #foreach($entry in $body) 
+                #if($velocityCount > 1),#end
+                #set($len = $entry.size() / 2 - 1)
+                {
+                   #foreach($i in [1..$len]) 
+                        #set($keyIdx = $i * 2)
+                        #set($valueIdx = $keyIdx + 1)
+                        #if($i > 1),#end
+                        "$entry.get($keyIdx)":"$entry.get($valueIdx)"
+                   #end
+                }          
+           #end
+        ],
+        "options": {
+            "page": {
+            "curPage": "$options.page.curPage",
+                "pageSize": "$options.page.pageSize",
+                "total": "$options.page.total"
+            }
+        }
+    },
+    "msg": "$!msg",
+}

@@ -1,0 +1,61 @@
+<div class="air">
+	
+    #*
+    #set($reasonList = [])
+    #foreach($i in [1..15])
+        $reasonList.add($reasonList.size(), 
+            {"text":"选项 $i", "value":"00$i"})
+    #end
+    #multipleSelect("rejectReason" $reasonList {"selectedList": ["007", "008"], "specialList": ["001", "002"]})
+    *#
+
+    <form id="queryForm">
+        <div>
+            <label> orderBy: 
+                <input type="text" name="orderBy" value="">
+            </label>
+            <label> desc: 
+                <select name="desc" >
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                </select>
+            </label>
+        </div>
+        <div>
+            
+        </div>
+
+        <input type="button" value="查询" id="subForm" ecui="shield:simple(query)"/>
+    </form>
+    <div></div>
+    #tableWrapper ("0", {
+        "defaultUrl": "table.tbcb.vm?id=0",
+        "shield": "query"
+    })
+    
+    <!--
+    <div style="display:inline;zoom:1;border:1px solid red">
+        <div style="width:200px;height:20px"></div>
+    </div>
+    -->
+
+    <div></div>
+    <input type="button" name="xxx" value="锁定表格" onclick="ecui.get('lst_0').setLocked(true)">
+    <input type="button" name="xxx" value="解锁表格" onclick="ecui.get('lst_0').setLocked(false)">
+    <input type="button" name="xxx" value="获取hash" onclick="alert(window.location.hash)">
+
+</div>
+<script type="text/javascript" charset="utf-8">
+    var G = baidu.g;
+    var on = baidu.event.on;
+    /* 页面初始化 */
+    // 初始化异步管理
+    asynMgr.init(["table#lst_0", "form#queryForm"]);
+
+    // 绑定查询按钮点击
+    on(G("subForm"), "click", function(e) {
+        ecui.ext.clickShield.lock(rigel.g('subForm'));
+        asynMgr.repaintTable('queryForm');
+    });
+
+</script>

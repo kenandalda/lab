@@ -1,0 +1,16 @@
+#**
+ * @desc : 业务页面的统一入口
+ *  1) 引入配置文件
+ *  2) 引入公共宏
+ *  3) 引入模块宏
+ *#
+
+## 引入配置文件
+#parse("/tcom/const.conf.vm")
+#parse("/tcom/action.conf.vm")
+
+## 引入公共宏，如：表格,日历等
+#parse("/tcom/utils.macro.vm")
+
+## 引入模块相关宏
+#parse("/tcom/mod.macro.vm")

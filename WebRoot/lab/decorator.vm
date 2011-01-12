@@ -1,0 +1,35 @@
+<div ecui="type:control;
+        id:ctr-btn;
+        decorate:foo-decorator(true)"
+    style="height:30px;width:60px;
+        border:1px solid blue">
+    button
+</div>
+<a ecui="type:control;
+        id:ctr-a;
+        decorate:foo-decorator(true)"
+    href="http://news.baidu.com" target="embed">
+   link 
+</a>
+<form action="http://www.baidu.com" method="" accept-charset="utf-8" target="embed">
+<input value="提交查询" type="submit" ecui="type:control;decorate:foo-decorator(true);id:ctr-sb"/>
+</form>
+<input type="button" onclick="enableClick()" value="启用点击"/>
+<script type="text/javascript" charset="utf-8">
+// ---------------分割线------------------------------
+var core = ecui;
+
+    core.get("ctr-btn").onclick = function() {
+            //console.log("custom")
+        };
+
+    function enableClick() {
+        baidu.each(core.query({type:core.ui.Control}), function(n, i) {
+                    // //console.log(this.getBase());
+                    // n._bClickable = true;
+                    n.setClickable(true);
+                });    
+    }
+    
+</script>
+<iframe name="embed"></iframe>

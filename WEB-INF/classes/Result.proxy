@@ -1,0 +1,9 @@
+int count;
+
+execute(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.lilystudio.ordinary.web.IRelay)
+{
+	System.out.println(this.getClass().getName() + " Run:" + (++count) + " time");
+	long time = System.nanoTime();
+	super.execute($$);
+	System.out.println("Run:" + ((double)(System.nanoTime() - time) / 1000000) + "ms");
+}

@@ -1,0 +1,11 @@
+<div ecui="id:foo;type:color-selector;name:color;select-all:true"></div>
+<script type="text/javascript" charset="utf-8">
+    baidu.dom.ready(function () {
+        ecui.get();
+        var cs = ecui.get("foo");    
+        // 获得第三个控件并选中
+        // getSub方法获得子控件
+        // 全选为最后一个, cs.getSub(12);
+        cs.getSub(2).checked();
+    });
+</script>

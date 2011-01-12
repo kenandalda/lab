@@ -1,0 +1,444 @@
+#parse('/tcom/const.inc.vm')
+
+## 分页
+#macro (page $curPage $pageSize $totalNum $url)
+	<p class="list-page" id="list-page-p">
+		#set($totalPage = ($totalNum - 1) / $pageSize + 1)
+		<script type="text/javascript">
+			var PageSub = {
+				sub: function (n) {
+					if(!/^\d+$/.test(n) || n == 0){
+						alert("请输入大于0的数字");
+						return false;
+					}
+					var totalPage = parseInt("$totalPage", 10) || 0;
+					if (n > totalPage) {
+						alert ("您输入的页码超出总页数范围");
+						return false;
+					}
+
+					//保存url
+					var l = "$!url",
+						orderPattern = /(\w+Condition\.(desc|orderBy))=\w+/g,
+						orderParams = location.href.match(orderPattern) ? 
+							'&' + location.href.match(orderPattern).join('&')
+							: '',
+						pageUrl = l + (l.indexOf('?')>0?'&':'?') + 'queryId=$!queryId&page.curPageNum=' + n + orderParams;
+
+					//TODO 调用本地储存
+					var localDataId = "$!localDataId";
+					if (!!localDataId) {
+						ecStorage.submit('$localDataId', {}, pageUrl);	
+					}
+					else {
+						location.href = pageUrl;
+					}
+				}
+			}
+		</script>
+		#set($currentPage = $curPage)
+
+		#set($pageStart = 1)
+		#set($pageEnd = $totalPage)
+
+		#if($currentPage >= $totalPage)
+			#set($currentPage = $totalPage)
+			#set($pageEnd = $totalPage)
+		#end
+
+		#if($currentPage < 1)
+			#set($currentPage = 1)
+		#end
+
+		#if($currentPage > 1)
+			<a href="#" onclick="PageSub.sub(1)">首页</a>
+			<a href="#" onclick="PageSub.sub($currentPage - 1)">&laquo;上一页</a>
+		#else
+			<b>首页</b>
+			<b>&laquo;上一页</b>
+		#end
+
+		#if($totalPage > 11)
+			#if($currentPage > 5)
+				#set($pageStart = $currentPage - 5)
+				#set($pageEnd = $currentPage + 5)
+			#else
+				#set($pageEnd = 10)
+			#end
+			#if($pageEnd > $totalPage)
+				#set($pageStart = $totalPage - 9)
+				#set($pageEnd = $totalPage)
+			#end
+		#end
+
+		#foreach($item in [${pageStart}..${pageEnd}])
+			#if($item == $currentPage)
+				<b class="page-n">$item</b>
+			#else
+				<a href="#" onclick="PageSub.sub($item)" class="page-n">$item</a>
+			#end
+		#end
+
+		#if($currentPage < $totalPage)
+			<a href="#" onclick="PageSub.sub($currentPage + 1)">下一页&raquo;</a>
+			<a href="#" onclick="PageSub.sub($totalPage)">尾页</a>
+		#else
+			<b>下一页&raquo;</b>
+			<b>尾页</b>
+		#end
+		<span style="zoom:1;margin-left:5px;">到 <input type="text" class="target-page"> 页 <a href="#" onclick="PageSub.sub(document.getElementById('targetPage').value)">跳转</a></span>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;共<em>$totalPage</em>页,<em>$totalNum</em>条记录&nbsp;&nbsp;
+	</p>
+	#if($totalNum == 0)
+	<script type="text/javascript">document.getElementById('list-page-p').innerHTML = '不存在记录';</script>
+	#end
+#end
+
+#macro (table $lstConfigs $data $options)
+#*	
+ *	表格控件
+ *
+ *	@params {List<Map>} $lstConfigs	[必填]列表表头数据，列样式(宽度，自定义属性等)
+ *	@params {List<Map>} $data		[必填]表格内容数据
+ *	@params {List<Map>} $options	表格其他参数
+ *		lstTitles	{list<Map>} [选填]表头, 可以由RD设置, 一般情况下就取${lstConfigs}的值
+ *		checkbox	{String}	[选填]用户自行选择的checkbox的name值
+ *		hasOp		{Boolean}	[选填]参数为true, 表示有操作列
+ *		custom		{Boolean}	[选填]全选是否可以针对整表,依赖于选项checkbox
+ *		style		{String}	[选填]表格采用的样式, 默认为"default"
+ *		url			{String}	[选填]分页请求的URL, 默认为""
+ *		id			{String}	[选填]列表的id, 命名建议[0-9a-zA-Z_]+
+ *		needPrint	{Boolean}	[选填]是否需要打印, 默认不需要打印
+ *		page		{list<Map>} [选填]每页记录数
+ *  @todo 修改id - 固定
+ *#
+#if($options.id)
+	#set($tbId = $options.id)
+#else
+	#if($tbId)
+		#set($tbId = $tbId + 1)
+	#else
+		#set($tbId = 0)
+	#end
+#end
+
+#set($tbNoData = false)
+#if(!$data || $data.size() == 0)
+	#set($tbNoData = true)
+#end
+
+<div class="tb-msg">
+	<div class="tb-msg-txt">
+		<span id="tbMsg_$tbId"></span>
+		<span onclick="this.parentNode.parentNode.style.visibility='hidden'" class="clo-btn">x</span>
+	</div>
+</div>
+<table 
+	#if(!($tbNoData || $options.needPrint))
+		ecui="type:ecom-table;id:lst_$tbId;#if($options.hasOp)right-lock:1;#end#if($options.checkbox)left-lock:1;#{end}vScroll:false" 
+		style="height:300px;visibility:hidden" id="ectable_$tbId" 
+	#end
+	class="#if($options.needPrint || $tbNoData)ec-print-table#end $!options.style">
+	<tbody>
+		<tr>
+		#if($options.checkbox)
+			<th style="width:28px;border-right:1px solid $cssMap.bdr_dk;border-left:0 none">
+			#if($options.custom)
+			<div ecui="type:control;id:cbCtnr_$tbId" class="cb-ctnr" id="cbCtnr_$tbId">
+				<div ecui="type:popup;id:cbPop_$tbId;" id="cbPop_$tbId" style="position:absolute">
+					<div>当前页
+						<div ecui="type:checkbox;id:cball_$tbId;capture:false" id="cbCurList"></div>
+					</div>
+					<div>整列表
+						<div ecui="type:checkbox;id:cbsall_$tbId;capture:false" id="cbWholeList"></div>
+					</div>
+				</div>
+			</div>
+			#else
+				<div ecui="type:checkbox;id:cball_$tbId"></div>
+			#end
+			</th>
+		#end
+        #if($options.lstTitles)
+            #set($lstTitles = $options.lstTitles)
+        #else
+            #set($lstTitles = $lstConfigs)
+        #end
+		#foreach($title in $lstTitles)
+			#set($index = $velocityCount - 1)
+			<th style="width:#if($title.width)$title.width#else$lstConfigs.get($index).width#end;
+						#if($title.chn.trim() == '')display:none#end" 
+				class="#if($title.sort)sort 
+							#if($orderBy==$title.eng && $orderBy)
+								#if($desc)sort-up#{else}sort-down#end
+							#end
+						#end 
+						#if($velocityCount==1)first#end
+						#if($title.noprint || $lstConfigs.get($index).noprint)noprint#end" 
+				#if($title.sort)sort="$title.eng"#end>$title.chn</th>
+		#end
+		</tr>
+		#foreach($item in $data)
+		<tr class="#if($velocityCount%2==0)ev#{else}od#end">
+			#if($options.checkbox)
+
+				<td class="dk" style="border-right:1px solid $cssMap.bdr_dk;border-left:0 none">
+					<div ecui='type:checkbox;name:$options.checkbox;value:#evaluate("\$item.$options.checkbox");superior:cball_$tbId'></div>
+				
+				</td>
+			#end
+			#foreach($lst in $lstTitles)
+				#set($index = $velocityCount - 1)
+					#set($config = false)
+					#set($config = $lstConfigs.get($index))
+					#if ($config.eval)
+						#set($eval = $config.eval)
+					#elseif ($lst.eval)
+						#set($eval = $lst.eval)
+					#else
+						#set($eval = false)
+						#set($text='-')
+						#set($text = $!item.get($lst.eng))
+						#if($text.getClass().getName() == "java.util.Date")
+							#set($text = $dateUtils.formatDate($text, $dateFormat))
+						#end
+					#end
+					#if ($eval.startsWith('$item') || $eval.startsWith('$!item'))
+						#set($eval = '$!utils.escapeInH(' + $eval + ')')
+					#end
+				<td class="#if($lst.chn=="操作")dk#end 
+							#if($velocityCount==1)first#end
+							#if($lst.noprint || $lstConfigs.get($index).noprint)noprint#end" 
+					style="#if($lst.chn.trim() == '')display:none;#end">
+					#if($eval)#evaluate($eval)#else$!text#end
+				</td>
+			#end
+		</tr>
+		#end
+	</tbody>
+</table>
+	#if ($page || $options.page)
+		#if($options.page)
+			#set($page = $options.page)
+		#end
+		<div class="clear"></div>
+		#page($page.curPageNum 
+				$page.pageSize 
+				$page.totalRecNum 
+				$options.url)
+		#set($page = false)
+	#end
+#end
+
+
+#**
+ * @desc : 适用于数据确定的下拉列表、单选组、多选组，数据类型为List型
+ * @param {String} name 表单项name属性值
+ * @param {List} data 填充表单项value和label属性的值
+ * @param {String} curVal 当前选中值
+ * @param {String} flag 哪个类型的表单项(radio/select/checkbox)
+ * @param {String} attrs 表单项其它的属性
+ *#
+#set($fieldIndex = 0)
+#macro (list $name $data $curVal $flag $attrs)
+	#if($flag == "select")
+		<select #if($name)name="$name"#end #evaluate($attrs)>
+		#foreach($item in $data)
+			<option value="$item.value" #if($curVal == $item.value)selected="selected"#end>$!utils.escapeInH($item.text)</option>
+		#end
+		</select>
+	#elseif($flag == "checkbox")
+		#foreach($item in $data)
+		<input id="fieldIndex_${fieldIndex}" type="checkbox" #if($name)name="$name"#end value="$item.value" #evaluate($attrs) #if($item.isChecked)checked="checked"#end><label for="fieldIndex_${fieldIndex}">$!utils.escapeInH($item.text)</label>
+		#set($fieldIndex = $fieldIndex + 1)
+		#end
+	#elseif($flag == "radio")
+		#foreach($item in $data)
+		<input id="fieldIndex_${fieldIndex}" type="radio" #if($name)name="$name"#end value="$item.value" #evaluate($attrs) #if($item.value == $curVal)checked="checked"#end><label for="fieldIndex_${fieldIndex}">$!utils.escapeInH($item.text)</label>
+		#set($fieldIndex = $fieldIndex + 1)
+		#end
+	#end
+#end
+
+#**
+ * @desc : 层级下拉框 
+ * @param {String} fName 下拉框fName属性值
+ * @param {List} fData 填充下拉框value和label属性及层级关系的值
+ * @param {String} fCurVal 当前选中值
+ * @param {String} fAttrs 表单项其它的属性
+ *#
+#macro (levelSelect $fName $fData $fCurVal $fAttrs)
+<select #if($!fName)name="$fName"#end #evaluate($fAttrs)>
+    #set($result = {})
+    #foreach ($item in $fData)
+        #set ($floor = 0)
+        #if ($item.parentId)
+            #set($floor = $result.get($item.parentId) + 1)
+        #end
+    
+        $!result.put($item.value, $floor)
+        <option value="$item.value" #if($fCurVal && $fCurVal == $item.value)selected="selected"#end>
+            #if($floor > 0)#evaluate("\#foreach($i in [1..$floor])&nbsp;\#end")#end $!utils.escapeInH($item.text)
+        </option>
+    #end
+</select>
+#end
+
+#**
+ * @desc : 统一引入错误提示
+ *#
+#macro (globalMsg)
+    #if($errors && $errors.globalMsg)
+    <div class="mess floor">
+    	<div class="area-w"></div><div class="area-v"></div>
+    	<div class="area">
+        <div class="error-msg">$!errors.globalMsg</div>
+    	</div>
+    	<div class="area-v"></div><div class="area-w"></div>
+    </div>
+    #end
+#end
+
+
+#**
+ * @desc : 单日历
+ * @param {String} name 表单项name属性值
+ * @param {String} value 默认时间
+ * @param {list} options 可选项 支持的参数有 range设定可操作范围   ecid设置ecid
+ * @demo #singleCal("cal-demo" "2012-01-12")
+ *#
+#macro (singleCal $name $value $options)
+		<input name="$name" ecui="type:calendar-edit;
+			calendartype:single;
+			capture:false;
+			#if ($!option.range) range:$!option.range #end;
+			#if ($!option.ecId) id:$!option.ecId; #end;" 
+		readonly="readonly"
+		value="$!value"
+	/>
+ #end
+
+ #**
+ * @desc : 双日历
+ * @param {String} name 表单项name属性值
+ * @param {String} value 默认时间
+ * @param {list} options 可选项 支持的参数有 range设定可操作范围   ecid设置ecid
+ * @demo #rangeCal("2012-01-11" "2012-02-23")
+ *#
+#macro (rangeCal  $bVal $eVal $options)
+	<input ecui="type:calendar-edit;
+			calendartype:range;
+			capture:false;
+			#if($!option.ecId) id:$!option.ecId #end; 
+			#if($!option.bName) beginName:$!option.bName #end;
+			#if($!option.eName) endName:$!option.eName #end;
+			#if($!option.range) range:$!option.range #end;"
+		#if (!$options.editable) readonly="readonly" #end
+		value="$!bVal#if(($bVal && $bVal != "") && ($eVal && $eVal != ""))  至  #{end}$!eVal"
+		/>
+#end
+
+ #**
+ * @desc : 多选下拉菜单
+ * @param {String} name 表单项name属性值
+ * @param {list} data 数据源，内有text，value，isChecked三个属性值
+ * @param {num} col  下拉菜单布局中的列数
+ * @param {num} swidth  单列的宽度，视具体text的值让用户来定
+ * @param {num} sheight  下拉的可见高度，超过会纵向显示滚动条
+ * @demo #selectbox("chosenTimeIdList" $genTimeList 2 56 150)
+ *#
+#macro (selectbox $name $data  $col $swidth $sheight)
+	#set($fieldIndex = 1)
+	#set($dwidth = $col*$swidth)
+	#set($bwidth = ${dwidth} - 15)
+	<div class="select-box">
+		<input type="text" id="sel-edit" class="sel-edit" style="width:${bwidth}px">
+		<div ecui="type:panel;id:panel_1" style="height:${sheight}px; width:${dwidth}px;">
+		#foreach($item in $data)
+			<input id="fieldIndex_s${fieldIndex}" type="checkbox" #if($name)name="$name"#end value="$item.value" #evaluate($attrs) #if($item.isChecked)checked="checked"#end /><label for="fieldIndex_s${fieldIndex}">$!utils.escapeInH($item.text)</label>
+			#if($fieldIndex%$col ==0) <br/> #end
+			#set($fieldIndex = $fieldIndex + 1)
+		#end
+		<div><button type="button" id="sel-clk" style="margin-bottom:10px;">确定</button></div>
+		</div>
+	</div>
+#end
+
+
+#**
+* @desc : 浮动层开头部分代码
+* @param {String} ecId ecui控件Id，在ecFloater.show(ecId)调用使用
+* @param {String} title 浮动层标题名称
+* @param {Number} width 浮动层的宽度值
+* @param {Number} height 浮动层的高度值
+* @demo
+* #startFloater("floater1" "标题" 500 300)
+* 浮动层里面的HTML代码
+* #endFloater
+*#
+
+#macro (startFloater $ecId $title $width $height)
+    <div ecui="
+        type:form;
+        id:$!ecId;
+        decorate:t-b-decorator(floaterd);
+        title-auto:width;
+        h-scroll:false;
+        hide:true;
+        " class="floater" style="width:$!{width}px;height:$!{height}px;position:absolute;display:none">
+        <label>$!utils.escapeInH($title)</label>
+        <div class="floater-content">
+#end
+#macro (endFloater)
+        </div>
+    </div>
+#end
+
+
+#**
+* @desc : 初始本地存储模块
+* @param {String} ecId 可选，默认为localStorage。ecui控件Id，用户获取ecui本地存储控件。
+* @demo #storageInit() 或 #storageInit("myLocalStorage")
+*#
+#macro (storageInit $ecId)
+    #if(!$ecId)
+        #set($ecId = "localStorage")
+    #end
+    <div ecui="type:Storage;swf:${staticRoot}/flash/Storage.swf;id:$!{ecId}"></div>
+#end
+
+#**
+* @desc : 提交查询表单时本地保存内容
+* @param {String} ecId 可选，默认为localStorage。ecui控件Id，用户获取ecui本地存储控件。
+* @demo #storageSave() 或 #storageSave("myLocalStorage")
+*#
+#macro (storageSave $ecId)
+    #if(!$ecId)
+        #set($ecId = "localStorage")
+    #end
+   this.localDataId.value = ecui.get('$!ecId').save(this);
+#end
+
+#**
+ * @desc : includeStatic 统一引入静态资源 
+ *#
+#macro (includeStatic)
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7"/>
+<link rel="stylesheet" href="${staticRoot}/css/global.css" type="text/css">
+<link rel="stylesheet" href="${staticRoot}/css/mod.css" type="text/css">
+<style type="text/css">#parse("/tcom/table.css.vm")</style>
+<link rel="stylesheet" href="${staticRoot}/js/ui/floater/css/floater.css" type="text/css">
+<link rel="stylesheet" href="${staticRoot}/js/ui/selectbox/css/selectbox.css" type="text/css"/>
+<link rel="stylesheet" href="${staticRoot}/js/ui/calendar/css/calendar.css" type="text/css"/>
+<script type="text/javascript" src="${staticRoot}/js/core/tangram-1.1.0.js"></script>
+<<<<<<< utils.macro.vm
+<script type="text/javascript" src="${staticRoot}/js/core/ecui_1.0.0_br.js"></script>
+##<script type="text/javascript" src="${staticRoot}/js/core/ecui_1.0.0_all.js"></script>
+=======
+<script type="text/javascript" src="${staticRoot}/js/core/ecui_1.0.0_br.js"></script>
+>>>>>>> 1.35
+<script type="text/javascript" src="${staticRoot}/js/ui/table/js/ecomui.table.js"></script>
+<script type="text/javascript" src="${staticRoot}/js/ui/floater/js/floater.js"></script>
+<script type="text/javascript" src="${staticRoot}/js/ui/calendar/js/ecomui.calendar.js"></script>
+<script type="text/javascript" src="${staticRoot}/js/mod/mod.js"></script>
+#end

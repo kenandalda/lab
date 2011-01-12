@@ -1,0 +1,55 @@
+#**
+ * @desc : 单日历
+ * @param {String} name 表单项name属性值
+ * @param {String} value 默认时间
+ * @param {Map} options 可选项 支持的参数有 
+ *      range {String}  设定可操作范围   
+ *      ecId {String}   设置ecId
+ * @demo #singleCal("cal-demo" "2012-01-12" {"range": "now-"})
+ *#
+#macro (singleCal $name $value $options)
+<div ecui="type:ecom-calendar-edit;
+    #if($options.range)range:$options.range;#end
+    #if($options.ecId)id:$options.ecId#end"
+    style="display:inline">
+    <input type="text" readonly="readonly" name="$!name" value="$!value"/>
+</div>
+#end
+
+ #**
+ * @desc : 双日历
+ * @param {String} name 表单项name属性值
+ * @param {String} value 默认时间
+ * @param {Map} options 可选项 支持的参数有
+ *      range {String}  设定可操作范围
+ *      ecId {String}   设置ecId
+ *      bName   {String}    开始时间输入框名, 默认dateFrom
+ *      eName   {String}    结束时间输入框名, 默认dateTo
+ *      loose   {Boolean}   是否允许只选择一个时间, 默认不允许
+ *
+ * @demo #rangeCal("2012-01-11" "2012-02-23" {"range": "1m-now", "bName":"beginDate", "eName": "endDate"})
+ *#
+#macro (rangeCal  $bVal $eVal $options)
+#if($options.ecId)
+    #set($calId = $options.ecId)
+#else
+    #if($calId)
+        #set($calId = $calId + 1)
+    #else
+        #set($calId = 0)
+    #end
+#end
+<div ecui="type:ecom-calendar-edit;calType:range;
+    #if($!options.ecId)id:$!options.ecId;#end 
+    #if($!options.range)range:$!options.range;#end
+    #if($!options.loose)loose:$!options.loose;#end"
+    style="display:inline">
+    <input name="rcal_$calId" type="text" data-shield="true" readonly="readonly" value=""/>
+    <input type="text" style="display:none" readonly="readonly" 
+        name="#if($options.bName)$options.bName#{else}dateFrom#end" 
+        value="$!bVal"/>
+    <input type="text" style="display:none" readonly="readonly" 
+        name="#if($options.eName)$options.eName#{else}dateTo#end" 
+        value="$!eVal"/>
+</div>
+#end

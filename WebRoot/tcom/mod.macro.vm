@@ -1,0 +1,45 @@
+#**
+ * @desc : 用于定义模块的宏，建议与模块相关的宏在该该文件中定义
+ *
+ *#
+
+## [macro] ------------------ 静态资源引入 --------------------------
+#**
+ * @desc : includeStatic 统一引入静态资源 
+ *#
+#macro (includeStatic)
+#if ($fDebug)
+    #set($fUINames = ["calendar", "floater", "foldable", "multi-select", "pager", "table", "tab", "table.ex_async", "check-tree"])
+    <link rel="stylesheet" href="${staticRoot}/css/global.css" type="text/css">
+    <link rel="stylesheet" href="${staticRoot}/css/mod.css" type="text/css">
+    #foreach($control in $fUINames)
+    <link rel="stylesheet" href="${staticRoot}/js/ui/ui.source/ecomui.${control}.css" type="text/css">
+    #end
+    <script type="text/javascript" src="${staticRoot}/js/core/tangram-1.3.1.source.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/core/ecui-1.2.0-all.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/core/rigel.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/ui/asynMgr.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/ui/clickShield.js"></script>
+    #foreach($control in $fUINames)
+    <script type="text/javascript" src="${staticRoot}/js/ui/ui.source/ecomui.${control}.js"></script>
+    #end
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.spcom.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.htvalidate.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.multilvselect.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.fileuploader.js"></script>
+#else
+    <link rel="stylesheet" href="${staticRoot}/css/global.css" type="text/css">
+    <link rel="stylesheet" href="${staticRoot}/css/mod.css" type="text/css">
+    <link rel="stylesheet" href="${staticRoot}/js/ui/ui.css" type="text/css">
+    <script type="text/javascript" src="${staticRoot}/js/core/tangram-1.3.1.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/core/ecui-1.1.0-br.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/core/rigel.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/ui/ui.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.spcom.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.htvalidate.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.multilvselect.js"></script>
+    <script type="text/javascript" src="${staticRoot}/js/mod/mod.fileuploader.js"></script>
+#end
+#end

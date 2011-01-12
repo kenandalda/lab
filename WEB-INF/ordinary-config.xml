@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ordinary-config version="0.1">
+	<alias>
+		<import-dom name="alias.xml" />
+	</alias>
+	<modules>
+		<module class="org.lilystudio.ordinary.module.ProxyModule" file="Result.proxy">
+			<proxy class="org.lilystudio.ordinary.web.result.SmartyResult" />
+            <proxy class="org.lilystudio.ordinary.web.result.VelocityResult" />
+		</module>
+	</modules>
+	<process>
+		<host name=".*" root="/WebRoot">
+            <filter class="load" name="staticRoot" value="/static" />
+		    <filter name="utils" class="org.lilystudio.test.UtilsFilter" className="com.baidu.rigel.util.StringUtilsForFE" />
+		    <filter name="dateUtils" class="org.lilystudio.test.UtilsFilter" className="org.lilystudio.test.DateUtils" />
+            <filter class="load" name="fDebug" value="true" />
+			<import-dom name="lab.xml" />
+			<import-dom name="sandbox.xml" />
+		</host>
+	</process>
+</ordinary-config>

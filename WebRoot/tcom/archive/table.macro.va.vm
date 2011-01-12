@@ -1,0 +1,168 @@
+#macro (table $lstConfigs $data $options)
+#*	
+ *	表格控件
+ *
+ *	@params {List<Map>} $lstConfigs	[必填]列表表头数据，列样式(宽度，自定义属性等)
+ *	@params {List<Map>} $data		[必填]表格内容数据
+ *	@params {List<Map>} $options	表格其他参数
+ *		lstTitles	{list<Map>} [选填]表头, 可以由RD设置, 一般情况下就取${lstConfigs}的值
+ *		checkbox	{String}	[选填]用户自行选择的checkbox的name值
+ *		checkboxVal	{String}	[选填]用户自行选择的checkbox的id值
+ *		hasOp		{Boolean}	[选填]参数为true, 表示有操作列
+ *		custom		{Boolean}	[选填]全选是否可以针对整表,依赖于选项checkbox
+ *		style		{String}	[选填]表格采用的样式, 默认为"default"
+ *		url			{String}	[选填]分页请求的URL, 默认为""
+ *		id			{String}	[选填]列表的id, 命名建议[0-9a-zA-Z_]+
+ *		needPrint	{Boolean}	[选填]是否需要打印, 默认不需要打印
+ *		page		{list<Map>} [选填]每页记录数
+ *  @todo 修改id - 固定
+ *#
+#if($options.id)
+	#set($tbId = $options.id)
+#else
+	#if($tbId)
+		#set($tbId = $tbId + 1)
+	#else
+		#set($tbId = 0)
+	#end
+#end
+
+#set($tbNoData = false)
+#if(!$data || $data.size() == 0)
+	#set($tbNoData = true)
+#end
+
+<div class="tb-msg">
+	<div class="tb-msg-txt">
+		<span id="tbMsg_$tbId"></span>
+		<span onclick="this.parentNode.parentNode.style.visibility='hidden'" class="clo-btn">x</span>
+	</div>
+</div>
+<div 
+	#if(!$options.needPrint)
+		ecui="type:ecom-table;id:lst_$tbId;#if($options.hasOp && !$tbNoData)right-lock:1;#end#if($options.checkbox && !$tbNoData)left-lock:1;#{end}vScroll:false" 
+		style="height:300px;visibility:hidden" 
+	#end
+	id="ectable_$tbId" 
+	##class="ec-ecom-table">
+	class="#if($options.needPrint)ec-print-table#end $!options.style">
+	<table cellspacing="0" #if($options.width)style="width:$options.width"#end>
+	<tbody>
+		<tr>
+		#if($options.checkbox && !$tbNoData)
+			<th style="width:28px;border-right:1px solid $cssMap.bdr_dk;border-left:0 none">
+			#if($options.custom)
+			<div ecui="type:control;id:cbCtnr_$tbId" class="cb-ctnr" id="cbCtnr_$tbId">
+				<div ecui="type:popup;id:cbPop_$tbId;" id="cbPop_$tbId" style="position:absolute">
+					<div>当前页
+						<div ecui="type:checkbox;id:cball_$tbId;capture:false" id="cbCurList"></div>
+					</div>
+					<div>整列表
+						<div ecui="type:checkbox;id:cbsall_$tbId;capture:false" id="cbWholeList"></div>
+					</div>
+				</div>
+			</div>
+			#else
+				<div ecui="type:checkbox;id:cball_$tbId"></div>
+			#end
+			</th>
+		#end
+        #if($options.lstTitles)
+            #set($lstTitles = $options.lstTitles)
+        #else
+            #set($lstTitles = $lstConfigs)
+        #end
+		#foreach($title in $lstTitles)
+			#set($index = $velocityCount - 1)
+			<th style="width:#if($title.width)$title.width#else$lstConfigs.get($index).width#end;
+						#if($title.chn.trim() == '')display:none#end" 
+				class="#if($title.sort && !$tbNoData)sort 
+							#if($orderBy==$title.eng && $orderBy)
+								#if($desc)sort-up#{else}sort-down#end
+							#end
+						#end 
+						#if($velocityCount==1)first#end
+						#if($title.noprint || $lstConfigs.get($index).noprint)noprint#end" 
+				#if($title.sort)sort="$title.eng"#end>$title.chn</th>
+		#end
+		</tr>
+		#if(!$tbNoData)
+		#foreach($item in $data)
+		<tr class="#if($velocityCount%2==0)ev#{else}od#end">
+			#if($options.checkbox)
+
+				<td class="dk" style="border-right:1px solid $cssMap.bdr_dk;border-left:0 none">
+					<div ecui='type:checkbox;name:$options.checkbox;
+							value:#if($options.checkboxVal)#evaluate("\$!item.$options.checkboxVal");#else#evaluate("\$!item.$options.checkbox");#end
+							superior:cball_$tbId'></div>
+				
+				</td>
+			#end
+			#foreach($lst in $lstTitles)
+				#set($index = $velocityCount - 1)
+					#set($config = false)
+					#set($config = $lstConfigs.get($index))
+					#if ($config.eval)
+						#set($eval = $config.eval)
+					#elseif ($lst.eval)
+						#set($eval = $lst.eval)
+					#else
+						#set($eval = false)
+						#set($text='-')
+						#set($text = $!item.get($lst.eng))
+						#if($text.getClass().getName() == "java.util.Date")
+							#set($text = $dateUtils.formatDate($text, $dateFormat))
+						#end
+					#end
+					#if ($eval.startsWith('$item') || $eval.startsWith('$!item'))
+						#set($eval = '$!utils.escapeInH(' + $eval + ')')
+					#end
+				<td class="#if($lst.chn=="操作")dk#end 
+							#if($velocityCount==1)first#end
+							#if($lst.noprint || $lstConfigs.get($index).noprint)noprint#end" 
+					style="#if($lst.chn.trim() == '')display:none;#end">
+					#if($eval)#evaluate($eval)#else$!text#end
+				</td>
+			#end
+		
+		</tr>
+		#end
+		#else
+		<tr style="height:20px">
+			#foreach($lst in $lstTitles)
+			<td style="border:0 none"></td>
+			#end
+		</tr>
+		#end
+	</tbody>
+</table>
+</div>
+	#if ($page || $options.page)
+		<div class="clear"></div>
+		#if($options.page)
+		    #page($options.page.curPageNum 
+				$options.page.pageSize 
+				$options.page.totalRecNum 
+				$options.url)
+        #else
+		    #page($page.curPageNum 
+				$page.pageSize 
+				$page.totalRecNum 
+				$options.url)
+		#end
+
+	#end
+<script type="text/javascript">
+    baidu.dom.ready(function() {
+        var t = ecui.get("lst_$tbId");
+		if (t) {
+			for (var i = 0, cCount = t._aCol.length; i < cCount; i++) { 
+				var col = t.getCol(i);
+				if (col.getBase().className.match(/\s*sort\s*/)) {
+					col.onclick = defaultSort;
+				}           
+			}
+		}
+   });
+</script>
+#end

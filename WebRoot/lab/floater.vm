@@ -1,0 +1,21 @@
+<input type="button" name="some_name" value="showModal" onclick="ecomui.showModal('foo')" />
+
+<select name="some_name" id="some_name">
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+</select>
+
+<select name="some_name" id="some_name">
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+    <option value="option">option</option>
+</select>
+
+#startFloater("foo" "浮动层标题" 300 200)
+    fdsfdwfwfewfewfw
+#endFloater

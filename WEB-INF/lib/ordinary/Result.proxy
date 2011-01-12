@@ -1,0 +1,10 @@
+int count;
+
+execute(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.lilystudio.ordinary.web.IRelay)
+{
+	System.out.println("Run:" + (++count) + " time");
+	long time = (new java.util.Date()).getTime();
+	super.execute($$);
+	System.out.println($3.getDataMap());
+	System.out.println("Run:" + ((new java.util.Date()).getTime() - time));
+}

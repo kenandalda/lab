@@ -1,0 +1,36 @@
+<table>
+	<tr>
+		<th>Header</th>
+		<th>Header</th>
+		<th>Header</th>
+		<th>Header</th>
+		<th>Header</th>
+		<th>Header</th>
+	</tr>
+	<tr>
+		<td>Data</td>
+		<td>Data</td>
+		<td>
+			<div style="position:relative;top:2px">xxxxxxx</div>
+			<div style="position:absolute">yyyyyyyy</div>
+		</td>
+		<td>Data</td>
+		<td>Data</td>
+		<td>Data</td>
+	</tr>
+	<tr>
+		<td>Data</td>
+		<td>Data</td>
+		<td>Data</td>
+		<td>Data</td>
+		<td>Data</td>
+		<td>Data</td>
+	</tr>
+</table>
+</table>
+
+<input id="test" type="text" value="test" status="aaa"/>
+<script type="text/javascript" charset="utf-8">
+	alert(document.getElementById("test").getAttribute('status').match(/a/));
+	console.log("xx");
+</script>

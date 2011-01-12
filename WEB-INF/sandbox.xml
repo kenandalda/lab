@@ -1,0 +1,19 @@
+<ordinary-config>
+	<command name="/sandbox(?:\/(\w+))*">
+			<list>
+                <parse rewrite="tbList,cbList">
+                    #set($tbList = [])
+                    #set($cbList = [])
+                    #foreach ($i in [1..5])
+                        $tbList.add($tbList.size(), {
+                            "id": $i,
+                            "modalName": "名称$i",
+                            "modalDesc": "描述$i"
+                        })
+                        $cbList.add($cbList.size(), {"text": "选项$i", "value": "值$i"})
+                    #end
+                </parse>
+			</list>
+			<velocity path="/sandbox/sandbox.vm" />
+	</command>
+</ordinary-config>

@@ -1,0 +1,233 @@
+<ordinary-config>
+	<command name="/tablecss">
+		<list></list>
+		<velocity path="/tcom/table.css.vm"/>
+	</command>
+	<command name="/lab(?:\/(\w+))*">
+			<list>
+				<parse rewrite="rowcount,curPageNum" parser="sparser">
+					<!--用smarty把rowcount转换成整型-->
+					{if !$rowcount}
+						{assign var='rowcount' value=`5`}
+					{else}
+2						{assign var='rowcount' value=`$rowcount+0`}
+					{/if}
+					{if !$curPageNum}
+						{assign var='curPageNum' value=`999`}
+					{else}
+						{assign var='curPageNum' value=`$curPageNum+0`}
+					{/if}
+				</parse>
+				<parse rewrite="everydayReportVo,page">
+                    #set($page = {"curPageNum": 12, "totalRecNum": 1000, "pageSize": 20, "dataList": [], "dataList2": []})
+
+					#if($rowcount != 0)
+						#foreach($i in [1..$rowcount])
+							#if($velocityCount % 2 == 1)	
+								#set($foo = "北京志诚泰和数码办公设备股份有限公司")
+								#set($bar = "xxxxsfdsfew看来飞机上看来打发似的xs")
+							#else
+								#set($foo = "sssssss")
+								#set($bar = "xxxxxssf是否违反文物服务费而我")
+							#end
+							$page.dataList.add(
+								$page.dataList.size(), 
+								{
+									"date":"$foo",
+									"crmAccount":"$test",
+									"isCustomerService":"1",
+									"allTaskCount":"109",
+									"finishedTaskCount":"foo",
+									"managerCrmAccount":"foo",
+									"unProcessTaskCount":"2",
+									"waitProcessTaskCount":"bar",
+									"allFinishedRate":"30%"
+								}
+							)	
+						#end
+					#end
+
+                    #foreach($i in [1..10])
+                        $page.dataList2.add(
+								$page.dataList2.size(), 
+								{
+									"date":"$foo",
+									"crmAccount":"ca$velocityCount",
+									"isCustomerService":"33$velocityCount",
+									"allTaskCount":"109$velocityCount",
+									"finishedTaskCount":"foo$velocityCount",
+									"managerCrmAccount":"bzr",
+									"unProcessTaskCount":"2$velocityCount",
+									"waitProcessTaskCount":"bar",
+                                    "allFinishedRate":"3${velocityCount}%"
+								}
+							)
+                    #end
+				</parse>
+			</list>
+			<velocity path="/lab/lab.vm" />
+	</command>
+    <!--ajax-->
+    <command name="/ajax/table">
+        <list>
+            <parse rewrite="flag,data,body,options,desc">
+                #set($flag = "success")
+                #set($body = [])
+                #foreach($i in [1..10])
+                    $body.add($body.size(),	[
+                        "date","$foo",
+                        "crmAccount","$test $curPage",
+                        "isCustomerService","1",
+                        "allTaskCount","109",
+                        "finishedTaskCount","foo $curPage",
+                        "managerCrmAccount","foo",
+                        "unProcessTaskCount","2",
+                        "waitProcessTaskCount","bar",
+                        "allFinishedRate","30%"
+                    ]) 
+                #end
+                #set($options = {})
+                #set($options.page = {
+                    "curPageNum": "3",
+                    "pageSize": "20",
+                    "totalRecNum": "1000"
+                })
+
+            </parse>
+        </list>
+        <velocity path="/tcom/table.macro.cb.vm"/>
+    </command>
+    <!--ajax by velocity-->
+    <command name="/lab/table.tbcb.vm">
+        <list>
+            <parse rewrite="desc">
+                #if($desc == "true")
+                    #set($desc = true)
+                #elseif($desc == "false")
+                    #set($desc = false)
+                #end
+            </parse>
+				<parse rewrite="everydayReportVo,page">
+                    #if(!$curPageNum)
+                        #set($curPageNum = 1)
+                    #end
+                    #set($page = {"curPageNum": $curPageNum, "totalRecNum": 1000, "pageSize": 20, "dataList": []})
+
+                    #if($id.toString() == "0")
+                    #set($rowcount = 10)
+                    #else
+                    #set($rowcount = 5)
+                    #end
+					#if($rowcount != 0)
+						#foreach($i in [1..$rowcount])
+							#if($velocityCount % 2 == 1)	
+								#set($foo = "北京志诚泰和数码办公设备股份有限公司")
+								#set($bar = "xxxxsfdsfew看来飞机上看来打发似的xs")
+							#else
+								#set($foo = "sssssss")
+								#set($bar = "xxxxxssf是否违反文物服务费而我")
+							#end
+							$page.dataList.add(
+								$page.dataList.size(), 
+								{
+									"date":"$foo $curPageNum",
+									"crmAccount":"$test",
+									"isCustomerService":"1",
+									"allTaskCount":"109 $velocityCount",
+									"finishedTaskCount":"foo $curPageNum",
+									"managerCrmAccount":"foo",
+									"unProcessTaskCount":"2",
+									"waitProcessTaskCount":"bar",
+									"allFinishedRate":"30%"
+								}
+							)	
+						#end
+					#end
+				</parse>
+        </list>
+        <velocity />
+    </command>
+    <command name="/lab/table.tbcb.st">
+        <list>
+            <parse rewrite="desc">
+                #if($desc == "true")
+                    #set($desc = true)
+                #elseif($desc == "false")
+                    #set($desc = false)
+                #end
+            </parse>
+				<parse rewrite="lstTitles,fOptions">
+#set ($lstTitles=[
+		{"chn":"日期","eval":'{$item.date|escape}',"width":"80px"},
+		{"chn":"CRM帐号","eng":"account", "eval":'&lt;a href="#">{$item.crmAccount|escape}&lt;/a>',"sort":true, "width":"100px"},
+		{"chn":"总任务数","eval":'&lt;a href="#">{$item.allTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'&lt;a href="#">{$item.finishedTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'{$item.allFinishedRate|escape}', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'&lt;a href="#">{$item.unProcessTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'&lt;a href="#">{$item.waitProcessTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"日期","eval":'{$item.date|escape}',"width":"80px"},
+		{"chn":"CRM帐号","eng":"account", "eval":'&lt;a href="#">{$item.crmAccount|escape}&lt;/a>',"sort":true, "width":"100px"},
+		{"chn":"总任务数","eval":'&lt;a href="#">{$item.allTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"已完成任务数xx","eval":'&lt;a href="#">{$item.finishedTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"完成率5","eng":"finRate", "eval":'{$item.allFinishedRate|escape}', "width":"100px","sort": true},
+		{"chn":"待处理任务数","eval":'&lt;a href="#">{$item.unProcessTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"待后续任务数","eval":'&lt;a href="#">{$item.waitProcessTaskCount|escape}&lt;/a>', "width":"100px"},
+		{"chn":"管理员","eval":'{$item.managerCrmAccount|escape}', "width":"100px"}
+	])
+		#set ($fOptions = {"url":"$!fMultiReport", "checkbox":"date", "hasOp":true, "width": "800px", "page": $page})
+
+
+				</parse>
+				<parse rewrite="everydayReportVo,page">
+                    #if(!$curPageNum)
+                        #set($curPageNum = 1)
+                    #end
+                    #set($page = {"curPageNum": $curPageNum, "totalRecNum": 1000, "pageSize": 20, "dataList": []})
+
+                    #set($rowcount = 80)
+					#if($rowcount != 0)
+						#foreach($i in [1..$rowcount])
+							#if($velocityCount % 2 == 1)	
+								#set($foo = "北京志诚泰和数码办公设备股份有限公司")
+								#set($bar = "xxxxsfdsfew看来飞机上看来打发似的xs")
+							#else
+								#set($foo = "sssssss")
+								#set($bar = "xxxxxssf是否违反文物服务费而我")
+							#end
+							$page.dataList.add(
+								$page.dataList.size(), 
+								{
+									"date":"$foo $curPageNum",
+									"crmAccount":"$test",
+									"isCustomerService":"1",
+									"allTaskCount":"109",
+									"finishedTaskCount":"foo $curPageNum",
+									"managerCrmAccount":"foo",
+									"unProcessTaskCount":"2",
+									"waitProcessTaskCount":"bar",
+									"allFinishedRate":"30%"
+								}
+							)	
+						#end
+					#end
+				</parse>
+        </list>
+        <smarty />
+	</command>
+    
+    <!--tests-->
+    <command name="/histest/test.html">
+        <list>
+            <parse rewrite="foo">
+                #set($foo = "bar")
+            </parse>
+        </list>
+        <velocity path="/test/test.html"/>
+    </command>
+    <!--comments-->
+    <command name="/histest/ifr.html">
+        <list>
+        </list>
+        <velocity path="/test/ifr.html"/>
+    </command>
+</ordinary-config>

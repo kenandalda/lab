@@ -1,0 +1,29 @@
+<div class="air">
+	#set ($lstTitles=[
+		{"chn":"日期","eval":'$!item.date',"width":"8%"},
+		{"chn":"CRM帐号","eval":'<a href="#">$!utils.escapeInH($!item.crmAccount)</a>',"width":"9%","sort":true},
+		{"chn":"管理员","eval":'$!item.managerCrmAccount',"width":"100px"},
+		{"chn":"总任务数","eval":'<a href="#">$!utils.escapeInH($!item.allTaskCount)</a>',"width":"10%"},
+		{"chn":"已完成任务数xx","eng":"xxx","eval":'<a href="#">$!utils.escapeInH($!item.finishedTaskCount)</a>',"width":"10%","sort":true},
+		{"chn":"待处理任务数","eval":'<a href="#">$!utils.escapeInH($!item.unProcessTaskCount)</a>',"width":"10%"},
+		{"chn":"待后续任务数","eval":'<a href="#">$!utils.escapeInH($!item.waitProcessTaskCount)</a>',"width":"10%"},
+		{"chn":"完成率","eval":'$!item.allFinishedRate',"width":"9%"},
+		{"chn":"操作","eval":'<a href="#">查看类型分布</a>',"width":"9%"}
+	])
+
+	<!--ecui列表开始-->
+    &#61;
+	<div ecui="type:locked-table;vScroll:false;right-lock:1" 
+		class="test-table">
+		<table style="width:1800px">
+            <thead><tr><th>xxxxxx</th><th>xxxxxx</th><th>xxxxxx</th><th>xxxxxx</th><th>xxxxxx</th></tr></thead><tbody>
+			<tr><td>&#61;xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td></tr>
+			<tr><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td></tr>
+			<tr><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td></tr>
+			<tr><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td></tr>
+			<tr><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td><td>xxxxxx</td></tr></tbody>
+        </table>
+    </div>
+	<!--ecui列表结束-->
+</div>
+

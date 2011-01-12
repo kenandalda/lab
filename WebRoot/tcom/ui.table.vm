@@ -1,0 +1,369 @@
+#**
+ * 表格控件和后端接口
+ *   page.curPageNum  -------- 表示当前页(页码从1开始)
+ *   page.totalRecNum -------- 表示全部的记录数
+ *   page.pageSize    -------- 表示单页大小
+ * 
+ *   orderBy   ----- 表示排序字段
+ *   desc      ---- 表示排序方式
+ *   isAllData ---- 整列表(1-是, 0-否)
+ *#
+
+#**
+ * 表格容器
+ * @desc 表格容器, 管理内部表格控件/分页控件的创建, 以及异步请求
+ * {{{
+ * @param   {String}    ecId  [必填] 表格id
+ * @param {Map} $options  选项
+ *      defaultUrl  {String}    [必填]默认请求的url, 如果不设置查询/分页/排序的url, 将按此设置进行请求
+ *      queryUrl    {String}    [选填]查询请求地址
+ *      pageUrl {String}    [选填]分页请求地址
+ *      sortUrl {String}    [选填]排序请求地址
+ *      pageParam {String}  [选填]分页(当前页)参数名称, 默认page.curPageNum
+ *      orderByParam    {String}    [选填]排序字段参数名称, 默认orderBy
+ *      descParam   {String}    [选填]排序方式参数字段名称, 默认desc
+ *      shield  {String}    [选填]屏蔽分组
+ *      noInitRequest {Boolean} [选填]初始不请求
+ * }}}
+
+ * @demo #tableWrapper("tableId" {"defaultUrl": "/ht-support/order/financeSearch.action"})
+ *#
+#macro (tableWrapper $ecId $options)
+
+#if($ecId)
+    #set($tbId = $ecId)
+#else
+    #if($tbId)
+        #set($tbId = $tbId + 1)
+    #else
+        #set($tbId = 0)
+    #end
+#end
+
+#* {{{
+<div class="tb-msg">
+    <div class="tb-msg-txt">
+        <span id="tbMsg_$tbId"></span>
+        <span onclick="this.parentNode.parentNode.style.visibility='hidden'" class="clo-btn">x</span>
+    </div>
+</div>
+}}}*#
+<div 
+    ecui="
+        type:ecom-table;id:lst_$tbId;tbId:$tbId;
+        #if($options.defaultUrl)defaultUrl:$options.defaultUrl;#end
+        #if($options.queryUrl)queryUrl:$options.queryUrl;#end
+        #if($options.pageUrl)pageUrl:$options.pageUrl;#end
+        #if($options.sortUrl)sortUrl:$options.sortUrl;#end
+        #if($options.pageParam)pageParam:$options.pageParam;#end
+        #if($options.orderByParam)orderByParam:$options.orderByParam;#end
+        #if($options.descParam)descParam:$options.descParam;#end
+        #if($options.shield)shield:control($options.shield true)#end
+    " 
+    style="$!options.style;" 
+    id="ecomtable_$tbId">
+    #if($options.noInitRequest)
+        <div style="display:none" class="ec-ecom-table-el">
+            <table border="0">
+                <thead><tr><th></th></tr></thead>
+                <tbody><tr><td></td></tr></tbody>
+            </table>
+        </div>
+        ## <div style="display:none" class="ec-ecom-pager-el"></div>
+    #end
+</div>
+#end
+
+#**
+ * 表格数据
+ * @desc 在每个表格的异步模版中使用, 同时将表格容器宏中设定的各个url指向调用该宏的模版
+ * {{{
+ *    @params {List<Map>} $lstTitles    [必填]列表表头数据，列样式(宽度，自定义属性等)
+ *    @params {List<Map>} $data    [必填]表格内容数据
+ *    @params {Map} $options    表格其他参数
+ *        checkbox    {String}    [选填]用户自行选择的checkbox的name值
+ *        checkboxVal    {String}    [选填]用户自行选择的checkbox的value值
+ *        hasOp    {Boolean}    [选填]参数为true, 表示有操作列
+ *        custom    {Boolean}    [选填]全选是否可以针对整表,依赖于选项checkbox
+ *        floatThead    {Boolean}    [选填]是否浮动表头, 默认不浮动
+ *        fixedHeight    {Boolean}    [选填]是否定高,是则会锁定表头,内容过高会出现纵向滚动条,默认不定高
+ *        leftLock    {Number}    [选填]左侧锁定列数,计算时要包括checkbox列在内
+ *  }}}
+ * @demo #tableData($lstTitles $page.dataList {"hasOp": true, "checkbox": "finRate"})
+ *#
+#macro(tableData $lstTitles $data $options)
+
+## 无数据的标识
+#set($tbNoData = false)
+#if(!$data || $data.size() == 0)
+    #set($tbNoData = true)
+#end
+
+<div class="ec-ecom-table-body ec-ecom-table-body ec-ecom-table-el" 
+        ecui="
+            #if($options.hasOp && !$tbNoData)right-lock:1;#end
+            #if($options.checkbox && !$tbNoData)#if(!$options.leftLock)left-lock:1;checkbox:$options.checkbox;
+            #if($options.checkboxVal)checkboxVal:$options.checkboxVal;#end#end#end
+            #if($options.leftLock && !$tbNoData)left-lock:$options.leftLock;#end
+            #if(!$options.fixedHeight)vScroll:false;#end 
+            #if($options.floatThead)floatThead:true;#end
+			#if($tbNoData)noData:true;#end
+            #if($options.custom)custom:true;#end
+            #if($options.syncOp)syncOp:true;#end
+            "
+        style="#if($options.fixedHeight)height:$options.fixedHeight#end;">
+    <table cellspacing="0" style="table-layout:fixed;#if($options.width)width:$options.width#end">
+        <thead><tr>
+        #if($options.checkbox && !$tbNoData)
+            <th style="width:28px;border-right:1px solid $cssMap.bdr_dk;border-left:0 none">
+            #* {{{
+            #if($options.custom)
+            <div ecui="type:control;id:cbCtnr_$tbId" class="cb-ctnr" id="cbCtnr_$tbId">
+                <div ecui="type:popup;id:cbPop_$tbId;" id="cbPop_$tbId" style="position:absolute">
+                    <div>当前页
+                        <div ecui="type:checkbox;id:cball_$tbId;capture:false" id="cbCurList_$tbId"></div>
+                    </div>
+                    <div>整列表
+                        <div ecui="type:checkbox;id:cbsall_$tbId;capture:false;" id="cbWholeList_$tbId"></div>
+                    </div>
+                </div>
+                <input id="hcbsall_$tbId" type="hidden" name="isAllData" value="0" />
+            </div>
+            #else
+                <div ecui="type:checkbox;id:cball_$tbId"></div>
+            #end
+            }}} *#
+                <input type="checkbox" data-id="cball_$tbId" />
+            </th>
+        #end
+        #foreach($title in $lstTitles)
+            #set($index = $velocityCount - 1)
+            <th style="width:$title.width;
+                        #if($title.chn.trim() == '')display:none#end" 
+                class="#if($title.sort && !$tbNoData)sort#if($orderBy==$title.eng && $orderBy)#if($desc) sort-down#{else} sort-up#end#end#end#if($velocityCount==1) first#end" 
+                #if($title.sort)sort="$title.eng"#end #if($title.edit)edit="$title.edit"#end>$title.chn</th>#end</tr>
+    </thead>
+    <tbody>
+        #if(!$tbNoData)
+        #foreach($item in $data)
+        <tr class="#if($velocityCount%2==0)ev#{else}od#end">
+            #if($options.checkbox)
+                <td class="dk" style="border-left:0 none">
+                    #if($item.disableSelect == true)
+                        <div class="checkbox-disabled"></div>
+                    #else
+                    <input name="$options.checkbox" type="checkbox"
+                        value='#if($options.checkboxVal)
+                                    #if($options.checkboxValEncode)
+                                        #set($fCheckboxVal = '$security.encryptValue($!item.' + $options.checkboxVal + ')')
+                                    #else
+                                        #set($fCheckboxVal = '$security.encryptNUEValue($!item.' + $options.checkboxVal + ')')
+                                    #end
+                                    #if($options.checkboxEncrypt)
+                                        #evaluate($fCheckboxVal)
+                                    #else
+                                        #evaluate("\$!item.$options.checkboxVal")
+                                    #end
+                               #else
+                                    #if($options.checkboxValEncode)
+                                        #set($fCheckboxVal = '$security.encryptValue($!item.' + $options.checkbox + ')')
+                                    #else
+                                        #set($fCheckboxVal = '$security.encryptNUEValue($!item.' + $options.checkbox + ')')
+                                    #end
+                                    #if($options.checkboxEncrypt)
+                                        #evaluate($fCheckboxVal)
+                                    #else
+                                        #evaluate("\$!item.$options.checkbox")
+                                    #end
+                               #end'
+                        data-superior="cball_$tbId" />
+                    #end
+                </td>
+            #end
+            #foreach($lst in $lstTitles)
+                #set($index = $velocityCount - 1)
+                    #if ($lst.eval)
+                        #set($eval = $lst.eval)
+                    #else
+                        #set($eval = false)
+                        #set($text='-')
+                        #set($text = $!item.get($lst.eng))
+                        #if($text.getClass().getName() == "java.util.Date")
+                            #set($text = $dateUtils.formatDate($text, $dateFormat))
+                        #end
+                    #end
+                    #if ($eval.startsWith('$item') || $eval.startsWith('$!item'))
+                        #set($eval = '$!utils.escapeInH(' + $eval + ')')
+                    #end
+                <td class="#if($lst.chn=="操作")dk#end 
+                            #if($velocityCount==1)first#end
+                            #if($lst.noprint)noprint#end" 
+                    style="#if($lst.chn.trim() == '')display:none;#end">
+                    <div style="">#if($eval)#evaluate($eval)#else$!text#end</div>
+                </td>
+            #end
+        </tr>
+        #end
+        #else
+        <tr style="height:20px">
+            #foreach($lst in $lstTitles)
+            <td style="border:0 none"></td>
+            #end
+        </tr>
+        #end
+    </tbody>
+</table>
+</div>
+#if($options.page)
+<div class="ec-pager ec-pager ec-ecom-pager-el"
+    ecui="
+        curPage:$options.page.curPageNum;
+        total:#if($tbNoData)0#{else}$options.page.totalRecNum#end;
+        pageSize:$options.page.pageSize
+    "></div>    
+#end
+#end
+
+#*
+ * 静态表格
+ *#
+#macro(table $lstTitles $data $options)
+
+#if($options.ecId)
+    #set($tbId = $options.ecId)
+#else
+    #if($tbId)
+        #set($tbId = $tbId + 1)
+    #else
+        #set($tbId = 0)
+    #end
+#end
+
+<div 
+    ecui="
+    type:ecom-table;id:lst_$tbId;tbId:$tbId;
+    #if($options.pageParam)pageParam:$options.pageParam;#end
+    #if($options.orderByParam)orderByParam:$options.orderByParam;#end
+    #if($options.descParam)descParam:$options.descParam;#end
+    ">
+    #tableData($lstTitles $data $options)
+</div>
+#end
+
+#*
+ * 简单表格
+ *#
+#macro(liteTable $lstTitles $data $options)
+
+#if($options.ecId)
+    #set($tbId = $options.ecId)
+#else
+    #if($tbId)
+        #set($tbId = $tbId + 1)
+    #else
+        #set($tbId = 0)
+    #end
+#end
+
+## 无数据的标识
+#set($tbNoData = false)
+#if(!$data || $data.size() == 0)
+    #set($tbNoData = true)
+#end
+
+<div class="ec-ecom-table-body ec-ecom-table-body ec-inline-block"
+    data-nodata="$!tbNoData" 
+    id="lst_$tbId"
+    style="#if($options.fixedHeight)height:$options.fixedHeight#end;padding-top:0"><table cellspacing="0" style="table-layout:fixed;#if($options.width)width:$options.width#end"><thead><tr>
+        #foreach($title in $lstTitles)
+            <th style="width:$title.width;
+                #if($title.chn.trim() == '')display:none#end"
+                class="ec-ecom-table-body-head">
+                $title.chn</th>
+        #end
+        </tr></thead><tbody>
+            #if(!$tbNoData)
+            #foreach($item in $data)
+            <tr class="ec-ecom-table-body-row">
+                #foreach($lst in $lstTitles)
+                    #if ($lst.eval)
+                        #set($eval = $lst.eval)
+                    #end
+                    #if ($eval.startsWith('$item') || $eval.startsWith('$!item'))
+                        #set($eval = '$!utils.escapeInH(' + $eval + ')')
+                    #end
+                    <td class="#if($velocityCount==1)first#end ec-ecom-table-body-item"
+                        style="#if($lst.chn.trim() == '')display:none;#end"><div>#evaluate($eval)</div></td>
+                #end
+            </tr>
+            #end
+            #else
+            <tr style="height:20px" class="ec-ecom-table-body-row">
+                #foreach($lst in $lstTitles)
+                <td style="border:0 none" class="ec-ecom-table-body-item"></td>
+                #end
+            </tr>
+            #end
+        </tbody></table></div>
+#end
+
+#**
+ * 将listMap转成edit模块可认的数组
+ * @param name {String} select名
+ * @param list {List<Map>} 要转换的listMap
+ * @param out  {Map} 结果Map, 必须在调用宏之前定义, 输出结果为其out键的值
+ *
+ * @demo
+ *   #set($fooRes = {})
+ *   #ToEditArray("test" $switchList $fooRes)
+ *   $fooRes.out ## 输出
+ *#
+#macro(ToEditArray $name $list $out)
+
+    #set($fTEATmp = "['$name', ")
+    #foreach($item in $list)
+        
+        #if($velocityCount > 1)
+            #set($fTEATmp = $fTEATmp + "," + "'$item.value'" + "," + "'$item.text'")
+        #else
+            #set($fTEATmp = $fTEATmp + "'$item.value'" + "," + "'$item.text'")
+        #end
+    #end
+    #set($fTEATmp = $fTEATmp + ']')
+    #set($out.out = $fTEATmp)
+
+#end
+
+#**
+ * 根据表头定义List<Map>，获得表格的整体宽度
+ * @param list {List<Map>} 表头定义
+ * @param out  {Map} 结果Map, 必须在调用宏之前定义, 输出结果为其out键的值
+ * @param hasCheckbox  {Boolean} 是否存在checkbox列，默认不存在
+ *
+ * @demo
+ *   #set($ret = {})
+ *   #getTableWidth($fLstTitles $ret)
+ *   $ret.out ## 输出
+ *#
+#macro(getTableWidth $tbTitleList $out $hasCheckbox)
+    #set($tbWidthTemp = 25)
+
+    #if ($hasCheckbox)
+        #set($tbWidthTemp = $tbWidthTemp + 50)
+    #end
+
+    #foreach($item in $tbTitleList)
+        #if ($item.width)
+            #set($intTemp = 1)
+            #set($tdWidthTemp = $item.width.replace('px', ''))
+            #set($tdWidthTemp = $intTemp.getClass().parseInt($tdWidthTemp))
+
+            #set($tbWidthTemp = $tbWidthTemp + $tdWidthTemp)
+        #end
+    #end
+
+    #set($out.out = $tbWidthTemp)
+#end
+
+
+#* vim:set fdm=marker: *#

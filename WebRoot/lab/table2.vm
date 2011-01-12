@@ -1,0 +1,81 @@
+<div class="ka-table">
+<table class="ka-table-layout">
+	<thead>
+		<tr>
+			<th colspan="3" style="width:700px">表头1-1</th>
+			#foreach($j in [1..19])
+			#set($count = $j + 1)
+			<th #if($velocityCount == 3)colspan="2"#{end}>表头1-$count</th>
+			#end
+		</tr>
+		<tr>
+			<th style="width:333px">表头2-1-1</th>
+			<th >表头2-1-2xxxxxxxxxxxxxxxxx</th>
+			<th >表头2-1-3.....</th>
+			#foreach($j in [1..20])
+			#set($count = $j + 1)
+			<th>表头2-$count</th>
+			#end
+		</tr>
+	</thead>
+	<tbody>
+		#foreach($i in [1..20])
+		<tr>
+			<th>列表头 ${velocityCount}-1</th>	
+			<th>列表头 ${velocityCount}-2</th>	
+			<th>列表头 ${velocityCount}-3</th>	
+			#foreach($j in [1..20])
+			<td>&nbsp; $j</td>	
+			#end
+		</tr>
+		#end
+	</tbody>
+</table>
+</div>
+<div>
+	<label for="cb1">
+		列表头1
+		<input type="checkbox" id="cb1" checked="checked" onclick="t.toggleVHeadCol(0);"/>
+	</label>
+	<label for="cb2">
+		列表头2
+		<input type="checkbox" id="cb2" checked="checked" onclick="t.toggleVHeadCol(1);"/>
+	</label>
+	<label for="cb3">
+		列表头3
+		<input type="checkbox" id="cb3" checked="checked" onclick="t.toggleVHeadCol(2);"/>
+	</label>
+</div>
+<script>
+	/*
+	var t = baidu.dom.q("ka-table")[0];
+	t.onTableReady = function() {
+		this.toggleVHeadCol(2);
+	};
+	*/
+</script>
+<div class="ka-table">
+<table class="ka-table-layout">
+	<thead>
+	<tr>
+		#foreach($i in [1..20])
+		<th style="width:111px">THEAD-1-$velocityCount</th>
+		#end
+	</tr>
+	<tr>
+		#foreach($i in [1..19])
+		<th #if($velocityCount == 3)colspan="2"#end>表头-$velocityCount</th>
+		#end
+	</tr>
+	</thead>
+	<tbody>
+	#foreach($i in [1..20])
+	<tr>
+		#foreach($r in [1..20])
+		<td>Data</td>
+		#end
+	</tr>
+	#end
+	</tbody>
+</table>
+</div>

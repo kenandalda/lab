@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+#parse('/tcom/core.vm')
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	#includeStatic
+    <script text="text/javascript" src="${staticRoot}/js/mod/colorSelector.js"></script>
+    <script text="text/javascript" src="${staticRoot}/js/mod/subFilter.js"></script>
+    <script text="text/javascript" src="${staticRoot}/js/mod/xyPager.js"></script>
+	<style type="text/css">
+		.tb-title td {font-weight:bold;}
+		.nav{padding:0}
+		.nav a{float:left;color:#FFF;display:block;line-height:30px;text-decoration:none;padding:0 13px;}
+		.nav a:hover, .nav a.cur{color:#346665;background:#F6FFB8}
+        .ec-listbox {width:100px;height:160px;border:1px solid #828790}
+        .ec-listbox-item {padding-left:2px;line-height:20px;background:#FFF;cursor:default}
+        .ec-listbox-item-selected {background:#3399FF;color:#FFF}
+        .select-box {border:1px solid #333}
+        #foo .ec-tab div.area {display:none}
+        #foo .ec-tab div.area-v {display:none}
+        #foo .ec-tab div.area-w {display:none}
+		#tablectnr{float:left;width:800px;height:100%;background:#EEE;border:2px solid #AAA;}
+		#holiday .holiday{float:left}
+        /*CS*/
+        .ec-color-selector-sub {width:30px;height:30px}
+        .ec-color-selector-tip {width:30px;height:60px;border:solid 2px red;}
+        .ec-color-selector-sub-checked {border:2px solid #EEE}
+        .ec-color-selector-all-checked {background-color:#000}
+        /*SF*/
+        /*.ec-sub-filter {width: 100px; border:1px solid #EEE}*/
+        /*IS*/
+        .ec-img-scroll {width:460px;height:60px}
+        .ec-img-scroll-title {height:61px}
+        .ec-img-scroll-item {width:58px;height:58px;border:1px solid #EEE}
+        .ec-img-scroll-item-selected {border-color:blue}
+	</style>
+	<!--<link rel="stylesheet" href="${staticRoot}/js/ui/ka-table/ka-table.css" type="text/css">-->
+	<style type="text/css" media="screen">
+		.test-table{border:1px solid #DDD}
+	</style>
+    <script type="text/javascript" charset="utf-8">
+		d = new Date();
+        timeLog = true;
+    </script>
+</head>
+<body data-pageNS="Lab">
+	#if(!$URI1)
+		#set($URI1="table")
+	#end
+    #*
+		{"en":"holiday", "cn":"节假日管理"},
+		{"en":"imgrotation", "cn":"图片翻转"},
+		{"en":"formatedit", "cn":"格式化输入框"},
+		{"en":"decorator", "cn":"装饰器"}
+		{"en":"localstorage", "cn":"本地储存"},
+		{"en":"listbox", "cn":"listbox"},
+		{"en":"table2", "cn":"列表2"},
+		{"en":"html", "cn":"html"},
+		{"en":"filter", "cn":"SF"},
+		{"en":"tableinctnr", "cn":"容器中的表格"},
+		{"en":"CS", "cn":"CS"},
+		{"en":"initor", "cn":"js启动器"},
+		{"en":"ecuitable", "cn":"ecui列表"},
+    *#
+	#set($testTitleList = [
+		{"en":"table", "cn":"列表"},
+		{"en":"statictable", "cn":"静态列表"},
+		{"en":"cal", "cn":"日历"},
+		{"en":"foldable", "cn":"可折叠容器"},
+		{"en":"tab", "cn":"标签页"},
+		{"en":"multiselect", "cn":"多选下拉框"},
+		{"en":"floater", "cn":"浮动层"},
+		{"en":"pager", "cn":"分页"},
+		{"en":"imgscroll", "cn":"IS"}
+	])
+	<div class="nav">
+		#foreach($t in $testTitleList)
+			<a href="/lab/$t.en" #if($URI1 == $t.en)class="cur"#end>$t.cn</a>
+		#end
+	</div>
+
+    <div class="" id="timer">
+        初次渲染: <em style="font-style:normal;color:blue;font-weight:bold">...</em>ms
+        数据返回: <em style="font-style:normal;color:blue;font-weight:bold">...</em>ms
+        总渲染时间: <em style="font-style:normal;color:blue;font-weight:bold">...</em>ms
+    </div>
+	<div class="wrapper">
+		#foreach($t in $testTitleList)
+			#if(${t.en} == $URI1)
+				#parse("/lab/${t.en}.vm")	
+			#end
+		#end
+	</div>
+	<script type="text/javascript">
+		(function () {
+			var timerEl = document.getElementById("timer").getElementsByTagName("em")[0];
+			ecui.get();
+			timerEl.innerHTML = new Date() - d; 
+		})();
+	</script>
+</body>
+</html>

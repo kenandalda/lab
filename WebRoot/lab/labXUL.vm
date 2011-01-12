@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window
+    id="findfile-window"
+    title="XUL test"
+    orient="horizontal"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<!-- Other elements go here --> 
+	<groupbox>
+      <caption label="Colour"/>
+      <radiogroup>
+        <radio label="Red"/>
+        <radio label="Green" selected="true"/>
+        <radio label="Blue"/>
+      </radiogroup>
+      <label value="Nickname"/>
+      <textbox />
+	<timepicker value="12:05"/>
+	<datepicker type="grid" value="2007-03-26"/>
+	<datepicker type="popup" value="2007-03-26"/>
+   </groupbox>
+</window>
+

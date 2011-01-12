@@ -1,0 +1,7 @@
+<script src="${staticRoot}/js/mod/image.rotate.js" type="text/javascript" charset="utf-8"></script>
+	<a href="javascript:;" onclick="rotateImageCCW('foo');" >左转</a>
+	<a href="javascript:;" onclick="rotateImageCW('foo');" >右转</a>
+<div>
+	<img src="http://img2.cache.netease.com/cnews/2010/7/2/201007020959387b673.jpg" alt="foo" id="foo">
+	<canvas id="foo-canvas"></canvas>
+</div>

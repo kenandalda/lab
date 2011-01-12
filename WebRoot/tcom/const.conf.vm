@@ -1,0 +1,56 @@
+#**
+ * @desc : 用于配置前端公共常量
+ *  1) 非公共部分建议放置在业务页面
+ *  2) 建议前端定义的常量以f(f-front)开头(容易识别，避免冲突)。如：$fFoobar
+ *#
+
+## 单引号
+#set($fSQuote = "'")
+
+## 双引号
+#set($fDQuote = '"')
+
+## 精确到秒
+#set($fTimeFormat = 'yyyy-MM-dd HH:mm:ss')
+
+## 精确到天
+#set($fDateFormat = 'yyyy-MM-dd')
+#set($dateFormat = 'yyyy-MM-dd')
+#set($accurate2Day = "yyyy-MM-dd")
+
+## 表格高度
+#set($fTableHeight = "423px")
+
+## 是否列表
+#set($fSwitchList = [{"text":"否", "value":"0"}, {"text":"是", "value":"1"}])
+## AB单状态列表
+#set($ABList=$fSwitchList)
+
+## 全部
+#set($totalItem = {"text":"全部","value":"-1"})
+
+## 删除时的二次确认
+#set($deleteConfirmText = "请确认是否删除？")
+
+## 审核备注长度
+#set($fe_auditDesc_len = 1000)
+
+## 请选择的数据
+#set($selectItem = {"text":"请选择","value":"-1"})
+
+## 发送方式列表
+#set($sendMethodList=[{"text":"自行","value":"0"},{"text":"快递","value":"1"}])
+
+## 时间段
+#set($fTimeSectionList = [])
+#foreach($i in [0..23])
+	#if($i<10)
+		$fTimeSectionList.add($fTimeSectionList.size(),{"text":"0${i}:00","value":"0${i}:00"})
+		$fTimeSectionList.add($fTimeSectionList.size(),{"text":"0${i}:30","value":"0${i}:30"})
+	#else
+		$fTimeSectionList.add($fTimeSectionList.size(),{"text":"${i}:00","value":"${i}:00"})
+		$fTimeSectionList.add($fTimeSectionList.size(),{"text":"${i}:30","value":"${i}:30"})
+	#end
+#end
+##
+#set($fSecurityKey = $security.securityKey())
