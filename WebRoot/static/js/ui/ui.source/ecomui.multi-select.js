@@ -24,6 +24,7 @@ _eInput - 多选项的INPUT对象
 //{if 0}//
 (function () {
     var core = ecui,
+        lib = baidu,
         dom = core.dom,
         ui = core.ui,
         util = core.util,
@@ -35,7 +36,7 @@ _eInput - 多选项的INPUT对象
         setInput = dom.setInput,
         copy = util.copy,
         inherits = util.inherits,
-        ieVersion = core.browser.ie,
+        ieVersion = lib.browser.ie,
         restore = core.restore,
 
         $fastCreate = core.$fastCreate,

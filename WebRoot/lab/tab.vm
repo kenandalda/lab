@@ -1,5 +1,5 @@
 <div ecui="type:ecom-tab;id:tab;selected:1">
-    #foreach($i in [1..4])
+    #foreach($i in [1..25])
     #if ($i % 3 != 0)
     <div #if($i == 5)style="display:none"#{end}>
         <label>tab $i</label>
@@ -50,28 +50,15 @@
 ## <div ecui="type:control;decorate:l-r-decorator(foolr)">test control</div>
 <script type="text/javascript" charset="utf-8">
     var UI_TAB_ITEM_CLASS = ecui.ui.Tab.Item.prototype;
-
-    /*
-    UI_TAB_ITEM_CLASS.onclick = function (event) {
-        console.log(this.getBody().innerHTML);
-    };
-    */
-
-    /*
-    ecui.get("tab").onitemclick = function (index) {
-        console.log(this.getBody().innerHTML, index);
-    };
-    */
-
-    /*
-    for (var i = 0, items = ecui.get("tab").getItems(), o; o = items[i++]; ) {
-        o.onclick = function (event) {
-            console.log(this.getBody().innerHTML);
-        };
-    }
-    */
+    
     function delCurSel() {
         var t = ecui.get("tab");
         t.remove(t.getSelected());
     }
+
+    ecui.ext.Tween(ecui.ui.Tab.Button.prototype, {
+        pressStep: 10,
+        monitor: 'getParent().getBody().style.left'
+    });
+    
 </script>
