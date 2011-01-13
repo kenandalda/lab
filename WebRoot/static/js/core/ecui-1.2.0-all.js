@@ -6,39 +6,71 @@
 
 
 
+
+//__gzip_unitize__i
+//__gzip_unitize__list
+//__gzip_unitize__o
+//__gzip_unitize__params
     var core = ecui = {},
         array = core.array = {},
-        browser = core.browser = {},
         dom = core.dom = {},
         ext = core.ext = {},
         string = core.string = {},
         ui = core.ui = {},
-        util = core.util = {},
+        util = core.util = {};
 
-        lib = baidu,
-        __gzip_direct__libArray = lib.array,
+    //__gzip_original__libArray
+    //__gzip_original__libBrowser
+    //__gzip_original__libDom
+    //__gzip_original__libString
+    var lib = baidu,
+        libArray = lib.array,
         libBrowser = lib.browser,
         libDom = lib.dom,
-        __gzip_direct__libString = lib.string,
+        libString = lib.string;
 
-        undefined = void(0),
+    //__gzip_original__WINDOW
+    ///__gzip_original__DOCUMENT
+    //__gzip_original__DATE
+    //__gzip_original__MATH
+    //__gzip_original__REGEXP
+    //__gzip_original__ABS
+    //__gzip_original__CEIL
+    ///__gzip_original__FLOOR
+    ///__gzip_original__MAX
+    ///__gzip_original__MIN
+    //__gzip_original__POW
+    ///__gzip_original__ROUND
+    ///__gzip_original__PARSEINT
+    //__gzip_original__ISNAN
+    var undefined,
         WINDOW = window,
         DOCUMENT = document,
+        DATE = Date,
         MATH = Math,
-        MIN = MATH.min,
-        MAX = MATH.max,
+        REGEXP = RegExp,
         ABS = MATH.abs,
         CEIL = MATH.ceil,
         FLOOR = MATH.floor,
+        MAX = MATH.max,
+        MIN = MATH.min,
+        POW = MATH.pow,
         ROUND = MATH.round,
         PARSEINT = parseInt,
+        ISNAN = isNaN;
 
-        ieVersion = browser.ie
-            = libBrowser.ie,
+    //__gzip_original__isStrict
+    //__gzip_original__isWebkit
+    ///__gzip_original__ieVersion
+    ///__gzip_original__firefoxVersion
+    //__gzip_original__operaVersion
+    var isStrict = libBrowser.isStrict,
+        isWebkit = libBrowser.isWebkit,
 
-        firefoxVersion = browser.firefox = libBrowser.firefox,
-        isStrict = browser.isStrict = libBrowser.isStrict,
-        DOM_TEXT = firefoxVersion ? 'textContent' : 'innerText',
+        ieVersion = libBrowser.ie,
+
+        firefoxVersion = libBrowser.firefox,
+        operaVersion = libBrowser.opera;
 
         /**
          * 查询数组中指定对象的位置序号。
@@ -49,7 +81,7 @@
          * @param {Object} obj 需要查询的对象
          * @return {number} 位置序号，不存在返回 -1
          */
-        indexOf = array.indexOf = __gzip_direct__libArray.indexOf,
+     var indexOf = array.indexOf = libArray.indexOf,
 
         /**
          * 从数组中移除对象。
@@ -58,7 +90,7 @@
          * @param {Array} list 数组对象
          * @param {Object} obj 需要移除的对象
          */
-        remove = array.remove = __gzip_direct__libArray.remove,
+        remove = array.remove = libArray.remove,
 
         /**
          * 为 Element 对象添加新的样式。
@@ -101,14 +133,14 @@
          * @return {HTMLElement} 创建的 Element 对象
          */
         createDom = dom.create = function (className, cssText, tagName) {
-            var el = DOCUMENT.createElement(tagName || 'div');
+            tagName = DOCUMENT.createElement(tagName || 'DIV');
             if (className) {
-                el.className = className;
+                tagName.className = className;
             }
             if (cssText) {
-                el.style.cssText = cssText;
+                tagName.style.cssText = cssText;
             }
-            return el;
+            return tagName;
         },
 
         /**
@@ -143,8 +175,63 @@
          * @param {HTMLElement} el Element 对象
          * @return {Object} 位置信息
          */
-        getPosition = dom.getPosition
-            = libDom.getPosition,
+        getPosition = dom.getPosition = function (element) {
+            var top = 0,
+                left = 0,
+                body = DOCUMENT.body,
+                html = getParent(body);
+
+            if (ieVersion) {
+                if(!isStrict) {
+                    o = getStyle(body);
+                    if (ISNAN(top = PARSEINT(o.borderTopWidth))) {
+                        top = -2;
+                    }
+                    if (ISNAN(left = PARSEINT(o.borderLeftWidth))) {
+                        left = -2;
+                    }
+                }
+
+                o = element.getBoundingClientRect();
+                top += html.scrollTop + body.scrollTop - html.clientTop + FLOOR(o.top);
+                left += html.scrollLeft + body.scrollLeft - html.clientLeft + FLOOR(o.left);
+            }
+            else if (element == html) {
+                top = html.scrollTop + body.scrollTop;
+                left = html.scrollLeft + body.scrollLeft;
+            }
+            else {
+                for (o = element; o; o = o.offsetParent) {
+                    top += o.offsetTop;
+                    left += o.offsetLeft;
+                }
+
+                if (operaVersion || (isWebkit && getStyle(element, 'position') == 'absolute')) {
+                    top -= body.offsetTop;
+                }
+
+                for (
+                    var o = getParent(element),
+                        style = getStyle(element);
+                    o != html;
+                    o = getParent(o), style = element
+                ) {
+                    left -= o.scrollLeft;
+                    if (!operaVersion) {
+                        element = getStyle(o);
+                        body =
+                            firefoxVersion && element.overflow != 'visible' && style.position == 'absolute' ? 2 : 1;
+                        top += toNumber(html.borderTopWidth) * body - o.scrollTop;
+                        left += toNumber(html.borderLeftWidth) * body;
+                    }
+                    else if (o.tagName != 'TR') {
+                        top -= o.scrollTop;
+                    }
+                }
+            }
+
+            return {top: top, left: left};
+        },
 
         /**
          * 获取 Element 对象的 CssStyle 对象或者是指定的样式值。
@@ -156,9 +243,8 @@
          * @return {CssStyle|Object} CssStyle 对象或样式值
          */
         getStyle = dom.getStyle = function (el, name) {
-            return name
-                ? libDom.getStyle(el, name)
-                : el.currentStyle || (ieVersion ? el.style : getComputedStyle(el, null));
+            return name ? libDom.getStyle(el, name) :
+                el.currentStyle || (ieVersion ? el.style : getComputedStyle(el, null));
         },
 
         /**
@@ -168,8 +254,10 @@
          * @param {HTMLElement} el Element 对象
          * @return {string} Element 对象的文本
          */
-        getText = dom.getText = function (el) {
-            return el[DOM_TEXT];
+        getText = dom.getText = firefoxVersion ? function (el) {
+            return el.textContent;
+        } : function (el) {
+            return el.innerText;
         },
 
         /**
@@ -217,12 +305,15 @@
          *
          * @param {HTMLElement} source 指定的 Element 对象
          * @param {HTMLElement} target 目标 Element 对象
-         * @param {boolean} remove 是否移除指定的 Element 对象，默认不移除
+         * @param {boolean} all 是否移动所有的 DOM 对象，默认仅移动 ElementNode 对象
          */
-        moveElements = dom.moveElements = function (source, target, remove) {
-            remove && removeDom(source);
-            for (var o; o = source.firstChild; ) {
-                target.appendChild(o);
+        moveElements = dom.moveElements = function (source, target, all) {
+            //__transform__el_o
+            for (var el = source.firstChild; el; el = source) {
+                source = el.nextSibling;
+                if (all || el.nodeType == 1) {
+                    target.appendChild(el);
+                }
             }
         },
 
@@ -250,13 +341,13 @@
          * @param {HTMLElement} el Element 对象
          * @return {HTMLElement} 被移除的 Element 对象
          */
-        removeDom = dom.remove
-
-            = function (el) {
-                var parent = getParent(el);
-                parent && parent.removeChild(el);
-                return el;
-            },
+        removeDom = dom.remove = function (el) {
+            var parent = getParent(el);
+            if (parent) {
+                parent.removeChild(el);
+            }
+            return el;
+        },
 
         /**
          * 删除 Element 对象中的样式。
@@ -293,9 +384,9 @@
                     insertHTML(
                         el,
                         'afterEnd',
-                        '<input type="' + type + '" name="' + name + '" class="' + el.className
-                            + '" style="' + el.style.cssText + '" ' + (el.disabled ? 'disabled' : '')
-                            + (el.readOnly ? ' readOnly' : '') + '>'
+                        '<input type="' + type + '" name="' + name + '" class="' + el.className +
+                            '" style="' + el.style.cssText + '" ' + (el.disabled ? 'disabled' : '') +
+                            (el.readOnly ? ' readOnly' : '') + '>'
                     );
                     name = el;
                     (el = el.nextSibling).value = name.value;
@@ -329,8 +420,10 @@
          * @param {HTMLElement} el Element 对象
          * @param {string} text Element 对象的文本
          */
-        setText = dom.setText = function (el, text) {
-            el[DOM_TEXT] = text;
+        setText = dom.setText = firefoxVersion ? function (el, text) {
+            el.textContent = text;
+        } : function (el, text) {
+            el.innerText = text;
         },
 
         /**
@@ -341,7 +434,7 @@
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        encodeHTML = string.encodeHTML = __gzip_direct__libString.encodeHTML,
+        encodeHTML = string.encodeHTML = libString.encodeHTML,
 
         /**
          * 根据字节长度截取字符串
@@ -377,8 +470,8 @@
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        toCamelCase = string.toCamelCase
-            = __gzip_direct__libString.toCamelCase,
+        toCamelCase = string.toCamelCase =
+            libString.toCamelCase,
 
         /**
          * 将目标字符串中常见全角字符转换成半角字符
@@ -386,7 +479,7 @@
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        toHalfWidth = string.toHalfWidth = __gzip_direct__libString.toHalfWidth,
+        toHalfWidth = string.toHalfWidth = libString.toHalfWidth,
 
         /**
          * 过滤字符串两端的空白字符。
@@ -408,7 +501,12 @@
          * @param {Function} func 事件处理函数
          */
         attachEvent = util.attachEvent = function (obj, type, func) {
-            obj.attachEvent ? obj.attachEvent('on' + type, func) : obj.addEventListener(type, func, false);
+            if (obj.attachEvent) {
+                obj.attachEvent('on' + type, func);
+            }
+            else {
+                obj.addEventListener(type, func, false);
+            }
         },
 
         /*
@@ -448,7 +546,12 @@
          * @param {Function} func 事件处理函数
          */
         detachEvent = util.detachEvent = function (obj, type, func) {
-            obj.detachEvent ? obj.detachEvent('on' + type, func) : obj.removeEventListener(type, func, false);
+            if (obj.detachEvent) {
+                obj.detachEvent('on' + type, func);
+            }
+            else {
+                obj.removeEventListener(type, func, false);
+            }
         },
 
         /**
@@ -469,23 +572,6 @@
         },
 
         /**
-         * 在 prototype 链上查找与当前对象指定属性不相同的属性。
-         * 对象在引用属性时，有时需要得知原型链上被覆盖的属性值。findPrototype 方法用于在原型链上查找当前属性值覆盖掉的属性值，如果无法找到，返回 undefined。
-         * @public
-         *
-         * @param {Object} object 需要查找属性的对象
-         * @param {string} name 属性名称
-         * @param {Object} 属性值
-         */
-        findPrototype = util.findPrototype = function (object, name) {
-            for (var clazz = object.constructor.prototype; clazz; clazz = clazz.constructor.superClass) {
-                if (object[name] != clazz[name]) {
-                    return clazz[name];
-                }
-            }
-        },
-
-        /**
          * 获取浏览器可视区域的相关信息。
          * getView 方法将返回浏览器可视区域的信息。属性如下：
          * top    {number} 可视区域最小X轴坐标
@@ -499,9 +585,11 @@
          * @return {Object} 浏览器可视区域信息
          */
         getView = util.getView = function () {
+            //__gzip_original__clientWidth
+            //__gzip_original__clientHeight
             var body = DOCUMENT.body,
                 html = getParent(body),
-                client = DOCUMENT.compatMode == 'BackCompat' ? body : DOCUMENT.documentElement,
+                client = isStrict ? html : body,
                 scrollTop = html.scrollTop + body.scrollTop,
                 scrollLeft = html.scrollLeft + body.scrollLeft,
                 clientWidth = client.clientWidth,
@@ -509,11 +597,13 @@
 
             return {
                 top: scrollTop,
-                right: clientWidth + scrollLeft,
-                bottom: clientHeight + scrollTop,
+                right: scrollLeft + clientWidth,
+                bottom: scrollTop + clientHeight,
                 left: scrollLeft,
-                width: MAX(html.scrollWidth, body.scrollWidth, clientWidth),
-                height: MAX(html.scrollHeight, body.scrollHeight, clientHeight)
+                width: clientWidth,
+                height: clientHeight,
+                maxWidth: MAX(html.scrollWidth, body.scrollWidth, clientWidth),
+                maxHeight: MAX(html.scrollHeight, body.scrollHeight, clientHeight)
             };
         },
 
@@ -556,28 +646,14 @@
          */
         toNumber = util.toNumber = function (obj) {
             return PARSEINT(obj) || 0;
-        },
-
-        /**
-         * 创建一个定时器对象，从第4个参数起都是传入 func 中的变量
-         * @public
-         *
-         * @param {Function} func 定时器需要调用的函数
-         * @param {number} delay 定时器延迟调用的毫秒数
-         * @param {Object} caller 调用者，在 func 被执行时，this 指针指向的对象，可以为空
-         */
-        Timer = core.Timer = function (func, delay, caller) {
-            var args = Array.prototype.slice.call(arguments, 3);
-            this._nID = setTimeout(function () {
-                func.apply(caller, args);
-                args = caller = null;
-            }, delay);
         };
 
 
 
 
 
+
+//__gzip_unitize__event
     var $bind,
         $connect,
         $create,
@@ -587,25 +663,93 @@
         calcLeftRevise,
         calcTopRevise,
         calcWidthRevise,
-        createControl,
+
+        /**
+         * 创建 ECUI 控件。
+         * 标准的创建 ECUI 控件 的工厂方法，所有的 ECUI 控件 都应该通过 create 方法或者 $create 方法生成。params 参数对象支持的属性如下：
+         * id        {string} 当前控件的 id，提供给 $connect 与 get 方法使用
+         * base      {string} 控件的基本样式，参见 getBaseClass 方法，如果忽略此参数将使用基本 Element 对象的 className 属性
+         * element   {HTMLElement} 与控件绑捆的 Element 对象，参见 getBase 方法，如果忽略此参数将创建 Element 对象与控件绑捆
+         * parent    {ecui.ui.Control} 父控件对象或者父 Element 对象
+         * type      {string} 控件的默认样式，通常情况下省略此参数，使用 "ec-控件名称" 作为控件的默认样式
+         * @public
+         *
+         * @param {string} type 控件的名称
+         * @param {Object} params 初始化参数，参见 ECUI 控件
+         * @return {ecui.ui.Control} ECUI 控件
+         */
+        createControl = core.create = function (type, params) {
+            type = $create(type, params);
+            type.cache();
+            type.init();
+            return type;
+        },
+
         disposeControl,
         drag,
-        findControl,
+
+        /**
+         * 从指定的 DOM 节点开始，依次向它的父节点查找绑定的 ECUI 控件。
+         * findControl 方法，会返回从当前 DOM 节点开始，依次向它的父节点查找到的第一个绑定的 ECUI 控件。findControl 方法一般在控件创建时使用，用于查找父控件对象。
+         * @public
+         *
+         * @param {HTMLElement} el Element 对象
+         * @return {ecui.ui.Control} ECUI 控件对象，如果不能找到，返回 null
+         */
+        findControl = core.findControl = function (el) {
+            for (; el; el = getParent(el)) {
+                if (el.getControl) {
+                    return el.getControl();
+                }
+            }
+
+            return null;
+        },
+
         getAttributeName,
         getFocused,
         getKey,
         getMouseX,
         getMouseY,
+        getParameters,
         getPressed,
-        hasLoaded,
+        getScrollNarrow,
+        getStatus,
+        intercept,
         isFixedSize,
         loseFocus,
         mask,
-        paint,
+        query,
         restore,
         setFocused,
         standardEvent,
-        zoom,
+
+        /**
+         * 创建一个定时器对象，从第4个参数起都是传入 func 中的变量
+         * @public
+         *
+         * @param {Function} func 定时器需要调用的函数
+         * @param {number} delay 定时器延迟调用的毫秒数，如果为负数表示需要连续触发
+         * @param {Object} caller 调用者，在 func 被执行时，this 指针指向的对象，可以为空
+         */
+        Timer = core.Timer = function (func, delay, caller) {
+            var args = Array.prototype.slice.call(arguments, 3),
+                handle = (delay < 0 ? setInterval : setTimeout)(function () {
+                    func.apply(caller, args);
+                    if (delay >= 0) {
+                        func = caller = args = null;
+                    }
+                }, ABS(delay));
+
+            /**
+             * 中止定时调用操作
+             * @public
+             */
+            this.stop = function () {
+                (delay < 0 ? clearInterval : clearTimeout)(handle);
+                func = caller = args = null;
+            };
+        },
 
         eventNames = [
             'mousedown', 'mouseover', 'mousemove', 'mouseout', 'mouseup',
@@ -669,10 +813,9 @@ $cache$position          - 控件布局方式缓存
      * @param {HTMLElement} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    ///__gzip_original__UI_CONTROL
     var UI_CONTROL =
         ui.Control = function (el, params) {
-            var o = el.style;
-
             this._bCapture = params.capture !== false;
             this._bFocusable = params.focus !== false;
             this._bEnabled = params.enabled !== false;
@@ -682,14 +825,1183 @@ $cache$position          - 控件布局方式缓存
             this._eBase = this._eBody = el;
             this._cParent = null;
 
-            this._sWidth = o.width;
-            this._sHeight = o.height;
+            this._sWidth = el.style.width;
+            this._sHeight = el.style.height;
 
             $bind(el, this);
         },
+        UI_CONTROL_CLASS = UI_CONTROL.prototype,
 
-        UI_CONTROL_READY_LIST,
-        UI_CONTROL_CLASS = UI_CONTROL.prototype;
+        UI_CONTROL_READY_LIST;
+
+
+/*
+Label - 定义事件转发的基本操作。
+标签控件，继承自基础控件，将事件转发到指定的控件上，通常与 Radio、Checkbox 等控件联合使用，扩大点击响应区域。
+
+标签控件直接HTML初始化的例子:
+<div ecui="type:label;for:checkbox"></div>
+
+属性
+_cFor - 被转发的控件对象
+*/
+
+
+    /**
+     * 初始化标签控件。
+     * params 参数支持的属性如下：
+     * for 被转发的控件 id
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_LABEL
+    var UI_LABEL =
+        ui.Label = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            $connect(this, this.setFor, params['for']);
+        },
+        UI_LABEL_CLASS = inherits(UI_LABEL, UI_CONTROL);
+
+
+/*
+Progress - 定义进度显示的基本操作。
+进度条控件，继承自基础控件，面向用户显示一个任务执行的程度。
+
+进度条控件直接HTML初始化的例子:
+<div ecui="type:progress;rate:0.5"></div>
+
+属性
+_eText - 内容区域
+_eMask - 完成的进度比例内容区域
+*/
+
+
+    /**
+     * 初始化进度条控件。
+     * params 参数支持的属性如下：
+     * rate 初始的百分比
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_PROGRESS
+    var UI_PROGRESS =
+        ui.Progress = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            var text = el.innerHTML;
+
+            el.innerHTML = '<div class="' + params.base +
+                '-text" style="position:absolute;top:0px;left:0px"></div><div class="' + params.base +
+                '-mask" style="position:absolute;top:0px;left:0px"></div>';
+            this._eText = el.firstChild;
+            this._eMask = el.lastChild;
+
+            this.setText(params.rate || 0, text);
+        },
+        UI_PROGRESS_CLASS = inherits(UI_PROGRESS, UI_CONTROL);
+
+
+/*
+Form - 定义独立于文档布局的内容区域的基本操作。
+窗体控件，继承自基础控件，内部包含了三个部件，分别是标题栏(基础控件)、关闭按钮(基础控件)与内容区域(截面控件)。窗体控件
+仿真浏览器的多窗体效果，如果在其中包含 iframe 标签，可以在当前页面打开一个新的页面，避免了使用 window.open 在不同浏览
+器下的兼容性问题。多个窗体控件同时工作时，当前激活的窗体在最上层。窗体控件的标题栏默认可以拖拽，窗体可以设置置顶方式显
+示，在置顶模式下，只有当前窗体可以响应操作。窗体控件的 z-index 从4096开始，页面开发请不要使用大于或等于4096的 z-index 
+值。
+
+窗体控件直接HTML初始化的例子:
+<div ecui="type:form;hide:true">
+    <!-- 标题可以没有 -->
+    <label>窗体的标题</label>
+    <!-- 这里放窗体的内容 -->
+    ...
+</div>
+
+属性
+_bHide      - 初始是否自动隐藏
+_bAuto      - 标题栏是否自适应宽度
+_uTitle     - 标题栏
+_uClose     - 关闭按钮
+*/
+
+
+    /**
+     * 初始化窗体控件。
+     * params 参数支持的属性如下：
+     * hide 初始是否自动隐藏
+     * titleAuto title 是否自适应宽度，默认自适应宽度
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_FORM
+    //__gzip_original__UI_FORM_TITLE
+    //__gzip_original__UI_FORM_CLOSE
+    var UI_FORM =
+        ui.Form = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            // 生成标题控件与内容区域控件对应的Element对象
+            //__gzip_original__baseClass
+            var baseClass = params.base,
+                o = createDom(baseClass + '-main', 'position:relative;overflow:auto'),
+                titleEl = first(el);
+
+            moveElements(el, o, true);
+
+            if (titleEl && titleEl.tagName == 'LABEL') {
+                el.innerHTML = '<div class="ec-control ' + baseClass + '-close" style="position:absolute"></div>';
+                el.insertBefore(titleEl, el.firstChild);
+                titleEl.className = 'ec-control ' + titleEl.className + ' ' + baseClass + '-title';
+                titleEl.style.cssText += ';position:absolute';
+            }
+            else {
+                el.innerHTML = '<div class="ec-control ' + baseClass +
+                    '-title" style="position:absolute"></div><div class="ec-control ' +
+                    baseClass + '-close" style="position:absolute"></div>';
+                titleEl = el.firstChild;
+            }
+            titleEl.onselectstart = cancel;
+
+            el.style.overflow = 'hidden';
+            el.appendChild(o);
+
+            this._bHide = params.hide;
+            this._bAuto = params.titleAuto !== false;
+
+            // 初始化标题区域
+            this._uTitle = $fastCreate(UI_FORM_TITLE, titleEl, this);
+
+            // 初始化关闭按钮
+            this._uClose = $fastCreate(UI_FORM_CLOSE, titleEl.nextSibling, this);
+
+            // 计算当前窗体显示的层级
+            this.getOuter().style.zIndex = UI_FORM_ALL.push(this) + 4095;
+        },
+        UI_FORM_CLASS = inherits(UI_FORM, UI_CONTROL),
+
+        /**
+         * 初始化窗体控件的标题栏部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_FORM_TITLE = UI_FORM.Title = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_FORM_TITLE_CLASS = inherits(UI_FORM_TITLE, UI_CONTROL),
+
+        /**
+         * 初始化窗体控件的关闭按钮部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_FORM_CLOSE = UI_FORM.Close = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_FORM_CLOSE_CLASS = inherits(UI_FORM_CLOSE, UI_CONTROL),
+
+        UI_FORM_ALL = []; // 当前全部初始化的窗体
+
+
+/*
+Collection - 定义批量控件集的事件与基本操作。
+集合控件，继承自基础控件，将大量子控件组合而成的控件。集合控件统一管理，所有子控件的事件允许调用统一的事件方法，可用于日
+历、调色板等。
+
+网格控件直接HTML初始化的例子:
+<div ecui="type:collection"></div>
+
+属性
+_aItem  - 子控件集合
+*/
+
+
+    /**
+     * 初始化网格控件。
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_COLLECTION
+    //__gzip_original__UI_COLLECTION_ITEM
+    var UI_COLLECTION =
+        ui.Collection = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            this._aItem = [];
+            for (var i = 0, list = children(el), o; o = list[i]; ) {
+                // 设置子控件在整个网格中的序号
+                this._aItem[i++] = $fastCreate(UI_COLLECTION_ITEM, o, this);
+            }
+        },
+        UI_COLLECTION_CLASS = inherits(UI_COLLECTION, UI_CONTROL),
+
+        /**
+         * 初始化网格控件的选项部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_COLLECTION_ITEM = UI_COLLECTION.Item = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_COLLECTION_ITEM_CLASS = inherits(UI_COLLECTION_ITEM, UI_CONTROL);
+
+
+/*
+Calendar - 定义日历显示的基本操作。
+日历控件，继承自基础控件，内部包含了两个部件，分别是星期名称(网格控件)与日期(网格控件)。在日期网格控件里，第一行包含上
+个月最后几天的信息，最后一行包含下个月最前几天的信息。日历控件不包含年/月/日的快速选择与切换，如果需要实现这些功能，请
+将下拉框(选择月份)、输入框(输入年份)等组合使用建立新的控件或直接在页面上布局并调用接口。
+
+日历控件直接HTML初始化的例子:
+<div ecui="type:calendar;year:2009;month:11"></div>
+
+属性
+_nYear      - 年份
+_nMonth     - 月份(0-11)
+_uName      - 星期名称网格
+_uDate      - 日期网格
+
+子控件属性
+_nDay       - 从本月1号开始计算的天数，如果是上个月，是负数，如果是下个月，会大于当月最大的天数
+*/
+
+
+    /**
+     * 初始化日历控件。
+     * params 参数支持的属性如下：
+     * year    日历控件的年份
+     * month   日历控件的月份(1-12)
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_CALENDAR
+    //__gzip_original__UI_CALENDAR_DATE_COLLECTION
+    var UI_CALENDAR =
+        ui.Calendar = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            el.style.overflow = 'auto';
+
+            // 分别插入日期网格与星期名称网格需要使用的层，星期名称网格初始化
+            for (var i = 0, html = [], baseClass = params.base; i < 7; ) {
+                html[i] =
+                    '<div class="ec-collection-item ' + baseClass + '-name-item" style="float:left">' +
+                        ['日', '一', '二', '三', '四', '五', '六'][i++] + '</div>';
+            }
+            html[i] =
+                '</div><div class="ec-collection ' + baseClass + '-date" style="padding:0px;border:0px">';
+            for (; ++i < 50; ) {
+                html.push('<div class="ec-collection-item ' + baseClass + '-date-item" style="float:left"></div>');
+            }
+
+            el.innerHTML =
+                '<div class="ec-collection ' + baseClass + '-name" style="padding:0px;border:0px">' +
+                    html.join('') + '</div>';
+
+            this._uName = $fastCreate(UI_COLLECTION, el.firstChild, this);
+            this._uDate = $fastCreate(UI_CALENDAR_DATE_COLLECTION, el.lastChild, this);
+
+            this.setDate(params.year, params.month);
+        },
+        UI_CALENDAR_CLASS = inherits(UI_CALENDAR, UI_CONTROL),
+
+        /**
+         * 初始化日历控件的日期集合部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+         UI_CALENDAR_DATE_COLLECTION = UI_CALENDAR.Date = function (el, params) {
+            UI_COLLECTION.call(this, el, params);
+        },
+        UI_CALENDAR_DATE_COLLECTION_CLASS = inherits(UI_CALENDAR_DATE_COLLECTION, UI_COLLECTION);
+
+
+/*
+Item/Items - 定义选项操作相关的基本操作。
+选项控件，继承自基础控件，用于弹出菜单、下拉框、交换框等控件的单个选项，通常不直接初始化。选项控件必须用在使用选项组接
+口(Items)的控件中，选项控件支持移入操作的缓存，不会因为鼠标移出而改变状态，因此可以通过函数调用来改变移入移出状态，选
+控件默认屏蔽了 DOM 的文本选中操作。选项组不是控件，是一组对选项进行操作的方法的集合，提供了基本的增/删操作，以及对选项
+控件的状态控制的接口，通过将 ecui.ui.Items 对象下的方法复制到类的 prototype 属性下继承接口，最终对象要正常使用还需要在
+类构造器中调用 $initItems 方法。
+*/
+
+
+    /**
+     * 初始化选项控件。
+     * params 参数支持的属性如下：
+     * parent 父控件对象
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {string|Object} params 参数
+     */
+    //__gzip_original__UI_ITEM
+    ///__gzip_original__UI_ITEMS
+    var UI_ITEM =
+        ui.Item = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            el.onselectstart = cancel;
+            el.style.overflow = 'hidden';
+        },
+        UI_ITEM_CLASS = inherits(UI_ITEM, UI_CONTROL),
+
+        UI_ITEMS = ui.Items = {};
+
+
+
+/*
+Popup - 定义弹出菜单项的基本操作。
+弹出菜单控件，继承自基础控件，实现了选项组接口。弹出式菜单操作时不会改变当前已经激活的对象，任何点击都将导致弹出菜单消
+失，弹出菜单默认向右展开子菜单，如果右部已经到达浏览器最边缘，将改为向左显示。
+
+弹出菜单控件直接HTML初始化的例子:
+<div ecui="type:popup;name:test">
+    <!-- 这里放选项内容 -->
+    <li>菜单项</li>
+    ...
+    <!-- 包含子菜单项的菜单项 -->
+    <li>
+        <label>菜单项</label>
+        <!-- 这里放子菜单项 -->
+        <li>子菜单项</li>
+        ...
+    </li>
+    ...
+</div>
+
+属性
+_nOptionSize - 弹出菜单选项的显示数量，不设置将全部显示
+_cSuperior   - 上一级被激活的弹出菜单控件
+_cInferior   - 下一级被激活的弹出菜单控件
+_uPrev       - 向上滚动按钮
+_uNext       - 向下滚动按钮
+
+子菜单项属性
+_cPopup      - 是否包含下级弹出菜单
+*/
+
+
+    /**
+     * 初始化弹出菜单控件。
+     * params 参数支持的属性如下：
+     * optionSize 弹出菜单选项的显示数量，不设置将全部显示
+     * @public
+     *
+     * @param {HTMLElement} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_POPUP
+    //__gzip_original__UI_POPUP_BUTTON
+    //__gzip_original__UI_POPUP_ITEM
+    var UI_POPUP =
+        ui.Popup = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            //__gzip_original__baseClass
+            //__gzip_original__buttonParams
+            var baseClass = params.base,
+                buttonParams = {focus: false};
+
+            removeDom(el);
+            el.style.cssText += ';position:absolute;overflow:hidden';
+            if (this._nOptionSize = params.optionSize) {
+                var o = createDom(baseClass + '-main', 'position:absolute;top:0px;left:0px');
+
+                moveElements(el, o);
+
+                el.innerHTML =
+                    '<div class="ec-control ' + baseClass +
+                        ('-prev" onselectstart="return false" style="position:absolute;top:0px;left:0px"></div>' +
+                        '<div class="ec-control ') + baseClass +
+                        '-next" onselectstart="return false" style="position:absolute"></div>';
+
+                this.$setBody(el.insertBefore(o, el = el.firstChild));
+
+                this._uPrev = $fastCreate(UI_POPUP_BUTTON, el, this, buttonParams);
+                this._uNext = $fastCreate(UI_POPUP_BUTTON, el.nextSibling, this, buttonParams);
+            }
+
+            // 初始化菜单项
+            this.$initItems();
+        },
+        UI_POPUP_CLASS = inherits(UI_POPUP, UI_CONTROL),
+
+        /**
+         * 初始化弹出菜单控件的按钮部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_POPUP_BUTTON = UI_POPUP.Button = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_POPUP_BUTTON_CLASS = inherits(UI_POPUP_BUTTON, UI_CONTROL),
+
+        /**
+         * 初始化弹出菜单控件的选项部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_POPUP_ITEM = UI_POPUP.Item = function (el, params) {
+            var o = first(el),
+                childParams = {};
+
+            if (o && o.tagName == 'LABEL') {
+                // 需要生成子菜单
+                insertBefore(o, el);
+                o.style.display = 'block';
+                o.className = el.className;
+                el.className = 'ec-popup ' + findControl(getParent(el)).getBaseClass();
+                copy(childParams, params);
+                this._cPopup = $fastCreate(UI_POPUP, el, this, childParams);
+                el = o;
+            }
+
+            UI_ITEM.call(this, el, params);
+
+            UI_POPUP_ITEM_FLUSH(this);
+        },
+        UI_POPUP_ITEM_CLASS = inherits(UI_POPUP_ITEM, UI_ITEM),
+
+        UI_POPUP_CHAIN_FIRST,
+        UI_POPUP_CHAIN_LAST;
+
+
+
+/*
+Tab - 定义分页选项卡的操作。
+选项卡控件，继承自基础控件，实现了选项组接口。每一个选项卡都包含一个头部区域与内容区域，选项卡控件存在互斥性，只有唯一
+的一个选项卡能被选中显卡内容区域。
+
+直接初始化选项卡控件的例子
+<div ecui="type:tab;selected:1">
+    <!-- 包含内容的选项卡 -->
+    <div>
+        <label>标题1</label>
+        <!-- 这里是内容 -->
+        ...
+    </div>
+    <!-- 仅有标题的选项卡，以下selected定义与控件定义是一致的，可以忽略其中之一 -->
+    <label ecui="selected:true">标题2</label>
+</div>
+
+属性
+_bButton         - 向前向后滚动按钮是否显示
+_oSelected       - 初始化时临时保存当前被选中的选项卡
+_aPosition       - 选项卡位置缓存
+_cSelected       - 当前选中的选项卡
+_uPrev           - 向前滚动按钮
+_uNext           - 向后滚动按钮
+
+Item属性
+_sContentDisplay - 内容 DOM 元素的布局属性
+_eContent        - 内容 DOM 元素
+*/
+
+
+    /**
+     * 初始化选项卡控件。
+     * params 参数支持的特定属性如下：
+     * selected 选中的选项序号，默认为0
+     * @protected
+     *
+     * @param {HTMLElement} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    //__gzip_original__UI_TAB
+    //__gzip_original__UI_TAB_BUTTON
+    //__gzip_original__UI_TAB_ITEM
+    var UI_TAB =
+        ui.Tab = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            //__gzip_original__baseClass
+            //__gzip_original__typeClass
+            var typeClass = params.type,
+                baseClass = params.base,
+                o = createDom(typeClass + '-title ' + baseClass + '-title', 'position:relative;overflow:hidden');
+
+            this._oSelected = params.selected || 0;
+
+            // 生成选项卡头的的DOM结构
+            o.innerHTML = '<div class="' + typeClass + '-title-prev ' + baseClass +
+                ('-title-prev" onselectstart="return false" style="position:absolute;left:0px;display:none"></div>' +
+                    '<div class="') +
+                typeClass + '-title-next ' + baseClass +
+                ('-title-next" onselectstart="return false" style="position:absolute;display:none"></div>' +
+                    '<div class="') +
+                baseClass + '-title-main" style="position:absolute;white-space:nowrap"></div>';
+
+            moveElements(el, params = o.lastChild);
+            el.appendChild(o);
+            this.$setBody(params);
+
+            this.$initItems();
+
+            // 滚动按钮
+            this._uNext = $fastCreate(UI_TAB_BUTTON, params = params.previousSibling, this);
+            this._uPrev = $fastCreate(UI_TAB_BUTTON, params.previousSibling, this);
+        },
+        UI_TAB_CLASS = inherits(UI_TAB, UI_CONTROL),
+
+        /**
+         * 初始化选项卡控件的按钮部件。
+         * @protected
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_TAB_BUTTON = UI_TAB.Button = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_TAB_BUTTON_CLASS = inherits(UI_TAB_BUTTON, UI_CONTROL),
+
+        /**
+         * 初始化选项卡控件的选项部件。
+         * params 参数支持的特定属性如下：
+         * selected 当前项是否被选中
+         * @protected
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_TAB_ITEM = UI_TAB.Item = function (el, params) {
+            //__gzip_original__parent
+            var parent = params.parent,
+                contentEl;
+
+            if (el.tagName != 'LABEL') {
+                this.setContent(contentEl = el);
+                // 这里要检查父节点是否存在，如果不存在表示直接生成的对象
+                insertBefore(el = first(el), contentEl);
+            }
+
+            setStyle(el, 'display', 'inline-block');
+
+            if (parent && params.selected) {
+                parent._oSelected = this;
+            }
+
+            UI_ITEM.call(this, el, params);
+        },
+        UI_TAB_ITEM_CLASS = inherits(UI_TAB_ITEM, UI_ITEM);
+
+
+/*
+Edit - 定义输入数据的基本操作。
+输入框控件，继承自基础控件，实现了对原生 InputElement 的功能扩展，包括光标的控制、输入事件的实时响应(每次改变均触发事
+件)，以及 IE 下不能动态改变输入框的表单项名称的模拟处理。输入框控件默认使用文本输入框，对于需要使用加密框的场景，可以
+使用 &lt;input type="password" ecui="type:edit"&gt; 的方式初始化。
+
+输入框控件直接HTML初始化的例子:
+<input ecui="type:edit" name="test" value="test" />
+或:
+<div ecui="type:edit;name:test;value:test">
+    <!-- 如果ec中不指定name,value，也可以在input中指定 -->
+    <input name="test" value="test" />
+</div>
+
+属性
+_bHidden - 输入框是否为hidden类型
+_nLock   - 锁定的次数
+_eInput  - INPUT对象
+*/
+
+
+    /**
+     * 初始化输入框控件。
+     * params 参数支持的属性如下：
+     * name  输入框的名称
+     * value 输入框的默认值
+     * input 输入框的类型，默认为 text
+     * hidden 输入框是否隐藏，隐藏状态下将不会绑定键盘事件
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_EDIT =
+        ui.Edit = function (el, params) {
+            var input = el;
+
+            if (el.tagName == 'INPUT') {
+                // 检查是否存在Input，如果没有生成一个Input
+                el = createDom(input.className, input.style.cssText + ';overflow:hidden');
+
+                input.className = '';
+                input.style.cssText = 'border:0px';
+                insertBefore(el, input).appendChild(input);
+            }
+            else {
+                el.style.overflow = 'hidden';
+                if (input = el.getElementsByTagName('input')[0]) {
+                    input.style.border = '0px';
+                }
+                else {
+                    input = setInput(null, params.name, params.input);
+                    input.style.border = '0px';
+                    input.value = params.value || '';
+                    el.appendChild(input);
+                }
+            }
+            if (this._bHidden = params.hidden) {
+                input.style.display = 'none';
+            }
+            setStyle(el, 'display', 'inline-block');
+
+            this._nLock = 0;
+            this._eInput = input;
+            UI_EDIT_BIND_EVENT(this);
+
+            UI_CONTROL.call(this, el, params);
+        },
+
+        UI_EDIT_CLASS = inherits(UI_EDIT, UI_CONTROL),
+        UI_EDIT_INPUT = {},
+
+        /**
+         * 输入框失去焦点事件处理函数。
+         * @private
+         *
+         * @param {Event} event 事件对象
+         */
+        UI_EDIT_INPUT_BLUR = UI_EDIT_INPUT.blur = function (event) {
+            event = findControl(standardEvent(event).target);
+            // 设置默认失去焦点事件，阻止在blur事件中再次回调
+            event.$blur = UI_CONTROL_CLASS.$blur;
+            event.isEnabled() && loseFocus(event);
+            delete event.$blur;
+        },
+
+        /**
+         * 输入框获得焦点事件处理函数。
+         * @private
+         *
+         * @param {Event} event 事件对象
+         */
+        UI_EDIT_INPUT_FOCUS = UI_EDIT_INPUT.focus = function (event) {
+            event = findControl(standardEvent(event).target);
+            // 设置默认获得焦点事件，阻止在focus事件中再次回调
+            event.$focus = UI_CONTROL_CLASS.$focus;
+            // 如果控件处于不可操作状态，不允许获得焦点
+            event.isEnabled() ? setFocused(event) : event._eInput.blur();
+            delete event.$focus;
+        };
+
+
+/*
+FormatEdit - 定义格式化输入数据的基本操作。
+格式化输入框控件，继承自输入框控件，对输入的数据内容格式进行限制。
+
+输入框控件直接HTML初始化的例子:
+<input ecui="type:format-edit" name="test" />
+或:
+<div ecui="type:format-edit;name:test;value:test">
+    <!-- 如果ec中不指定name,value，也可以在input中指定 -->
+    <input name="test" value="test" />
+</div>
+
+属性
+_bSymbol    - 是否自动进行全半角转换
+_bTrim      - 字符串是否需要过滤两端空白
+_nMinLength - 允许提交的最小长度
+_nMaxLength - 允许提交的最大长度
+_nMinValue  - 允许提交的最小值
+_nMaxValue  - 允许提交的最大值
+_sEncoding  - 字节码编码集
+_sLeft      - 每次操作左边的字符串
+_sSelection - 每次操作被替换的字符串
+_sRight     - 每次操作右边的字符串
+_sInput     - 每次操作输入的字符串
+_oKeyMask   - 允许提交的字符限制正则表达式
+_oFormat    - 允许提交的格式正则表达式
+*/
+
+
+    /**
+     * 初始化格式化输入框控件。
+     * params 参数支持的属性如下：
+     * symbol 是否进行全角转半角操作，默认为 true
+     * trim 是否进行前后空格 trim，默认为 true (注：粘贴内容也会进行前后空格过滤)
+     * encoding 字符编码，允许 utf8 与 gb2312，如果不设置表示基于字符验证长度
+     * keyMask 允许的字符集，自动添加正则表达式的[]，需要注意需要转义的字符
+     * minLength 最小长度限制
+     * maxLength 最大长度限制
+     * minValue 数字允许的最小值
+     * maxValue 数字允许的最大值
+     * format 字行串的正则表达式，自动添加正则表达式的^$
+     *
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_FORMAT_EDIT =
+        ui.FormatEdit = function (el, params) {
+            // 为FormatEdit注册方法
+            UI_EDIT.call(this, el, params);
+
+            this._bSymbol = params.symbol !== false;
+            this._bTrim = params.trim !== false;
+            this._sEncoding = params.encoding;
+            this._oKeyMask = params.keyMask ? new REGEXP('[' + params.keyMask + ']', 'g') : null;
+            this._nMinLength = params.minLength;
+            this._nMaxLength = params.maxLength;
+            this._nMinValue = params.minValue;
+            this._nMaxValue = params.maxValue;
+            this._oFormat = params.format ? new REGEXP('^' + params.format + '$') : null;
+        },
+
+        UI_FORMAT_EDIT_CLASS = inherits(UI_FORMAT_EDIT, UI_EDIT);
+
+
+/*
+Checkbox - 定义单个设置项选择状态的基本操作。
+复选框控件，继承自输入框控件，实现了对原生 InputElement 复选框的功能扩展，支持复选框之间的主从关系定义。当一个复选框的
+“从复选框”选中一部分时，“主复选框”将处于半选状态，这种状态逻辑意义上等同于未选择状态，但显示效果不同，复选框的主从关系
+可以有多级。
+
+复选框控件直接HTML初始化的例子:
+<input ecui="type:checkbox;checked:true" type="checkbox" name="test" value="test" checked="checked" />
+也可以使用其它标签初始化:
+<div ecui="type:checkbox;checked:true;name:test">
+    <!-- 如果ec中不指定name，也可以在input中指定 -->
+    <input name="test" />
+</div>
+
+属性
+_nStatus   - 复选框当前的状态，0--全选，1--未选，2--半选
+_cSuperior - 复选框的上级管理者
+_aInferior - 所有的下级复选框
+*/
+
+
+    /**
+     * 初始化复选框控件。
+     * params 参数支持的属性如下：
+     * checked  控件是否默认选中
+     * superior 管理复选框的 id
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_CHECKBOX =
+        ui.Checkbox = function (el, params) {
+            params.hidden = true;
+            params.input = 'checkbox';
+
+            UI_EDIT.call(this, el, params);
+            el = this.getInput();
+            if (params.checked) {
+                el.checked = true;
+            }
+
+            this._aInferior = [];
+
+            $connect(this, this.setSuperior, params.superior);
+        },
+
+        UI_CHECKBOX_CLASS = inherits(UI_CHECKBOX, UI_EDIT);
+
+
+/*
+Radio - 定义一组选项中选择唯一选项的基本操作。
+单选框控件，继承自输入框控件，实现了对原生 InputElement 单选框的功能扩展，支持对选中的图案的选择。单选框控件需要分组后
+使用，在表单项提交中，一组单选框控件中的第一个单选框保存提交用的表单内容。
+
+单选框控件直接HTML初始化的例子:
+<input ecui="type:radio" type="radio" name="test" checked="checked" />
+也可以使用其它标签初始化:
+<div ecui="type:radio;name:test;checked:true"></div>
+*/
+
+
+    /**
+     * 初始化单选框控件。
+     * params 参数支持的属性如下：
+     * checked 控件是否默认选中
+     * name    控件所属组的名称
+     * value   控件的值
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_RADIO =
+        ui.Radio = function (el, params) {
+            params.hidden = true;
+            params.input = 'radio';
+
+            UI_EDIT.call(this, el, params);
+            el = this.getInput();
+            if (params.checked) {
+                el.checked = true;
+            }
+        },
+
+        UI_RADIO_CLASS = inherits(UI_RADIO, UI_EDIT);
+
+
+/*
+Tree - 定义树形结构的基本操作。
+树控件，继承自基础控件，不可以被改变大小。树控件可以包含普通子控件或者子树控件，普通子控件显示在它的文本区域，如果是子
+树控件，将在专门的子树控件区域显示。子树控件区域可以被收缩隐藏或是展开显示，默认情况下点击树控件就改变子树控件区域的状
+态。
+
+树控件直接HTML初始化的例子:
+<div ecui="type:tree;fold:true">
+    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
+    <label>节点的文本</label>
+    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
+    <li>子控件文本</li>
+    ...
+</div>
+
+属性
+_sItemsDisplay - 隐藏时_eItems的状态，在显示时恢复
+_eItems        - 子控件区域Element对象
+_aTree         - 子控件集合
+*/
+
+
+    /**
+     * 初始化树控件。
+     * params 参数支持的属性如下：
+     * fold 子树是否收缩，默认为展开
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_TREE =
+        ui.Tree = function (el, params) {
+            var tmpEl = first(el),
+                childTrees = this._aTree = [];
+
+            params = copy(copy({}, params), getParameters(el));
+
+            UI_CONTROL.call(this, el, params);
+
+            // 检查是否存在label标签，如果是需要自动初始化树的子结点
+            if (tmpEl && tmpEl.tagName == 'LABEL') {
+
+                // 初始化子控件
+                for (var i = 0, childItems = createDom(), elements = children(el), o; o = elements[i + 1]; ) {
+                    childItems.appendChild(o);
+                    childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, params);
+                }
+
+                moveElements(tmpEl, el);
+                removeDom(tmpEl);
+                UI_TREE_SETITEMS(this, childItems);
+                insertAfter(childItems, el);
+            }
+
+            // 改变默认的展开状态
+            if (el.style.display == 'none' || params.fold) {
+                el.style.display = '';
+                this.setFold();
+            }
+            else {
+                UI_TREE_FLUSH(this);
+            }
+        },
+
+        UI_TREE_CLASS = inherits(UI_TREE, UI_CONTROL);
+
+
+
+/*
+RadioTree - 定义单选框的树形结构的基本操作。
+包含单选框的树控件，继承自树控件，每次点击可以选择一个树节点。
+
+树控件直接HTML初始化的例子:
+<div ecui="type:radio-tree;fold:true;name:part">
+    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
+    <label>节点的文本</label>
+    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
+    <li>子控件文本</li>
+    ...
+</div>
+
+属性
+_sName     - 节点项的名称
+_sValue    - 节点项的值
+_eInput    - 树的根节点拥有，保存树对应的提交 INPUT
+_cSelected - 树的根节点拥有，保存当前选中的项
+*/
+
+
+    /**
+     * 初始化单选树控件。
+     * params 参数支持的属性如下：
+     * name 单选框的表单项的默认名称
+     * value 单选框的表单项的值
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_RADIO_TREE = 
+        ui.RadioTree = function (el, params) {
+            params = copy(copy({}, params), getParameters(el));
+            this._sName = params.name;
+            this._sValue = el.getAttribute('value') || params.value;
+            UI_TREE.call(this, el, params);
+        },
+
+    UI_RADIO_TREE_CLASS = inherits(UI_RADIO_TREE, UI_TREE);
+
+
+
+/*
+CheckTree - 定义包含复选框的树形结构的基本操作。
+包含复选框的树控件，继承自树控件。每一个选项包含一个复选框进行选择，除非特别的指定，否则子节点的复选框与父节点的复选框
+自动联动。
+
+树控件直接HTML初始化的例子:
+<div ecui="type:check-tree;fold:true;id:parent;name:part">
+    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
+    <label>节点的文本</label>
+    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
+    <li ecui="superior:other">子控件文本</li>
+    <li>子控件文本(复选框默认与父控件复选框联动)</li>
+    ...
+</div>
+
+属性
+_oSuperior - 关联的父复选框控件ID，默认与父控件复选框关联
+_uCheckbox - 复选框控件
+*/
+
+
+    /**
+     * 初始化复选树控件。
+     * params 参数支持的属性如下：
+     * name 复选框的表单项的默认名称
+     * value 复选框的表单项的值
+     * superior 父复选框的标识，如果为true表示自动使用上级树节点作为父复选框，其它等价false的值表示不联动
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_CHECK_TREE =
+        ui.CheckTree = function (el, params) {
+            params = copy(copy({}, params), getParameters(el));
+
+            UI_TREE.call(this, el, params);
+
+            this._oSuperior = params.superior;
+
+            var i = 0,
+                checkbox = this._uCheckbox = $fastCreate(
+                    UI_CHECKBOX,
+                    el.insertBefore(createDom('ec-checkbox ' + this.getBaseClass() + '-checkbox'), el.firstChild),
+                    this,
+                    params
+                ),
+                childTrees = this.getChildTrees();
+
+            for (; el = childTrees[i++]; ) {
+                if (params = el._oSuperior) {
+                    el = el._uCheckbox;
+                    params === true
+                        ? el.setSuperior(checkbox)
+                        : $connect(el, el.setSuperior, params);
+                }
+            }
+        },
+
+        UI_CHECK_TREE_CLASS = inherits(UI_CHECK_TREE, UI_TREE);
+
+
+/*
+Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
+
+属性
+_nRed        - 红色值(0-255)
+_nGreen      - 绿色值(0-255)
+_nBlue       - 蓝色值(0-255)
+_nHue        - 色调(0-1)
+_nSaturation - 饱和度(0-1)
+_nLight      - 亮度(0-1)
+*/
+
+
+    /**
+     * 初始化色彩对象。
+     * @public
+     *
+     * @param {string} color 6 字符色彩值(如FFFFFF)，如果为空将使用000000
+     */
+    var Color = core.Color = function (rgb) {
+            if (rgb) {
+                this.setRGB(
+                    PARSEINT(rgb.substring(0, 2), 16),
+                    PARSEINT(rgb.substring(2, 4), 16),
+                    PARSEINT(rgb.substring(4, 6), 16)
+                );
+            }
+            else {
+                this.setRGB(0, 0, 0);
+            }
+        },
+
+        COLOR_CLASS = Color.prototype;
+
+/*
+HTMLPalette - 定义拾色器的基本操作
+拾色器控件，继承自基础控件，内部包含了多个部件，分别是色彩选择区(基础控件)、色彩选择区箭头(基础控件)、亮度条选择区(基
+础控件)、亮度条选择区箭头(基础控件)、基本色彩选择区(基础控件组)、色彩显示区(基础控件)、输入区域(输入框控件组)与确认按
+钮(基础控件)。
+
+拾色器控件直接HTML初始化的例子:
+<div ecui="type:palette">
+</div>
+
+属性
+_uMain            - 左部色彩选择区
+_uMain._uIcon     - 左部色彩选择区箭头
+_uLightbar        - 中部亮度条选择区
+_uLightbar._uIcon - 中部亮度条选择区箭头
+_uColor           - 右部色彩显示区
+_uConfirm         - 确认按钮
+_aValue           - 右部输入区域
+*/
+
+
+    /**
+     * 初始化拾色器控件。
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_PALETTE =
+        ui.Palette = function (el, params) {
+            var i = 1,
+                inlineBlock = ieVersion < 8 ? 'display:inline;zoom:1' : 'display:inline-block',
+                __gzip_direct__baseClass = params.base,
+                __gzip_direct__params = {capture: false},
+                list = [
+                    '<div class="' + __gzip_direct__baseClass + '-left" style="float:left"><div class="ec-control '
+                        + __gzip_direct__baseClass
+                        + '-image" style="position:relative;overflow:hidden"><div class="ec-control '
+                        + __gzip_direct__baseClass
+                        + '-cross" style="position:absolute"><div></div></div></div></div><div class="'
+                        + __gzip_direct__baseClass + '-mid" style="float:left"><div class="ec-control '
+                        + __gzip_direct__baseClass + '-lightbar" style="position:relative">'
+                ];
+
+            for (; i < 257; ) {
+                list[i++] = '<div style="height:1px;overflow:hidden"></div>';
+            }
+
+            list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass
+                + '-arrow" style="position:absolute"><div></div></div></div></div><div class="'
+                + __gzip_direct__baseClass
+                + '-right" style="float:left"><p>基本颜色</p><div class="'
+                + __gzip_direct__baseClass + '-basic" style="white-space:normal">';
+
+            for (; i < 306; ) {
+                list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass + '-area" style="' + inlineBlock
+                    + ';background:#' + UI_PALETTE_BASIC_COLOR[i - 259] + '"></div>';
+            }
+
+            list[i] = '</div><table cellspacing="0" cellpadding="0" border="0"><tr><td class="'
+                + __gzip_direct__baseClass + '-color" rowspan="3"><div class="ec-control '
+                + __gzip_direct__baseClass + '-show"></div><input class="ec-edit '
+                + __gzip_direct__baseClass + '-value"></td><th>色调:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td><th>红:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>饱和度:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td><th>绿:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>亮度:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td><th>蓝:</th><td><input class="ec-edit '
+                + __gzip_direct__baseClass + '-edit"></td></tr></table><div class="ec-control '
+                + __gzip_direct__baseClass + '-button">确定</div><div class="ec-control '
+                + __gzip_direct__baseClass + '-button">取消</div></div>';
+
+            el.innerHTML = list.join('');
+
+            UI_CONTROL.call(this, el, params);
+
+            // 初始化色彩选择区
+            el = el.firstChild;
+            params = this._uMain = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
+
+            // 初始化亮度条选择区
+            el = el.nextSibling;
+            params = this._uLightbar = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
+
+            // 初始化基本颜色区
+            el = children(el.nextSibling);
+            (this._uBasic = $fastCreate(UI_COLLECTION, el[1], this)).$click = UI_PALETTE_BUTTON_CLASS.$click;
+
+            // 初始化颜色输入框区域
+            list = el[2].getElementsByTagName('td');
+            this._uColor = $fastCreate(UI_CONTROL, list[0].firstChild, this);
+
+            this._aValue = [$fastCreate(UI_PALETTE_EDIT, list[0].lastChild, this)];
+            for (i = 1; i < 7; ) {
+                this._aValue[i] = $fastCreate(
+                    UI_PALETTE_EDIT,
+                    list[i++].lastChild,
+                    this,
+                    {keyMask: '0-9', maxValue: 255, maxLength: 3}
+                );
+            }
+
+            this._uConfirm = $fastCreate(UI_PALETTE_BUTTON, el[3], this);
+            this._uCancel = $fastCreate(UI_PALETTE_BUTTON, el[4], this);
+        },
+
+        UI_PALETTE_CLASS = inherits(UI_PALETTE, UI_CONTROL),
+        UI_PALETTE_AREA = UI_PALETTE.Area = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_PALETTE_AREA_CLASS = inherits(UI_PALETTE_AREA, UI_CONTROL),
+        UI_PALETTE_BUTTON = UI_PALETTE.Button = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_PALETTE_BUTTON_CLASS = inherits(UI_PALETTE_BUTTON, UI_CONTROL),
+        UI_PALETTE_EDIT = UI_PALETTE.Edit = function (el, params) {
+            UI_FORMAT_EDIT.call(this, el, params);
+        },
+        UI_PALETTE_EDIT_CLASS = inherits(UI_PALETTE_EDIT, UI_FORMAT_EDIT),
+        UI_PALETTE_BASIC_COLOR = [
+            'FF8080', 'FFFF80', '80FF80', '00FF80', '80FFFF', '0080F0', 'FF80C0', 'FF80FF',
+            'FF0000', 'FFFF00', '80FF00', '00FF40', '00FFFF', '0080C0', '8080C0', 'FF00FF',
+            '804040', 'FF8040', '00FF00', '008080', '004080', '8080FF', '800040', 'FF0080',
+            '800000', 'FF8000', '008000', '008040', '0000FF', '0000A0', '800080', '8000FF',
+            '400000', '804000', '004000', '004040', '000080', '000040', '400040', '400080',
+            '000000', '808000', '808040', '808080', '408080', 'C0C0C0', '400040', 'FFFFFF'
+        ];
 
 
 /*
@@ -810,6 +2122,7 @@ Panel - 定义在一个小区域内截取显示大区域内容的基本操作。
 属性
 _bAbsolute                - 是否包含绝对定位的Element
 _nWheelDelta              - 鼠标滚轮滚动一次的差值
+_eBrowser                 - 用于浏览器原生的滚动条实现的Element
 _uVScroll                 - 垂直滚动条控件
 _uHScroll                 - 水平滚动条控件
 _uCorner                  - 夹角控件
@@ -821,10 +2134,78 @@ $cache$mainHeight         - layout区域的实际高度
 
 
     /**
+     * 初始化浏览器原生滚动条控件。
+     * @protected
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_BROWSER_SCROLL = function (el, params) {
+            params.capture = false;
+            UI_CONTROL.call(this, el, params);
+            el.lastChild || el.appendChild(createDom(null, 'padding:0px;border:0px'));
+            detachEvent(el, 'scroll', this.scroll);
+            attachEvent(el, 'scroll', this.scroll);
+
+            this._sTotal = params.total;
+            this._sOverflow = params.overflow;
+            this._sScrollValue = params.scrollValue;
+            this._sScrollTotal = params.scrollTotal;
+        },
+        UI_BROWSER_SCROLL_CLASS = inherits(UI_BROWSER_SCROLL, UI_CONTROL);
+
+
+    /**
+     * 初始化浏览器原生垂直滚动条控件。
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_BROWSER_VSCROLL = function (el, params) {
+            params.total = 'height';
+            params.overflow = 'overflowY';
+            params.scrollValue = 'scrollTop';
+            params.scrollTotal = 'scrollHeight';
+            UI_BROWSER_SCROLL.call(this, el, params);
+        },
+        UI_BROWSER_VSCROLL_CLASS = inherits(UI_BROWSER_VSCROLL, UI_BROWSER_SCROLL);
+
+
+    /**
+     * 初始化浏览器原生水平滚动条控件。
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_BROWSER_HSCROLL = function (el, params) {
+            params.total = 'width';
+            params.overflow = 'overflowX';
+            params.scrollValue = 'scrollLeft';
+            params.scrollTotal = 'scrollWidth';
+            UI_BROWSER_SCROLL.call(this, el, params);
+        },
+        UI_BROWSER_HSCROLL_CLASS = inherits(UI_BROWSER_HSCROLL, UI_BROWSER_SCROLL);
+
+
+    /**
+     * 初始化夹角控件。
+     * @public
+     *
+     * @param {Element} el 关联的 Element 对象
+     * @param {Object} params 初始化参数
+     */
+    var UI_BROWSER_CORNER = blank,
+        UI_BROWSER_CORNER_CLASS = inherits(UI_BROWSER_CORNER, UI_CONTROL);
+
+
+    /**
      * 初始化层控件，层控件支持自动展现滚动条控件，允许指定需要自动展现的垂直或水平滚动条。
      * params 参数支持的属性如下：
      * vScroll    是否自动展现垂直滚动条，默认展现
      * hScroll    是否自动展现水平滚动条，默认展现
+     * browser    是否使用浏览器原生的滚动条，默认使用模拟的滚动条
      * absolute   是否包含绝对定位的Element，默认不包含
      * wheelDelta 鼠标滚轮的步长，即滚动一次移动的最小步长单位，默认总步长(差值*步长)为不大于20像素的最大值
      * @public
@@ -837,27 +2218,34 @@ $cache$mainHeight         - layout区域的实际高度
             var i = 0,
                 j = 0,
                 __gzip_direct__baseClass = params.base,
-                vscroll = params.vScroll !== false
-                    ? '<div class="ec-vscroll ' + __gzip_direct__baseClass
-                        + '-vscroll" style="position:absolute"></div>'
-                    : '',
-                hscroll = params.hScroll !== false
-                    ? '<div class="ec-hscroll ' + __gzip_direct__baseClass
-                        + '-hscroll" style="position:absolute"></div>'
-                    : '',
-                corner = vscroll && hscroll
-                    ? '<div class="' + params.type + '-corner ' + __gzip_direct__baseClass
-                        + '-corner" style="position:absolute"></div>'
-                    : '',
+                noBrowser = !params.browser,
+                vscroll = params.vScroll !== false,
+                hscroll = params.hScroll !== false,
                 list = [
-                    [vscroll, '_uVScroll', UI_VSCROLL],
-                    [hscroll, '_uHScroll', UI_HSCROLL],
-                    [corner, '_uCorner', UI_CONTROL]
+                    [vscroll, '_uVScroll', noBrowser ? UI_VSCROLL : UI_BROWSER_VSCROLL],
+                    [hscroll, '_uHScroll', noBrowser ? UI_HSCROLL : UI_BROWSER_HSCROLL],
+                    [vscroll && hscroll, '_uCorner', noBrowser ? UI_CONTROL : UI_BROWSER_CORNER]
                 ],
                 o = createDom(el.className, el.style.cssText + ';overflow:hidden');
 
-            o.innerHTML = vscroll + hscroll + corner + '<div class="' + __gzip_direct__baseClass
-                + '-layout" style="position:relative;overflow:hidden"></div>';
+            o.innerHTML =
+                (noBrowser && vscroll
+                    ? '<div class="ec-vscroll ' + __gzip_direct__baseClass
+                        + '-vscroll" style="position:absolute"></div>'
+                    : ''
+                )
+                + (noBrowser && hscroll
+                    ? '<div class="ec-hscroll ' + __gzip_direct__baseClass
+                        + '-hscroll" style="position:absolute"></div>'
+                    : ''
+                )
+                + (noBrowser && vscroll && hscroll
+                    ? '<div class="' + params.type + '-corner ' + __gzip_direct__baseClass
+                        + '-corner" style="position:absolute"></div>'
+                    : '<div style="position:absolute;top:0px;left:0px;overflow:auto;padding:0px;border:0px"><div style="padding:0px;border:0px"></div></div>'
+                )
+                + '<div class="' + __gzip_direct__baseClass
+                    + '-layout" style="position:relative;overflow:hidden"></div>';
             el.style.cssText = 'position:absolute;top:0px;left:0px' + (hscroll ? ';white-space:nowrap' : '');
             el.className = __gzip_direct__baseClass + '-main';
             insertBefore(o, el).lastChild.appendChild(el);
@@ -865,11 +2253,16 @@ $cache$mainHeight         - layout区域的实际高度
             UI_CONTROL.call(this, o, params);
             this.$setBody(el);
 
-            this._bAbsolute = !!params.absolute;
+            this._bAbsolute = params.absolute;
             this._nWheelDelta = params.wheelDelta;
 
             // 以下使用 el 表示 elements
-            el = children(o);
+            if (noBrowser) {
+                el = children(o);
+            }
+            else {
+                el = [el = this._eBrowser = o.firstChild, el, el];
+            }
 
             // 生成中心区域的Element层容器，滚动是通过改变容器的left与top属性实现
             for (; o = list[i++]; ) {
@@ -882,324 +2275,53 @@ $cache$mainHeight         - layout区域的实际高度
         UI_PANEL_CLASS = inherits(UI_PANEL, UI_CONTROL);
 
 
-/*
-Edit - 定义输入数据的基本操作。
-输入框控件，继承自基础控件，实现了对原生 InputElement 的功能扩展，包括光标的控制、输入事件的实时响应(每次改变均触发事
-件)，以及 IE 下不能动态改变输入框的表单项名称的模拟处理。输入框控件默认使用文本输入框，对于需要使用加密框的场景，可以
-使用 &lt;input type="password" ecui="type:edit"&gt; 的方式初始化。
+﻿/*
+Listbox - 定义了多项选择的基本操作。
+多选框控件，继承自截面控件，实现了选项组接口，扩展了多选的 SelectElement 的功能，允许使用鼠标拖拽进行多项选择，多个交
+换框，可以将选中的选项在互相之间移动。多选框控件也可以单独的使用，选中的选项在表单提交时将被提交。
 
-输入框控件直接HTML初始化的例子:
-<input ecui="type:edit" name="test" value="test" />
-或:
-<div ecui="type:edit;name:test;value:test">
-    <!-- 如果ec中不指定name,value，也可以在input中指定 -->
-    <input name="test" value="test" />
+多选框控件直接HTML初始化的例子:
+<div ecui="type:listbox;name:test">
+    <!-- 这里放选项内容 -->
+    <li>选项</li>
+    ...
 </div>
 
 属性
-_bHidden - 输入框是否为hidden类型
-_nLock   - 锁定的次数
-_eInput  - INPUT对象
+_sName  - 多选框内所有input的名称
+
+选项属性
+_eInput - 选项对应的input，form提交时使用
 */
 
 
     /**
-     * 初始化输入框控件。
-     * params 参数支持的属性如下：
-     * name  输入框的名称
-     * value 输入框的默认值
-     * input 输入框的类型，默认为 text
-     * hidden 输入框是否隐藏，隐藏状态下将不会绑定键盘事件
+     * 初始化多选框控件。
      * @public
      *
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    var UI_EDIT =
-        ui.Edit = function (el, params) {
-            var input = el;
+    var UI_LISTBOX =
+        ui.Listbox = function (el, params) {
+            params.hScroll = false;
+            params.vScroll = true;
+            this._sName = params.name || '';
 
-            if (el.tagName == 'INPUT') {
-                // 检查是否存在Input，如果没有生成一个Input
-                el = createDom(input.className, input.style.cssText + ';overflow:hidden');
+            UI_PANEL.call(this, el, params);
 
-                input.className = '';
-                input.style.cssText = 'border:0px';
-                insertBefore(el, input).appendChild(input);
-            }
-            else {
-                el.style.overflow = 'hidden';
-                if (input = el.getElementsByTagName('input')[0]) {
-                    input.style.border = '0px';
-                }
-                else {
-                    input = setInput(null, params.name, params.input);
-                    input.style.border = '0px';
-                    input.value = params.value || '';
-                    el.appendChild(input);
-                }
-            }
-            if (this._bHidden = params.hidden) {
-                input.style.display = 'none';
-            }
-            this._nLock = 0;
-            this._eInput = input;
-            setStyle(el, 'display', 'inline-block');
-            UI_EDIT_BIND_EVENT(this);
-
-            UI_CONTROL.call(this, el, params);
+            this._cScroll = this.$getSection('VScroll');
+            this.$initItems();
         },
 
-        UI_EDIT_CLASS = inherits(UI_EDIT, UI_CONTROL),
-        UI_EDIT_INPUT = {},
-
-        /**
-         * 输入框失去焦点事件处理函数。
-         * @private
-         *
-         * @param {Event} event 事件对象
-         */
-        UI_EDIT_INPUT_BLUR = UI_EDIT_INPUT.blur = function (event) {
-            var control = findControl(standardEvent(event).target);
-            // 设置默认失去焦点事件，阻止在blur事件中再次回调
-            control.$blur = UI_CONTROL_CLASS.$blur;
-            control.isEnabled() && loseFocus(control);
-            delete control.$blur;
+        UI_LISTBOX_CLASS = inherits(UI_LISTBOX, UI_PANEL),
+        UI_LISTBOX_ITEM = UI_LISTBOX.Item = function (el, params) {
+            UI_ITEM.call(this, el, params);
+            el.appendChild(this._eInput = setInput(null, params.parent._sName, 'hidden')).value
+                = params.value === undefined ? getText(el) : '' + params.value;
+            this.setSelected(!!params.selected);
         },
-
-        /**
-         * 输入框获得焦点事件处理函数。
-         * @private
-         *
-         * @param {Event} event 事件对象
-         */
-        UI_EDIT_INPUT_FOCUS = UI_EDIT_INPUT.focus = function (event) {
-            var control = findControl(standardEvent(event).target);
-            // 设置默认获得焦点事件，阻止在focus事件中再次回调
-            control.$focus = UI_CONTROL_CLASS.$focus;
-            // 如果控件处于不可操作状态，不允许获得焦点
-            control.isEnabled() ? setFocused(control) : event.target.blur();
-            delete control.$focus;
-        };
-
-
-/*
-FormatEdit - 定义格式化输入数据的基本操作。
-格式化输入框控件，继承自输入框控件，对输入的数据内容格式进行限制。
-
-输入框控件直接HTML初始化的例子:
-<input ecui="type:format-edit" name="test" />
-或:
-<div ecui="type:format-edit;name:test;value:test">
-    <!-- 如果ec中不指定name,value，也可以在input中指定 -->
-    <input name="test" value="test" />
-</div>
-
-属性
-_sLeft      - 每次操作左边的字符串
-_sSelection - 每次操作被替换的字符串
-_sRight     - 每次操作右边的字符串
-_sInput     - 每次操作输入的字符串
-*/
-
-
-    /**
-     * 初始化格式化输入框控件。
-     * params 参数支持的属性如下：
-     * symbol 是否进行全角转半角操作，默认为 true
-     * trim 是否进行前后空格 trim，默认为 true (注：粘贴内容也会进行前后空格过滤)
-     * encoding 字符编码，允许 utf8 与 gb2312，如果不设置表示基于字符验证长度
-     * keyMask 允许的字符集，自动添加正则表达式的[]，需要注意需要转义的字符
-     * minLength 最小长度限制
-     * maxLength 最大长度限制
-     * minValue 数字允许的最小值
-     * maxValue 数字允许的最大值
-     * pattern 字行串的正则表达式，自动添加正则表达式的^$
-     *
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_FORMAT_EDIT =
-        ui.FormatEdit = function (el, params) {
-            // 为FormatEdit注册方法
-            UI_EDIT.call(this, el, params);
-
-            this._bSymbol = params.symbol !== false;
-            this._bTrim = params.trim !== false;
-            this._sEncoding = params.encoding;
-            this._oKeyMask = params.keyMask ? new RegExp('[' + params.keyMask + ']', 'g') : null;
-            this._nMinLength = params.minLength;
-            this._nMaxLength = params.maxLength;
-            this._nMinValue = params.minValue;
-            this._nMaxValue = params.maxValue;
-            this._oPattern = params.pattern ? new RegExp('^' + params.pattern + '$') : null;
-        },
-
-        UI_FORMAT_EDIT_CLASS = inherits(UI_FORMAT_EDIT, UI_EDIT);
-
-
-/*
-Label - 定义事件转发的基本操作。
-标签控件，继承自基础控件，将事件转发到指定的控件上，通常与 Radio、Checkbox 等控件联合使用，扩大点击响应区域。
-
-标签控件直接HTML初始化的例子:
-<div ecui="type:label;for:checkbox"></div>
-
-属性
-_cFor - 被转发的控件对象
-*/
-
-
-    /**
-     * 初始化标签控件。
-     * params 参数支持的属性如下：
-     * for 被转发的控件 id
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_LABEL =
-        ui.Label = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-
-            $connect(this, this.setFor, params['for']);
-        },
-
-        UI_LABEL_CLASS = inherits(UI_LABEL, UI_CONTROL);
-
-
-/*
-Checkbox - 定义单个设置项选择状态的基本操作。
-复选框控件，继承自输入框控件，实现了对原生 InputElement 复选框的功能扩展，支持复选框之间的主从关系定义。当一个复选框的
-“从复选框”选中一部分时，“主复选框”将处于半选状态，这种状态逻辑意义上等同于未选择状态，但显示效果不同，复选框的主从关系
-可以有多级。
-
-复选框控件直接HTML初始化的例子:
-<input ecui="type:checkbox;checked:true" type="checkbox" name="test" value="test" checked="checked" />
-也可以使用其它标签初始化:
-<div ecui="type:checkbox;checked:true;name:test">
-    <!-- 如果ec中不指定name，也可以在input中指定 -->
-    <input name="test" />
-</div>
-
-属性
-_nStatus   - 复选框当前的状态，0--全选，1--未选，2--半选
-_cSuperior - 复选框的上级管理者
-_aInferior - 所有的下级复选框
-*/
-
-
-    /**
-     * 初始化复选框控件。
-     * params 参数支持的属性如下：
-     * checked  控件是否默认选中
-     * superior 管理复选框的 id
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_CHECKBOX =
-        ui.Checkbox = function (el, params) {
-            params.hidden = true;
-            params.input = 'checkbox';
-
-            UI_EDIT.call(this, el, params);
-            el = this.getInput();
-            if (params.checked) {
-                el.checked = true;
-            }
-
-            this._aInferior = [];
-
-            $connect(this, this.setSuperior, params.superior);
-        },
-
-        UI_CHECKBOX_CLASS = inherits(UI_CHECKBOX, UI_EDIT);
-
-
-/*
-Radio - 定义一组选项中选择唯一选项的基本操作。
-单选框控件，继承自输入框控件，实现了对原生 InputElement 单选框的功能扩展，支持对选中的图案的选择。单选框控件需要分组后
-使用，在表单项提交中，一组单选框控件中的第一个单选框保存提交用的表单内容。
-
-单选框控件直接HTML初始化的例子:
-<input ecui="type:radio" type="radio" name="test" checked="checked" />
-也可以使用其它标签初始化:
-<div ecui="type:radio;name:test;checked:true"></div>
-
-属性
-_sName  - 控件所属的组名称
-_sValue - 当前单选框的值
-
-组属性
-_eInput - 组对应的Element
-_cCheck - 当前被选中的选项
-*/
-
-
-    /**
-     * 初始化单选框控件。
-     * params 参数支持的属性如下：
-     * checked 控件是否默认选中
-     * name    控件所属组的名称
-     * value   控件的值
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_RADIO =
-        ui.Radio = function (el, params) {
-            params.hidden = true;
-            params.input = 'radio';
-
-            UI_EDIT.call(this, el, params);
-            el = this.getInput();
-            if (params.checked) {
-                el.checked = true;
-            }
-
-            if (params = this.getName()) {
-                (UI_RADIO['ec-' + params] = UI_RADIO['ec-' + params] || []).push(this);
-            }
-        },
-
-        UI_RADIO_CLASS = inherits(UI_RADIO, UI_EDIT);
-
-
-/*
-Item/Items - 定义选项操作相关的基本操作。
-选项控件，继承自基础控件，用于弹出菜单、下拉框、交换框等控件的单个选项，通常不直接初始化。选项控件必须用在使用选项组接
-口(Items)的控件中，选项控件支持移入操作的缓存，不会因为鼠标移出而改变状态，因此可以通过函数调用来改变移入移出状态，选
-控件默认屏蔽了 DOM 的文本选中操作。选项组不是控件，是一组对选项进行操作的方法的集合，提供了基本的增/删操作，以及对选项
-控件的状态控制的接口，通过将 ecui.ui.Items 对象下的方法复制到类的 prototype 属性下继承接口，最终对象要正常使用还需要在
-类构造器中调用 $initItems 方法。
-*/
-
-
-    /**
-     * 初始化选项控件。
-     * params 参数支持的属性如下：
-     * parent 父控件对象
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {string|Object} params 参数
-     */
-    var UI_ITEM =
-        ui.Item = function (el, params) {
-            el.onselectstart = cancel;
-            el.style.overflow = 'hidden';
-            UI_CONTROL.call(this, el, params);
-        },
-
-        UI_ITEM_CLASS = inherits(UI_ITEM, UI_CONTROL),
-        UI_ITEMS = ui.Items = {};
-
+        UI_LISTBOX_ITEM_CLASS = inherits(UI_LISTBOX_ITEM, UI_ITEM);
 
 
 ﻿/*
@@ -1285,9 +2407,14 @@ _uOptions     - 下拉选择框
             UI_EDIT.call(this, el, params);
 
             // 初始化下拉区域，下拉区域需要强制置顶
-            o = this._uOptions = $fastCreate(UI_SELECT_OPTIONS, optionsEl, this, {hScroll: false});
-            this._cScroll = o.$getSection('VScroll');
-            this.$setBody(o.getBody());
+            this.$setBody(
+                (this._uOptions = $fastCreate(
+                    UI_SELECT_OPTIONS,
+                    optionsEl,
+                    this,
+                    {hScroll: false, browser: params.browser}
+                )).getBody()
+            );
 
             el = children(el);
 
@@ -1297,7 +2424,6 @@ _uOptions     - 下拉选择框
 
             // 初始化下拉区域最多显示的选项数量
             this._nOptionSize = params.optionSize || 5;
-            this._cSelected = false;
 
             this.$initItems();
         },
@@ -1335,8 +2461,6 @@ Combox - 定义可输入下拉框行为的基本操作。
     <li value="值">文本</li>
     ...
 </div>
-
-属性
 */
 
 
@@ -1359,349 +2483,55 @@ Combox - 定义可输入下拉框行为的基本操作。
 
 
 /*
-Grid - 定义批量控件集的事件与基本操作。
-网格控件，继承自基础控件，将大量子控件按指定的行与列组合而成的控件。网格控件统一管理，所有子控件的事件允许调用统一的事
-件方法，可用于日历、调色板等。
+MultiSelect - 定义多选下拉框行为的基本操作。
+多选下拉框控件，继承自输入框控件，实现了选项组接口，参见下拉框控件。
 
-网格控件直接HTML初始化的例子:
-<div ecui="type:grid"></div>
+下拉框控件直接HTML初始化的例子:
+<select ecui="type:multi-select;option-size:3" name="test">
+    <!-- 这里放选项内容 -->
+    <option value="值">文本</option>
+    ...
+    <option value="值" selected>文本</option>
+    ...
+</select>
 
-属性
-_nRow   - 子控件的行数
-_nCol   - 子控件的列数
-_aItem  - 子控件集合
-*/
-
-
-    /**
-     * 初始化网格控件。
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_GRID =
-        ui.Grid = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-
-            this._aItem = [];
-            for (var i = 0, list = children(el), o; o = list[i]; ) {
-                // 设置子控件在整个网格中的序号
-                this._aItem[i++] = $fastCreate(UI_GRID_ITEM, o, this);
-            }
-        },
-
-        UI_GRID_CLASS = inherits(UI_GRID, UI_CONTROL),
-        UI_GRID_ITEM = UI_GRID.Item = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_GRID_ITEM_CLASS = inherits(UI_GRID_ITEM, UI_CONTROL);
-
-
-/*
-Calendar - 定义日历显示的基本操作。
-日历控件，继承自基础控件，内部包含了两个部件，分别是星期名称(网格控件)与日期(网格控件)。在日期网格控件里，第一行包含上
-个月最后几天的信息，最后一行包含下个月最前几天的信息。日历控件不包含年/月/日的快速选择与切换，如果需要实现这些功能，请
-将下拉框(选择月份)、输入框(输入年份)等组合使用建立新的控件或直接在页面上布局并调用接口。
-
-日历控件直接HTML初始化的例子:
-<div ecui="type:calendar;year:2009;month:11"></div>
-
-属性
-_nYear      - 年份
-_nMonth     - 月份(0-11)
-_uNames     - 星期名称网格
-_uDate      - 日期网格
-
-子控件属性
-_nDay       - 从本月1号开始计算的天数，如果是上个月，是负数，如果是下个月，会大于当月最大的天数
-*/
-
-
-    /**
-     * 初始化日历控件。
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params year--日历控件的年份，month--日历控件的月份(1-12)
-     */
-    var UI_CALENDAR =
-        ui.Calendar = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-
-            // 分别插入日期网格与星期名称网格需要使用的层，星期名称网格初始化
-            for (var i = 0, html = [], baseClass = params.base; i < 7; ) {
-                html[i] = '<div class="ec-grid-item ' + baseClass + '-name-item" style="float:left">'
-                    + ['日', '一', '二', '三', '四', '五', '六'][i++] + '</div>';
-            }
-            html[i] = '</div><div class="ec-grid ' + baseClass + '-date">';
-            for (; ++i < 50; ) {
-                html.push('<div class="ec-grid-item ' + baseClass + '-date-item" style="float:left"></div>');
-            }
-
-            el.innerHTML = '<div class="ec-grid ' + baseClass + '-name">' + html.join('') + '</div>';
-
-            this._uNames = $fastCreate(UI_GRID, el.firstChild, this);
-            this._uDate = $fastCreate(UI_CALENDAR_DATE_GRID, el.lastChild, this);
-
-            this.setDate(params.year, params.month);
-        },
-
-        UI_CALENDAR_CLASS = inherits(UI_CALENDAR, UI_CONTROL),
-        UI_CALENDAR_DATE_GRID = UI_CALENDAR.Date = function (el, params) {
-            UI_GRID.call(this, el, params);
-        },
-        UI_CALENDAR_DATE_GRID_CLASS = inherits(UI_CALENDAR_DATE_GRID, UI_GRID);
-
-
-/*
-Form - 定义独立于文档布局的内容区域的基本操作。
-窗体控件，继承自基础控件，内部包含了三个部件，分别是标题栏(基础控件)、关闭按钮(基础控件)与内容区域(截面控件)。窗体控件
-仿真浏览器的多窗体效果，如果在其中包含 iframe 标签，可以在当前页面打开一个新的页面，避免了使用 window.open 在不同浏览
-器下的兼容性问题。多个窗体控件同时工作时，当前激活的窗体在最上层。窗体控件的标题栏默认可以拖拽，窗体可以设置置顶方式显
-示，在置顶模式下，只有当前窗体可以响应操作。窗体控件的 z-index 从256开始，页面开发请不要使用大于或等于 256 的 z-index 
-值。
-
-窗体控件直接HTML初始化的例子:
-<div ecui="type:form;hide:true">
-    <!-- 标题可以没有 -->
-    <label>窗体的标题</label>
-    <!-- 这里放窗体的内容 -->
+如果需要自定义特殊的选项效果，请按下列方法初始化:
+<div ecui="type:multi-select;name:test;option-size:3">
+    <!-- 这里放选项内容 -->
+    <li ecui="value:值">文本</li>
     ...
 </div>
 
-属性
-_bHide      - 初始是否自动隐藏
-_bTitleAuto - 标题栏是否自适应宽度
-_uTitle     - 标题栏
-_uClose     - 关闭按钮
+Item属性
+_eInput - 多选项的INPUT对象
 */
 
 
     /**
-     * 初始化窗体控件。
+     * 初始化多选下拉框控件。
      * params 参数支持的属性如下：
-     * hide 初始是否自动隐藏
-     * titleAuto title 是否自适应宽度，默认自适应宽度
      * @public
      *
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    var UI_FORM =
-        ui.Form = function (el, params) {
-            // 生成标题控件与内容区域控件对应的Element对象
-            var __gzip_direct__baseClass = params.base,
-                o = createDom(el.className, el.style.cssText),
-                tmpEl = first(el);
+    UI_MULTI_SELECT = ui.MultiSelect = function (el, params) {
+        UI_SELECT.call(this, el, params);
+        removeDom(this.getInput());
+    },
+    UI_MULTI_SELECT_CLASS = inherits(UI_MULTI_SELECT, UI_EDIT),
+    UI_MULTI_SELECT_ITEM = UI_MULTI_SELECT.Item = function (el, params) {
+        UI_SELECT_ITEM.call(this, el, params);
 
-            o.innerHTML = '<div class="ec-control ' + __gzip_direct__baseClass
-                + '-title" onselectstart="return false" style="position:absolute"></div><div class="ec-control '
-                + __gzip_direct__baseClass + '-close" style="position:absolute"></div>';
+        el = params.parent
+            ? params.parent.getBase().appendChild(setInput(null, params.parent.getName(), 'checkbox'))
+            : setInput(null, '', 'checkbox');
 
-            UI_CONTROL.call(this, o, params);
-
-            el.style.cssText = 'position:relative;overflow:' + getStyle(el, 'overflow');
-            el.className = __gzip_direct__baseClass + '-main';
-            insertBefore(o, el).appendChild(el);
-
-            // 屏蔽IE下的选中操作
-            tmpEl && tmpEl.tagName == 'LABEL' && moveElements(tmpEl, o = o.firstChild, true);
-
-            this._bHide = params.hide;
-            this._bTitleAuto = params.titleAuto !== false;
-
-            // 初始化标题区域
-            this._uTitle = $fastCreate(UI_FORM_TITLE, o, this, {focus: false});
-
-            // 初始化关闭按钮
-            this._uClose = $fastCreate(UI_FORM_CLOSE, o.nextSibling, this);
-
-            // 计算当前窗体显示的层级
-            this.getOuter().style.zIndex = UI_FORM_ALL.push(this) - 1 + 4096;
-        },
-
-        UI_FORM_CLASS = inherits(UI_FORM, UI_CONTROL),
-        UI_FORM_TITLE = UI_FORM.Title = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_FORM_TITLE_CLASS = inherits(UI_FORM_TITLE, UI_CONTROL),
-        UI_FORM_CLOSE = UI_FORM.Close = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_FORM_CLOSE_CLASS = inherits(UI_FORM_CLOSE, UI_CONTROL),
-        UI_FORM_ALL = []; // 当前全部初始化的窗体
-
-
-/*
-Tree - 定义树形结构的基本操作。
-树控件，继承自基础控件，不可以被改变大小。树控件可以包含普通子控件或者子树控件，普通子控件显示在它的文本区域，如果是子
-树控件，将在专门的子树控件区域显示。子树控件区域可以被收缩隐藏或是展开显示，默认情况下点击树控件就改变子树控件区域的状
-态。
-
-树控件直接HTML初始化的例子:
-<div ecui="type:tree;fold:true">
-    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
-    <label>节点的文本</label>
-    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
-    <li>子控件文本</li>
-    ...
-</div>
-
-属性
-_sItemsDisplay - 隐藏时_eItems的状态，在显示时恢复
-_eItems        - 子控件区域Element对象
-_aTree         - 子控件集合
-*/
-
-
-    /**
-     * 初始化树控件。
-     * params 参数支持的属性如下：
-     * fold 子树是否收缩，默认为展开
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_TREE =
-        ui.Tree = function (el, params) {
-            var tmpEl = first(el),
-                childTrees = this._aTree = [];
-
-            params = copy(copy({}, params), getParameters(el));
-
-            UI_CONTROL.call(this, el, params);
-
-            // 检查是否存在label标签，如果是需要自动初始化树的子结点
-            if (tmpEl && tmpEl.tagName == 'LABEL') {
-
-                // 初始化子控件
-                for (var i = 0, childItems = createDom(), elements = children(el), o; o = elements[i + 1]; ) {
-                    childItems.appendChild(o);
-                    childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, params);
-                }
-
-                moveElements(tmpEl, el, true);
-                UI_TREE_SETITEMS(this, childItems);
-                insertAfter(childItems, el);
-            }
-
-            // 改变默认的展开状态
-            if (el.style.display == 'none' || params.fold) {
-                el.style.display = '';
-                this.setFold();
-            }
-            else {
-                UI_TREE_FLUSH(this);
-            }
-        },
-
-        UI_TREE_CLASS = inherits(UI_TREE, UI_CONTROL);
-
-
-
-/*
-RadioTree - 定义单选框的树形结构的基本操作。
-包含单选框的树控件，继承自树控件，每次点击可以选择一个树节点。
-
-树控件直接HTML初始化的例子:
-<div ecui="type:radio-tree;fold:true;name:part">
-    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
-    <label>节点的文本</label>
-    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
-    <li>子控件文本</li>
-    ...
-</div>
-
-属性
-_eInput    - 树的根节点拥有，保存树对应的提交 INPUT
-_cSelected - 树的根节点拥有，保存当前选中的项
-*/
-
-
-    /**
-     * 初始化单选树控件。
-     * params 参数支持的属性如下：
-     * name 单选框的表单项的默认名称
-     * value 单选框的表单项的值
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_RADIO_TREE = 
-        ui.RadioTree = function (el, params) {
-            params = copy(copy({}, params), getParameters(el));
-            this._sValue = el.getAttribute('value') || params.value;
-            this._sName = params.name;
-            UI_TREE.call(this, el, params);
-        },
-
-    UI_RADIO_TREE_CLASS = inherits(UI_RADIO_TREE, UI_TREE);
-
-
-
-/*
-CheckTree - 定义包含复选框的树形结构的基本操作。
-包含复选框的树控件，继承自树控件。每一个选项包含一个复选框进行选择，除非特别的指定，否则子节点的复选框与父节点的复选框
-自动联动。
-
-树控件直接HTML初始化的例子:
-<div ecui="type:check-tree;fold:true;id:parent;name:part">
-    <!-- 当前节点的文本，如果没有整个内容就是节点的文本 -->
-    <label>节点的文本</label>
-    <!-- 这里放子控件，如果需要fold某个子控件，将子控件的style="display:none"即可 -->
-    <li ecui="superior:other">子控件文本</li>
-    <li>子控件文本(复选框默认与父控件复选框联动)</li>
-    ...
-</div>
-
-属性
-_oSuperior - 关联的父复选框控件ID，默认与父控件复选框关联
-_uCheckbox - 复选框控件
-*/
-
-
-    /**
-     * 初始化复选树控件。
-     * params 参数支持的属性如下：
-     * name 复选框的表单项的默认名称
-     * value 复选框的表单项的值
-     * superior 父复选框的标识，如果为true表示自动使用上级树节点作为父复选框，其它等价false的值表示不联动
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_CHECK_TREE =
-        ui.CheckTree = function (el, params) {
-            params = copy(copy({}, params), getParameters(el));
-
-            UI_TREE.call(this, el, params);
-
-            this._oSuperior = params.superior;
-
-            var i = 0,
-                checkbox = this._uCheckbox = $fastCreate(
-                    UI_CHECKBOX,
-                    el.insertBefore(createDom('ec-checkbox ' + this.getBaseClass() + '-checkbox'), el.firstChild),
-                    this,
-                    params
-                ),
-                childTrees = this.getChildTrees();
-
-            for (; el = childTrees[i++]; ) {
-                if (params = el._oSuperior) {
-                    el = el._uCheckbox;
-                    params === true
-                        ? el.setSuperior(checkbox)
-                        : $connect(el, el.setSuperior, params);
-                }
-            }
-        },
-
-        UI_CHECK_TREE_CLASS = inherits(UI_CHECK_TREE, UI_TREE);
+        el.value = params.value || '';
+        el.style.display = 'none';
+        this._eInput = el;
+    },
+    UI_MULTI_SELECT_ITEM_CLASS = inherits(UI_MULTI_SELECT_ITEM, UI_SELECT_ITEM);
 
 
 /*
@@ -1782,10 +2612,10 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
             tableEl.setAttribute('cellSpacing', '0');
 
             // 设置滚动条操作
-            if (o = this._cVScroll = this.$getSection('VScroll')) {
+            if (o = this.$getSection('VScroll')) {
                 o.setValue = UI_TABLE_SCROLL_SETVALUE;
             }
-            if (o = this._cHScroll = this.$getSection('HScroll')) {
+            if (o = this.$getSection('HScroll')) {
                 o.setValue = UI_TABLE_SCROLL_SETVALUE;
             }
 
@@ -1835,7 +2665,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                 for (j = 0; elements = rows[j]; j++) {
                     if (el = elements._aCol[i]) {
                         el.className = o + el.className;
-                        el.getControl = UI_TABLE_INIT_GETCONTROL;
+                        el.getControl = ieVersion == 8 ? UI_TABLE_INIT_GETCONTROL() : UI_TABLE_INIT_GETCONTROL;
                     }
                 }
             }
@@ -1855,7 +2685,27 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
         UI_TABLE_CELL = UI_TABLE.Cell = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
-        UI_TABLE_CELL_CLASS = inherits(UI_TABLE_CELL, UI_CONTROL);
+        UI_TABLE_CELL_CLASS = inherits(UI_TABLE_CELL, UI_CONTROL),
+
+        /**
+         * 在需要时初始化单元格控件。
+         * 表格控件的单元格控件不是在初始阶段生成，而是在单元格控件第一次被调用时生成，参见核心的 getControl 方法。
+         * @private
+         *
+         * @return {ecui.ui.Control} 单元格控件
+         */
+        UI_TABLE_INIT_GETCONTROL = ieVersion == 8 ? function () {
+            var control;
+            return function () {
+                if (!control) {
+                    control = $fastCreate(UI_TABLE_CELL, this, getParent(this).getControl());
+                }
+                return control;
+            };
+        } : function () {
+            this.getControl = null;
+            return $fastCreate(UI_TABLE_CELL, this, getParent(this).getControl());
+        };
 
 
 /*
@@ -1911,7 +2761,7 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
 
             var i = 0,
                 rows = this.getRows(),
-                lockedEl = createDom('', 'position:absolute;top:0px;left:0px'),
+                lockedEl = createDom('', 'position:absolute;top:0px;left:0px;overflow:hidden'),
                 list = [],
                 lockedRows = this._aLockedRow = [],
                 o;
@@ -1928,10 +2778,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
 
             lockedEl.innerHTML =
                 '<div class="' + params.type + '-area ' + params.base
-                        + '-area" style="overflow:hidden"><div style="white-space:nowrap;position:absolute"><table cellspacing="0"><thead><tr><td style="padding:0px;border:0px"></td></tr></thead></table></div></div><div class="'
-                        + params.type + '-layout ' + params.base
-                        + '-layout" style="position:relative;overflow:hidden"><div style="white-space:nowrap;position:absolute;top:0px;left:0px"><table cellspacing="0"><tbody>'
-                        + list.join('') + '</tbody></table></div></div>';
+                    + '-area"><div style="white-space:nowrap;position:absolute"><table cellspacing="0"><thead><tr><td style="padding:0px;border:0px"></td></tr></thead></table></div></div><div class="' + params.type + '-layout ' + params.base
+                    + '-layout" style="position:relative;overflow:hidden"><div style="white-space:nowrap;position:absolute;top:0px;left:0px"><table cellspacing="0"><tbody>' + list.join('') + '</tbody></table></div></div>';
             // 初始化锁定的表头区域，以下使用 list 表示临时变量
             o = this._uLockedHead = $fastCreate(UI_CONTROL, lockedEl.firstChild, this);
             o.$setBody(o.getBase().lastChild.lastChild.firstChild.lastChild);
@@ -1944,7 +2792,7 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             for (i = 0, list = children(el.lastChild.lastChild); o = list[i]; ) {
                 lockedRows[i] = UI_LOCKED_TABLE_CREATE_LOCKEDROW(this, o, rows[i++]);
             }
-            insertBefore(lockedEl, this.getBase().firstChild);
+            insertBefore(lockedEl, getParent(this.getBody()));
         },
 
         UI_LOCKED_TABLE_CLASS = inherits(UI_LOCKED_TABLE, UI_TABLE),
@@ -1952,471 +2800,6 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             UI_TABLE_ROW.call(this, el, params);
         },
         UI_LOCKED_TABLE_ROW_CLASS = inherits(UI_LOCKED_TABLE_ROW, UI_TABLE_ROW);
-
-
-/*
-Popup - 定义弹出菜单项的基本操作。
-弹出菜单控件，继承自基础控件，实现了选项组接口。弹出式菜单操作时不会改变当前已经激活的对象，任何点击都将导致弹出菜单消
-失，弹出菜单默认向右展开子菜单，如果右部已经到达浏览器最边缘，将改为向左显示。
-
-弹出菜单控件直接HTML初始化的例子:
-<div ecui="type:popup;name:test">
-    <!-- 这里放选项内容 -->
-    <li>菜单项</li>
-    ...
-    <!-- 包含子菜单项的菜单项 -->
-    <li>
-        <label>菜单项</label>
-        <!-- 这里放子菜单项 -->
-        <li>子菜单项</li>
-        ...
-    </li>
-    ...
-</div>
-
-属性
-_nOptionSize - 弹出菜单选项的显示数量，不设置将全部显示
-_cSuperior   - 上一级被激活的弹出菜单控件
-_cInferior   - 下一级被激活的弹出菜单控件
-_uPrev       - 向上滚动按钮
-_uNext       - 向下滚动按钮
-
-子菜单项属性
-_cPopup      - 是否包含下级弹出菜单
-*/
-
-
-    /**
-     * 初始化弹出菜单控件。
-     * params 参数支持的属性如下：
-     * optionSize 弹出菜单选项的显示数量，不设置将全部显示
-     * @public
-     *
-     * @param {HTMLElement} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_POPUP =
-        ui.Popup = function (el, params) {
-            var __gzip_direct__style = el.style,
-                __gzip_direct__baseClass = params.base,
-                __gzip_direct__params = {focus: false};
-
-            removeDom(el);
-            __gzip_direct__style.display = 'none';
-            __gzip_direct__style.position = 'absolute';
-
-            if (this._nOptionSize = params.optionSize) {
-                var o = createDom(el.className, __gzip_direct__style.cssText + ';overflow:hidden');
-
-                __gzip_direct__style.cssText = 'position:absolute;top:0px;left:0px';
-                el.className = __gzip_direct__baseClass + '-main';
-                o.innerHTML =
-                    '<div class="ec-control ' + __gzip_direct__baseClass
-                        + '-prev" onselectstart="return false" style="position:absolute;top:0px;left:0px"></div><div class="ec-control '
-                        + __gzip_direct__baseClass
-                        + '-next" onselectstart="return false" style="position:absolute"></div>';
-
-                UI_CONTROL.call(this, o, params);
-                this.$setBody(el);
-
-                insertBefore(el, (el = children(o))[0]);
-                this._uPrev = $fastCreate(UI_POPUP_BUTTON, el[0], this, __gzip_direct__params);
-                this._uNext = $fastCreate(UI_POPUP_BUTTON, el[1], this, __gzip_direct__params);
-            }
-            else {
-                UI_CONTROL.call(this, el, params);
-            }
-
-            // 初始化菜单项
-            this.$initItems();
-        },
-
-        UI_POPUP_CLASS = inherits(UI_POPUP, UI_CONTROL),
-        UI_POPUP_BUTTON = UI_POPUP.Button = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_POPUP_BUTTON_CLASS = inherits(UI_POPUP_BUTTON, UI_CONTROL),
-        UI_POPUP_ITEM = UI_POPUP.Item = function (el, params) {
-            var o = first(el);
-
-            if (o && o.tagName == 'LABEL') {
-                // 需要生成子菜单
-                moveElements(o, o = insertBefore(createDom(el.className, el.style.cssText), el), true);
-                el.className = 'ec-popup ' + findControl(getParent(el)).getBaseClass();
-                this._cPopup = $fastCreate(UI_POPUP, el, this, getParameters(el));
-                el = o;
-            }
-
-            UI_ITEM.call(this, el, params);
-
-            this.setFocusable(false);
-            UI_POPUP_ITEM_FLUSH(this);
-        },
-        UI_POPUP_ITEM_CLASS = inherits(UI_POPUP_ITEM, UI_ITEM),
-        UI_POPUP_FOCUS;
-
-
-﻿/*
-Listbox - 定义了多项选择的基本操作。
-多选框控件，继承自截面控件，实现了选项组接口，扩展了多选的 SelectElement 的功能，允许使用鼠标拖拽进行多项选择，多个交
-换框，可以将选中的选项在互相之间移动。多选框控件也可以单独的使用，选中的选项在表单提交时将被提交。
-
-多选框控件直接HTML初始化的例子:
-<div ecui="type:listbox;name:test">
-    <!-- 这里放选项内容 -->
-    <li>选项</li>
-    ...
-</div>
-
-属性
-_sName  - 多选框内所有input的名称
-
-选项属性
-_eInput - 选项对应的input，form提交时使用
-*/
-
-
-    /**
-     * 初始化多选框控件。
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_LISTBOX =
-        ui.Listbox = function (el, params) {
-            params.hScroll = false;
-            params.vScroll = true;
-            this._sName = params.name || '';
-
-            UI_PANEL.call(this, el, params);
-
-            this._cScroll = this.$getSection('VScroll');
-            this.$initItems();
-        },
-
-        UI_LISTBOX_CLASS = inherits(UI_LISTBOX, UI_PANEL),
-        UI_LISTBOX_ITEM = UI_LISTBOX.Item = function (el, params) {
-            UI_ITEM.call(this, el, params);
-            el.appendChild(this._eInput = setInput(null, params.parent._sName, 'hidden')).value
-                = params.value === undefined ? getText(el) : '' + params.value;
-            this.setSelected(!!params.selected);
-        },
-        UI_LISTBOX_ITEM_CLASS = inherits(UI_LISTBOX_ITEM, UI_ITEM);
-
-
-/*
-Progress - 定义进度显示的基本操作。
-进度条控件，继承自基础控件，面向用户显示一个任务执行的程度。
-
-进度条控件直接HTML初始化的例子:
-<div ecui="type:progress;rate:0.5"></div>
-
-属性
-_eText - 内容区域
-_eMask - 完成的进度比例内容区域
-*/
-
-
-    /**
-     * 初始化进度条控件。
-     * params 参数支持的属性如下：
-     * rate 初始的百分比
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_PROGRESS =
-        ui.Progress = function (el, params) {
-            var text = el.innerHTML;
-
-            el.innerHTML =
-                '<div class="' + params.base + '-text" style="position:absolute;top:0px;left:0px"></div><div class="' + params.base + '-mask" style="position:absolute;top:0px;left:0px"></div>';
-            this._eText = el.firstChild;
-            this._eMask = el.lastChild;
-
-            UI_CONTROL.call(this, el, params);
-
-            this.setText(params.rate || 0, text);
-        },
-
-        UI_PROGRESS_CLASS = inherits(UI_PROGRESS, UI_CONTROL);
-
-
-/*
-Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
-
-属性
-_nRed        - 红色值(0-255)
-_nGreen      - 绿色值(0-255)
-_nBlue       - 蓝色值(0-255)
-_nHue        - 色调(0-1)
-_nSaturation - 饱和度(0-1)
-_nLight      - 亮度(0-1)
-*/
-
-
-    /**
-     * 初始化色彩对象。
-     * @public
-     *
-     * @param {string} color 6 字符色彩值(如FFFFFF)，如果为空将使用000000
-     */
-    var Color = core.Color = function (rgb) {
-            if (rgb) {
-                this.setRGB(
-                    PARSEINT(rgb.substring(0, 2), 16),
-                    PARSEINT(rgb.substring(2, 4), 16),
-                    PARSEINT(rgb.substring(4, 6), 16)
-                );
-            }
-            else {
-                this.setRGB(0, 0, 0);
-            }
-        },
-
-        COLOR_CLASS = Color.prototype;
-
-/*
-HTMLPalette - 定义拾色器的基本操作
-拾色器控件，继承自基础控件，内部包含了多个部件，分别是色彩选择区(基础控件)、色彩选择区箭头(基础控件)、亮度条选择区(基
-础控件)、亮度条选择区箭头(基础控件)、基本色彩选择区(基础控件组)、色彩显示区(基础控件)、输入区域(输入框控件组)与确认按
-钮(基础控件)。
-
-拾色器控件直接HTML初始化的例子:
-<div ecui="type:palette">
-</div>
-
-属性
-_uMain            - 左部色彩选择区
-_uMain._uIcon     - 左部色彩选择区箭头
-_uLightbar        - 中部亮度条选择区
-_uLightbar._uIcon - 中部亮度条选择区箭头
-_uColor           - 右部色彩显示区
-_uConfirm         - 确认按钮
-_aValue           - 右部输入区域
-*/
-
-
-    /**
-     * 初始化拾色器控件。
-     * @public
-     *
-     * @param {Element} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_PALETTE =
-        ui.Palette = function (el, params) {
-            var i = 1,
-                inlineBlock = ieVersion && ieVersion < 8 ? 'display:inline;zoom:1' : 'display:inline-block',
-                __gzip_direct__baseClass = params.base,
-                __gzip_direct__params = {capture: false},
-                list = [
-                    '<div class="' + __gzip_direct__baseClass + '-left" style="float:left"><div class="ec-control '
-                        + __gzip_direct__baseClass
-                        + '-image" style="position:relative;overflow:hidden"><div class="ec-control '
-                        + __gzip_direct__baseClass
-                        + '-cross" style="position:absolute"><div></div></div></div></div><div class="'
-                        + __gzip_direct__baseClass + '-mid" style="float:left"><div class="ec-control '
-                        + __gzip_direct__baseClass + '-lightbar" style="position:relative">'
-                ];
-
-            for (; i < 257; ) {
-                list[i++] = '<div style="height:1px;overflow:hidden"></div>';
-            }
-
-            list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass
-                + '-arrow" style="position:absolute"><div></div></div></div></div><div class="'
-                + __gzip_direct__baseClass
-                + '-right" style="float:left"><p>基本颜色</p><div class="'
-                + __gzip_direct__baseClass + '-basic" style="white-space:normal">';
-
-            for (; i < 306; ) {
-                list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass + '-area" style="' + inlineBlock
-                    + ';background:#' + UI_PALETTE_BASIC_COLOR[i - 259] + '"></div>';
-            }
-
-            list[i] = '</div><table cellspacing="0" cellpadding="0" border="0"><tr><td class="'
-                + __gzip_direct__baseClass + '-color" rowspan="3"><div class="ec-control '
-                + __gzip_direct__baseClass + '-show"></div><input class="ec-edit '
-                + __gzip_direct__baseClass + '-value"></td><th>色调:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>红:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>饱和度:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>绿:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>亮度:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>蓝:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr></table><div class="ec-control '
-                + __gzip_direct__baseClass + '-button">确定</div><div class="ec-control '
-                + __gzip_direct__baseClass + '-button">取消</div></div>';
-
-            el.innerHTML = list.join('');
-
-            UI_CONTROL.call(this, el, params);
-
-            // 初始化色彩选择区
-            el = el.firstChild;
-            params = this._uMain = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
-
-            // 初始化亮度条选择区
-            el = el.nextSibling;
-            params = this._uLightbar = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
-
-            // 初始化基本颜色区
-            el = children(el.nextSibling);
-            (this._uBasic = $fastCreate(UI_GRID, el[1], this)).$click = UI_PALETTE_BUTTON_CLASS.$click;
-
-            // 初始化颜色输入框区域
-            list = el[2].getElementsByTagName('td');
-            this._uColor = $fastCreate(UI_CONTROL, list[0].firstChild, this);
-
-            this._aValue = [$fastCreate(UI_PALETTE_EDIT, list[0].lastChild, this)];
-            for (i = 1; i < 7; ) {
-                this._aValue[i] = $fastCreate(
-                    UI_PALETTE_EDIT,
-                    list[i++].lastChild,
-                    this,
-                    {keyMask: '0-9', maxValue: 255, maxLength: 3}
-                );
-            }
-
-            this._uConfirm = $fastCreate(UI_PALETTE_BUTTON, el[3], this);
-            this._uCancel = $fastCreate(UI_PALETTE_BUTTON, el[4], this);
-        },
-
-        UI_PALETTE_CLASS = inherits(UI_PALETTE, UI_CONTROL),
-        UI_PALETTE_AREA = UI_PALETTE.Area = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_PALETTE_AREA_CLASS = inherits(UI_PALETTE_AREA, UI_CONTROL),
-        UI_PALETTE_BUTTON = UI_PALETTE.Button = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_PALETTE_BUTTON_CLASS = inherits(UI_PALETTE_BUTTON, UI_CONTROL),
-        UI_PALETTE_EDIT = UI_PALETTE.Edit = function (el, params) {
-            UI_FORMAT_EDIT.call(this, el, params);
-        },
-        UI_PALETTE_EDIT_CLASS = inherits(UI_PALETTE_EDIT, UI_FORMAT_EDIT),
-        UI_PALETTE_BASIC_COLOR = [
-            'FF8080', 'FFFF80', '80FF80', '00FF80', '80FFFF', '0080F0', 'FF80C0', 'FF80FF',
-            'FF0000', 'FFFF00', '80FF00', '00FF40', '00FFFF', '0080C0', '8080C0', 'FF00FF',
-            '804040', 'FF8040', '00FF00', '008080', '004080', '8080FF', '800040', 'FF0080',
-            '800000', 'FF8000', '008000', '008040', '0000FF', '0000A0', '800080', '8000FF',
-            '400000', '804000', '004000', '004040', '000080', '000040', '400040', '400080',
-            '000000', '808000', '808040', '808080', '408080', 'C0C0C0', '400040', 'FFFFFF'
-        ];
-
-
-/*
-Tab - 定义分页选项卡的操作。
-选项卡控件，继承自基础控件，实现了选项组接口。每一个选项卡都包含一个头部区域与内容区域，选项卡控件存在互斥性，只有唯一
-的一个选项卡能被选中显卡内容区域。
-
-直接初始化选项卡控件的例子
-<div ecui="type:tab;selected:1">
-    <!-- 包含内容的选项卡 -->
-    <div>
-        <label>标题1</label>
-        <!-- 这里是内容 -->
-        ...
-    </div>
-    <!-- 仅有标题的选项卡，以下selected定义与控件定义是一致的，可以忽略其中之一 -->
-    <label ecui="selected:true">标题2</label>
-</div>
-
-属性
-_bButton         - 向前向后滚动按钮是否显示
-_bKeep           - 是否持续自动滚动
-_nStep           - 自动滚动的步长
-_nTimeout        - 自动滚动的时间间隔
-_nIndex          - 需要移动到的选项序号
-_oSelected       - 初始化时临时保存当前被选中的选项卡
-_oTimer          - 自动滚动定时器
-_aPosition       - 选项卡位置缓存
-_cSelected       - 当前选中的选项卡
-_uPrev           - 向前滚动按钮
-_uNext           - 向后滚动按钮
-
-Item属性
-_bSelected       - 初始化时临时保存当前选项卡是否选中
-_sContentDisplay - 内容 DOM 元素的布局属性
-_eContent        - 内容 DOM 元素
-*/
-
-
-    /**
-     * 初始化选项卡控件。
-     * params 参数支持的特定属性如下：
-     * selected 选中的选项序号，默认为0
-     * @protected
-     *
-     * @param {HTMLElement} el 关联的 Element 对象
-     * @param {Object} params 初始化参数
-     */
-    var UI_TAB =
-        ui.Tab = function (el, params) {
-            var i = 0,
-                list = children(el),
-                __gzip_direct__baseClass = params.base,
-                __gzip_direct__typeClass = params.type,
-                titleEl = createDom(
-                    __gzip_direct__typeClass + '-title ' + __gzip_direct__baseClass + '-title',
-                    'position:relative;overflow:hidden'
-                );
-
-            this._oSelected = params.selected || 0;
-
-            // 生成选项卡头的的DOM结构
-            titleEl.innerHTML = '<div class="' + __gzip_direct__typeClass + '-title-prev '
-                + __gzip_direct__baseClass + '-title-prev" style="position:absolute;left:0px;display:none"></div><div class="'
-                + __gzip_direct__typeClass + '-title-next '
-                + __gzip_direct__baseClass + '-title-next" style="position:absolute;display:none"></div><div class="'
-                + __gzip_direct__baseClass + '-title-main" style="position:absolute;white-space:nowrap"></div>';
-
-            // 初始化
-            UI_CONTROL.call(this, el, params);
-
-            // 以下使用params代替list
-            params = children(titleEl);
-
-            el.appendChild(titleEl);
-            for (; el = list[i++]; ) { 
-                params[2].appendChild(el); 
-            } 
-            this.$setBody(params[2]);
-
-            this.$initItems();
-
-            // 滚动按钮
-            this._uPrev = $fastCreate(UI_TAB_BUTTON, params[0], this);
-            this._uNext = $fastCreate(UI_TAB_BUTTON, params[1], this);
-        },
-
-        UI_TAB_CLASS = inherits(UI_TAB, UI_CONTROL),
-        UI_TAB_BUTTON = UI_TAB.Button = function (el, params) {
-            UI_CONTROL.call(this, el, params);
-        },
-        UI_TAB_BUTTON_CLASS = inherits(UI_TAB_BUTTON, UI_CONTROL),
-        UI_TAB_ITEM = UI_TAB.Item = function (el, params) {
-            var parent = params.parent,
-                contentEl;
-
-            if (el.tagName != 'LABEL') {
-                this.setContent(contentEl = el);
-                el = first(el);
-                // 这里要检查父节点是否存在，如果不存在表示直接生成的对象
-                insertBefore(el, contentEl);
-                parent && parent.getBase().appendChild(contentEl);
-            }
-            setStyle(el, 'display', 'inline-block');
-
-            this._bSelected = params.selected;
-
-            UI_ITEM.call(this, el, params);
-        },
-        UI_TAB_ITEM_CLASS = inherits(UI_TAB_ITEM, UI_ITEM);
 
 
 /*
@@ -2443,6 +2826,7 @@ _oInner  - 内层装饰器或者控件对象
                 oldEl = (this._oInner = EXT_DECORATOR[id] || control).getOuter();
 
             insertBefore(this._eOuter = createDom(this._sClass = baseClass), oldEl).appendChild(oldEl);
+            $bind(this._eOuter, control);
 
             EXT_DECORATOR[id] = this;
 
@@ -2524,72 +2908,241 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
 
 
 
+/*
+Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
+              通过访问Decorator的属性来得到，属性名为控件对象
 
-
-
-
+属性
+_sClass  - 装饰器样式
+_eOuter  - 装饰器外框Element
+_oInner  - 内层装饰器或者控件对象
+*/
 
 
     /**
-     * 中止延迟调用操作
+     * 初始化点击时动画效果。
      * @public
+     *
+     * @param {ecui.ui.Control|ecui.ext.Decorator} control 需要装饰的控件
+     * @param {string} baseClass 装饰器的基本样式
      */
-    Timer.prototype.stop = function () {
-        clearTimeout(this._nID);
-    };
+    var EXT_TWEEN =
+        ext.Tween = function (object, params) {
+            function decelerate() {
+                var params = EXT_TWEEN[this.getUID()],
+                    x = MIN((params.currTime += 20) / totalTime, 1),
+                    name;
+
+                if (x == 1) {
+                    params.timer.stop();
+                    EXT_TWEEN[this.getUID()] = null;
+                }
+
+                params.currValue = {};
+                for (name in params.startValue) {
+                    params.currValue[name] = params.startValue[name] + (params.endValue[name] - params.startValue[name]) * (1 - POW(1 - x, 3));
+                }
+                setValue(this, params.currValue);
+            }
+
+            function steady() {
+                var params = EXT_TWEEN[this.getUID()],
+                    flag = true,
+                    sign,
+                    name;
+
+                for (name in params.startValue) {
+                    if (params.startValue[name] != params.endValue[name]) {
+                        sign = params.startValue[name] < params.endValue[name];
+                        params.currValue[name] += ('number' == typeof pressStep ? pressStep : pressStep[name]) * (sign ? 1 : -1);
+                        if (params.currValue[name] < params.endValue[name] && sign || params.currValue[name] > params.endValue[name] && !sign) {
+                            flag = false;
+                        }
+                    }
+                }
+                if (flag) {
+                    setValue(this, params.endValue);
+                    click.call(this);
+                    sign = getValue(this);
+                    for (name in sign) {
+                        if (params.endValue[name] == sign[name]) {
+                            params.currValue[name] = sign[name];
+                        }
+                        else {
+                            flag = false;
+                        }
+                    }
+                    if (flag) {
+                        params.timer.stop();
+                    }
+                    else {
+                        params.endValue = sign;
+                    }
+                }
+                setValue(this, params.currValue);
+            }
+
+            var click = object.$click,
+                pressstart = object.$pressstart,
+                pressend = object.$pressend,
+                totalTime = (params.second * 1000) || 500,
+                pressStep = params.pressStep;
+
+            if (params.monitor) {
+                var getValue = new Function(
+                        'o',
+                        'return [ecui.util.toNumber(o.' + params.monitor.replace(/\|/g, '),ecui.util.toNumber(o.') +
+                            ')]'
+                    ),
+                    setValue = new Function(
+                        'o',
+                        'v',
+                        'o.' + params.monitor.replace(/\|/g, '=v[0]+"px";v.splice(0,1);o.') + '=v[0]+"px"'
+                    );
+            }
+            else {
+                getValue = params.getValue;
+                setValue = params.setValue;
+            }
+
+            if (pressStep) {
+                object.$click = function (event) {
+                    var currValue = getValue(this);
+                    click.call(this, event);
+                    setValue(this, currValue);
+                };
+
+                object.$pressstart = function (event) {
+                    var params = EXT_TWEEN[this.getUID()];
+                    if (params) {
+                        params.timer.stop();
+                        setValue(this, params.endValue);
+                    }
+                    else {
+                        params = EXT_TWEEN[this.getUID()] = {};
+                        params.startValue = getValue(this);
+                        params.currValue = getValue(this);
+                    }
+                    click.call(this, event);
+                    params.endValue = getValue(this);
+                    if (params.startValue != params.endValue) {
+                        params.currTime = 0;
+                        steady.call(this);
+                        params.timer = new Timer(steady, -40, this);
+                    }
+                    pressstart.call(this, event);
+                };
+
+                object.$pressend = function (event) {
+                    var params = EXT_TWEEN[this.getUID()];
+                    params.timer.stop();
+                    params.startValue = params.currValue;
+                    params.timer = new Timer(decelerate, -20, this);
+                    pressend.call(this, event);
+                };
+            }
+            else {
+                object.$click = function (event) {
+                    var params = EXT_TWEEN[this.getUID()];
+                    if (params) {
+                        params.timer.stop();
+                        setValue(this, params.endValue);
+                        params.startValue = params.currValue;
+                    }
+                    else {
+                        params = EXT_TWEEN[this.getUID()] = {};
+                        params.startValue = getValue(this);
+                    }
+                    click.call(this, event);
+                    params.endValue = getValue(this);
+                    if (params.startValue != params.endValue) {
+                        params.currTime = 0;
+                        decelerate.call(this);
+                        params.timer = new Timer(decelerate, -20, this);
+                    }
+                };
+            }
+        };
 
 
 
 
+
+
+
+
+
+
+
+
+
+    core.NORMAL = 0;
+    core.INIT   = 1;
+    core.PAINT  = 2;
 
     (function () {
-        var ecuiName = 'ecui',      // Element 中用于自动渲染的 ecui 属性名称
-            isGlobalId,             // 是否自动将 ecui 的标识符全局化
+        var ecuiName = 'ecui',        // Element 中用于自动渲染的 ecui 属性名称
+            isGlobalId,               // 是否自动将 ecui 的标识符全局化
 
-            flgFixedSize,           // 在计算宽度与高度时，是否需要修正内填充与边框样式的影响
-            flgFixedOffset,         // 在计算相对位置时，是否需要修正边框样式的影响
+            flgFixedSize,             // 在计算宽度与高度时，是否需要修正内填充与边框样式的影响
+            flgFixedOffset,           // 在计算相对位置时，是否需要修正边框样式的影响
+            scrollNarrow,             // 浏览器滚动条相对窄的一边的长度
 
-            initRecursion,          // init 操作的递归次数
-            lastClientWidth,        // 浏览器之前的宽度
+            initRecursion,            // init 操作的递归次数
+            lastClientWidth,          // 浏览器之前的宽度
 
-            exts = [],              // 扩展组件列表
-            maskElements = [],      // 遮罩层组
+            plugins = {},             // 扩展组件列表
+            maskElements = [],        // 遮罩层组
 
-            mouseX,                 // 当前鼠标光标的X轴坐标
-            mouseY,                 // 当前鼠标光标的Y轴坐标
-            keyCode,                // 当前键盘按下的键值，解决keypress与keyup中得不到特殊按键的keyCode的问题
+            mouseX,                   // 当前鼠标光标的X轴坐标
+            mouseY,                   // 当前鼠标光标的Y轴坐标
+            keyCode,                  // 当前键盘按下的键值，解决keypress与keyup中得不到特殊按键的keyCode的问题
 
-            isLoaded = false,       // 是否自动加载过
-            allControls = [],       // 全部生成的控件，供释放控件占用的内存使用
-            namedControls,          // 所有被命名的控件的集合
-            uniqueIndex = 0,        // 控件的唯一序号
-            connectedControls = {}, // 等待关联的控件集合
+            status = core.INIT,       // 框架当前状态
+            allControls = [],         // 全部生成的控件，供释放控件占用的内存使用
+            independentControls = [], // 独立的控件，即使用create($create)方法创建的控件
+            namedControls,            // 所有被命名的控件的集合
+            uniqueIndex = 0,          // 控件的唯一序号
+            connectedControls = {},   // 等待关联的控件集合
 
-            selectorControl,        // 在select操作时使用此控件展现选择的部分
+            selectorControl,          // 在select操作时使用此控件展现选择的部分
 
-            pressedControl = null,  // 当前环境下被按压的控件
-            overedControl = null,   // 当前鼠标移入的控件
-            focusedControl = null,  // 当前环境下拥有焦点的控件
+            pressedControl,           // 当前环境下被按压的控件
+            overedControl,            // 当前鼠标移入的控件
+            focusedControl,           // 当前环境下拥有焦点的控件
 
-            envStack = [],          // 高优先级事件调用时，保存上一个事件环境的栈
-            currEnv = {             // 当前操作的环境数据对象
+            envStack = [],            // 高优先级事件调用时，保存上一个事件环境的栈
+            currEnv = {               // 当前操作的环境数据对象
 
                 mousedown: function (event) {
                     event = standardEvent(event);
 
                     // 改变框架中被激活的控件
-                    if (pressedControl = event.getTarget()) {
-                        bubble(pressedControl, 'mousedown', event);
-                        pressedControl.pressstart(event);
-                        // 以下使用 event 代替 control
-                        for (event = pressedControl; event; event = event.getParent()) {
-                            if (event.isFocusable()) {
-                                event != pressedControl && event.contain(focusedControl) || setFocused(event);
+                    //__transform__control_o
+                    var control = event.getTarget();
+                    pressedControl = null;
+                    if (control) {
+                        if (!isScrollClick(event)) {
+                            bubble(pressedControl = control, 'mousedown', event);
+                            pressedControl.pressstart(event);
+                        }
+                        else if (ieVersion < 8) {
+                            return;
+                        }
+
+                        for (; control; control = control.getParent()) {
+                            if (control.isFocusable()) {
+                                if (!(control != pressedControl && control.contain(focusedControl))) {
+                                    setFocused(control);
+                                }
                                 break;
                             }
                         }
                     }
                     else {
+                        if (findControl(event.target)) {
+                            event.preventDefault();
+                        }
                         setFocused();
                     }
                 },
@@ -2598,8 +3151,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                     // 鼠标移入的处理，首先需要计算是不是位于之前移出的控件之外，如果是需要触发之前的移出事件
                     event = standardEvent(event);
 
-                    var control = overedControl,
-                        parent = getCommonParent(overedControl = event.getTarget(), control),
+                    //__transform__control_o
+                    var control = event.getTarget(),
+                        parent = getCommonParent(control, overedControl),
                         allowPress = currEnv.type;
 
                     // 在拖曳与缩放状态时，不进行按压移入移出的处理
@@ -2607,32 +3161,44 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                         (!parent || parent.contain(pressedControl));
 
                     // 对控件及其父控件序列进行移出或移入操作，针对公共的父控件不进行处理
-                    bubble(control, 'mouseout', event, parent);
-                    allowPress && pressedControl.contain(control) && pressedControl.pressout(event);
-                    bubble(overedControl, 'mouseover', event, parent);
-                    allowPress && pressedControl.contain(overedControl) && pressedControl.pressover(event);
+                    bubble(overedControl, 'mouseout', event, parent);
+                    if (allowPress && pressedControl.contain(overedControl)) {
+                        pressedControl.pressout(event);
+                    }
+                    bubble(control, 'mouseover', event, parent);
+                    if (allowPress && pressedControl.contain(control)) {
+                        pressedControl.pressover(event);
+                    }
+
+                    overedControl = control;
                 },
 
                 mousemove: function (event) {
                     event = standardEvent(event);
 
+                    //__transform__control_o
                     var control = event.getTarget();
 
                     // 对控件及其父控件序列进行移动操作
                     bubble(control, 'mousemove', event);
-                    pressedControl && pressedControl.contain(control) && pressedControl.pressmove(event);
+                    if (pressedControl && pressedControl.contain(control)) {
+                        pressedControl.pressmove(event);
+                    }
                 },
 
                 mouseup: function (event) {
                     event = standardEvent(event);
 
+                    //__transform__control_o
                     var control = event.getTarget();
 
                     bubble(control, 'mouseup', event);
                     if (pressedControl) {
                         pressedControl.pressend(event);
                         // 点击事件只在鼠标按下与弹起发生在同一个控件上时触发
-                        control == pressedControl && pressedControl.click(event);
+                        if (control == pressedControl) {
+                            pressedControl.click(event);
+                        }
                         pressedControl = null;
                     }
                 }
@@ -2645,65 +3211,73 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                     event = standardEvent(event);
 
                     // 计算限制拖拽的范围
+                    //__transform__target_o
                     var target = currEnv.target,
-                        tmpX = mouseX,
-                        tmpY = mouseY,
                         // 计算期待移到的位置
-                        expectX = target.getX() + tmpX - currEnv.x,
-                        expectY = target.getY() + tmpY - currEnv.y,
+                        expectX = target.getX() + mouseX - currEnv.x,
+                        expectY = target.getY() + mouseY - currEnv.y,
                         // 计算实际允许移到的位置
                         x = MIN(MAX(expectX, currEnv.left), currEnv.right),
                         y = MIN(MAX(expectY, currEnv.top), currEnv.bottom);
 
-                    target.ondragmove && target.ondragmove(event, x, y) === false
-                        || target.$dragmove(event, x, y) === false
-                        || target.setPosition(x, y);
+                    if (!(target.ondragmove && target.ondragmove(event, x, y) === false ||
+                            target.$dragmove(event, x, y) === false)) {
+                        target.setPosition(x, y);
+                    }
 
-                    currEnv.x = tmpX + target.getX() - expectX;
-                    currEnv.y = tmpY + target.getY() - expectY;
+                    currEnv.x = mouseX + target.getX() - expectX;
+                    currEnv.y = mouseY + target.getY() - expectY;
                 },
 
                 mouseup: function (event) {
                     event = standardEvent(event);
 
+                    //__transform__target_o
                     var target = currEnv.target;
-                    target.ondragend && target.ondragend(event) === false || target.$dragend(event);
+                    if (!(target.ondragend && target.ondragend(event) === false)) {
+                        target.$dragend(event);
+                    }
                     restore();
                     // 恢复IE浏览器外事件捕获的规则
-                    ieVersion && DOCUMENT.body.releaseCapture(false);
+                    if (ieVersion) {
+                        DOCUMENT.body.releaseCapture(false);
+                    }
                     currEnv.mouseup(event);
                 }
             },
 
-            forciblyEnv = { // 强制点击拦截操作的环境数据对象
-                type: 'forcibly',
+            interceptEnv = { // 强制点击拦截操作的环境数据对象
+                type: 'intercept',
 
                 mousedown: function (event) {
                     event = standardEvent(event);
 
+                    //__transform__target_o
                     var target = currEnv.target,
                         env = currEnv,
                         control = event.getTarget();
 
-                    if (control && !control.isFocusable()) {
-                        // 需要捕获但不激活的控件是高优先级处理的控件
-                        pressedControl = control;
-                        bubble(pressedControl, 'mousedown', event);
-                        pressedControl.pressstart(event);
-                    }
-                    else if (target.onforcibly && target.onforcibly(event) === false
-                            || target.$forcibly(event) === false) {
-                        if (env == currEnv) {
-                            if (pressedControl = event.getTarget()) {
-                                pressedControl.pressstart(event);
+                    if (!isScrollClick(event)) {
+                        if (control && !control.isFocusable()) {
+                            // 需要捕获但不激活的控件是高优先级处理的控件
+                            bubble(pressedControl = control, 'mousedown', event);
+                            pressedControl.pressstart(event);
+                        }
+                        else if (target.onintercept && target.onintercept(event) === false ||
+                                    target.$intercept(event) === false) {
+                            if (env == currEnv) {
+                                if (control) {
+                                    bubble(pressedControl = control, 'mousedown', event);
+                                    pressedControl.pressstart(event);
+                                }
+                            }
+                            else {
+                                currEnv.mousedown(event);
                             }
                         }
                         else {
-                            currEnv.mousedown(event);
+                            restore();
                         }
-                    }
-                    else {
-                        restore();
                     }
                 }
             },
@@ -2714,66 +3288,142 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                 mousemove: function (event) {
                     event = standardEvent(event);
 
+                    //__gzip_original__minWidth
+                    //__gzip_original__maxWidth
+                    //__gzip_original__minHeight
+                    //__gzip_original__maxHeight
+                    //__transform__target_o
                     var target = currEnv.target,
-                        width = currEnv.width,
-                        height = currEnv.height,
-                        expectWidth = currEnv.width = mouseX - currEnv.x + width,
-                        expectHeight = currEnv.height = mouseY - currEnv.y + height,
-                        __gzip_direct__minWidth = currEnv.minWidth,
-                        __gzip_direct__maxWidth = currEnv.maxWidth,
-                        __gzip_direct__minHeight = currEnv.minHeight,
-                        __gzip_direct__maxHeight = currEnv.maxHeight;
+                        width = currEnv.width = mouseX - currEnv.x + currEnv.width,
+                        height = currEnv.height = mouseY - currEnv.y + currEnv.height,
+                        minWidth = currEnv.minWidth,
+                        maxWidth = currEnv.maxWidth,
+                        minHeight = currEnv.minHeight,
+                        maxHeight = currEnv.maxHeight;
 
                     currEnv.x = mouseX;
                     currEnv.y = mouseY;
 
-                    width = __gzip_direct__minWidth !== undefined
-                        ? MAX(__gzip_direct__minWidth, expectWidth)
-                        : expectWidth;
-                    height = __gzip_direct__minHeight !== undefined
-                        ? MAX(__gzip_direct__minHeight, expectHeight)
-                        : expectHeight;
-                    width = __gzip_direct__maxWidth !== undefined
-                        ? MIN(__gzip_direct__maxWidth, width)
-                        : width;
-                    height = __gzip_direct__maxHeight !== undefined
-                        ? MIN(__gzip_direct__maxHeight, height)
-                        : height;
+                    width = minWidth > width ? minWidth : maxWidth < width ? maxWidth : width;
+                    height = minHeight > height ? minHeight : maxHeight < height ? maxHeight : height;
 
                     // 如果宽度或高度是负数，需要重新计算定位
-                    target.setPosition(
-                        width < 0 ? currEnv.left + width : currEnv.left,
-                        height < 0 ? currEnv.top + height : currEnv.top
-                    );
-                    target.onzoom && target.onzoom(event) === false || target.$zoom(event) === false
-                        || target.setSize(ABS(width), ABS(height));
+                    target.setPosition(currEnv.left + MIN(width, 0), currEnv.top + MIN(height, 0));
+                    if (!(target.onzoom && target.onzoom(event) === false || target.$zoom(event) === false)) {
+                        target.setSize(ABS(width), ABS(height));
+                    }
                 },
 
                 mouseup: function (event) {
                     event = standardEvent(event);
 
+                    //__transform__target_o
                     var target = currEnv.target;
-                    target.onzoomend && target.onzoomend(event) === false || target.$zoomend(event);
+                    if (!(target.onzoomend && target.onzoomend(event) === false)) {
+                        target.$zoomend(event);
+                    }
                     restore();
-                    ieVersion && DOCUMENT.body.releaseCapture(false);
+                    if (ieVersion) {
+                        DOCUMENT.body.releaseCapture(false);
+                    }
 
                     // 如果是选择框需要关闭
-                    target == selectorControl ? target.hide() : paint();
+                    if (target == selectorControl) {
+                        target.hide();
+                    }
+                    else {
+                        paint();
+                    }
                     currEnv.mouseup(event);
                 }
+            },
+
+            /**
+             * 窗体改变大小时的事件处理。
+             * 一些特殊情况下，例如包含框架的页面，页面变化时不会触发 onresize 事件，需要手工调用 paint 函数刷新所有的控件大小。
+             * @public
+             */
+            paint = core.paint = function () {
+                var i = 0,
+                    list = [],
+                    o;
+
+                if (ieVersion) {
+                    o = (isStrict ? DOCUMENT.documentElement : DOCUMENT.body).clientWidth;
+                    if (lastClientWidth != o) {
+                        lastClientWidth = o;
+                    }
+                    else {
+                        // 阻止 ie6/7 下的重入
+                        return;
+                    }
+                }
+
+                status = core.PAINT;
+                o = currEnv.type;
+                mask(false);
+                if (o != 'zoom') {
+                    // 改变窗体大小需要清空拖拽状态
+                    if (o == 'drag') {
+                        currEnv.mouseup();
+                    }
+                    for (o = null; o !== undefined; o = list[i++]) {
+                        for (var j = 0, controls = query({parent: o}); o = controls[j++]; ) {
+                            if (o.isShow()) {
+                                list.push(o);
+                            }
+                        }
+                    }
+
+                    for (i = 0; o = list[i++]; ) {
+                        o.paint = blank;
+                        o.resize();
+                        delete o.paint;
+                        if (ieVersion < 8) {
+                            // 修复ie6/7下宽度自适应错误的问题
+                            o = getStyle(j = o.getBase());
+                            if (o.width == 'auto' && o.display == 'block') {
+                                j.style.width = '100%';
+                            }
+                        }
+                    }
+
+                    if (ieVersion < 8) {
+                        for (; o = list[--i]; ) {
+                            j = o.getBase();
+                            j.style.width = j.offsetWidth - (flgFixedSize ? o.getInvalidWidth(true) * 2 : 0) + 'px';
+                        }
+                    }
+
+                    for (i = 0; o = list[i++]; ) {
+                        o.cache(true, true);
+                    }
+                    for (i = 0; o = list[i++]; ) {
+                        o.$setSize(o.getWidth(), o.getHeight());
+                    }
+                }
+                if (ieVersion < 8) {
+                    new Timer(mask, 0, null, true);
+                }
+                else {
+                    mask(true);
+                }
+                status = core.NORMAL;
             };
 
         /**
          * 使一个 DOM 节点与一个 ECUI 控件 在逻辑上绑定。
-         * 一个 DOM 节点只能绑定一个 ECUI 控件，多次绑定以最后一次为准，绑定后的 DOM 节点可以通过 getControl 方法得到绑定的 ECUI 控件。使用页面静态初始化(参见 ECUI 使用方式)控件后，如果需要修改 DOM 节点绑定的 ECUI 控件，通过改变 DOM 节点的 ecui 属性值，并调用核心提供的 init 方法初始化，是无效的，请通过 create 方法创建控件后，执行此方法进行绑定。
+         * 一个 DOM 节点只能绑定一个 ECUI 控件，多次绑定仅第一次有效，绑定后的 DOM 节点可以通过 getControl 方法得到绑定的 ECUI 控件。使用页面静态初始化(参见 ECUI 使用方式)控件后，如果需要修改 DOM 节点绑定的 ECUI 控件，通过改变 DOM 节点的 ecui 属性值，并调用核心提供的 init 方法初始化，是无效的，请通过 create 方法创建控件后，执行此方法进行绑定。
          * @protected
          *
          * @param {HTMLElement} el Element 对象
          * @param {ecui.ui.Control} control ECUI 控件
          */
         $bind = core.$bind = function (el, control) {
-            el._cControl = control;
-            el.getControl = getControlByElement;
+            if (!el.getControl) {
+                el._cControl = control;
+                el.getControl = getControlByElement;
+            }
         };
 
         /**
@@ -2788,12 +3438,13 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
         $connect = core.$connect = function (caller, func, targetId) {
             if (targetId) {
                 var target = namedControls[targetId];
-                target
-                    ? func.call(caller, target)
-                    : (connectedControls[targetId] = connectedControls[targetId] || []).push({
-                        func: func,
-                        caller: caller
-                    });
+                if (target) {
+                    func.call(caller, target);
+                }
+                else {
+                    (connectedControls[targetId] = connectedControls[targetId] || [])
+                        .push({func: func, caller: caller});
+                }
             }
         };
 
@@ -2814,6 +3465,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
         $create = core.$create = function (type, params) {
             params = params || {};
 
+            //__gzip_original__parent
+            //__gzip_original__id
+            //__gzip_original__typeClass
             var i = 0,
                 parent = params.parent,
                 id = params.id,
@@ -2830,8 +3484,8 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             params.uid = 'ec-' + ++uniqueIndex;
 
             el.className +=
-                ' ' + (typeClass && typeClass != type ? typeClass : params.type = 'ec-' + type.toLowerCase())
-                + ' ' + o;
+                ' ' + (typeClass && typeClass != type ? typeClass : params.type = 'ec-' + type.toLowerCase()) +
+                ' ' + o;
             // 如果没有指定基本样式，使用控件的样式作为基本样式
             if (!o) {
                 o = el.className.split(/\s+/);
@@ -2845,15 +3499,17 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             if (parent) {
                 type.setParent(parent);
             }
-            else if (parent = findControl(getParent(type.getOuter()))) {
-                parent.onappend && parent.onappend(type) === false || parent.$append(type) === false
-                    || type.$setParent(parent);
+            else if (o = findControl(getParent(type.getOuter()))) {
+                if (!(o.onappend && o.onappend(type) === false || o.$append(type) === false)) {
+                    type.$setParent(o);
+                }
             }
             else {
                 type.$setParent();
             }
 
             allControls.push(type);
+            independentControls.push(type);
             type.create(params);
 
             if (id) {
@@ -2864,9 +3520,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             }
 
             // 处理所有的关联操作
-            if (o = connectedControls[id]) {
-                for (connectedControls[id] = null; id = o[i++]; ) {
-                    id.func.call(id.caller, type);
+            if (el = connectedControls[id]) {
+                for (connectedControls[id] = null; o = el[i++]; ) {
+                    o.func.call(o.caller, type);
                 }
             }
 
@@ -2910,7 +3566,7 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {Function} func 扩展组件的初始化函数
          */
         $register = core.$register = function (name, func) {
-            exts.push(name, func);
+            plugins[name] = func;
         };
 
         /**
@@ -2922,9 +3578,8 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {number} 高度修正值
          */
         calcHeightRevise = core.calcHeightRevise = function (style) {
-            return flgFixedSize
-                ? toNumber(style.borderTopWidth) + toNumber(style.paddingTop)
-                    + toNumber(style.paddingBottom) + toNumber(style.borderBottomWidth)
+            return flgFixedSize ? toNumber(style.borderTopWidth) + toNumber(style.borderBottomWidth) +
+                    toNumber(style.paddingTop) + toNumber(style.paddingBottom)
                 : 0;
         };
 
@@ -2937,14 +3592,10 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {number} 左定位修正值
          */
         calcLeftRevise = core.calcLeftRevise = function (el) {
-            var style = getStyle(el.offsetParent),
-                borderLeftWidth = toNumber(style.borderLeftWidth);
-
-            return flgFixedOffset
-                ? borderLeftWidth
-                : firefoxVersion && style.overflow == 'hidden' && getStyle(el, 'position') == 'absolute'
-                    ? -borderLeftWidth
-                    : 0;
+            //__transform__style_o
+            var style = getStyle(el.offsetParent);
+            return !firefoxVersion || style.overflow != 'visible' && getStyle(el, 'position') == 'absolute' ?
+                toNumber(style.borderLeftWidth) * flgFixedOffset : 0;
         };
 
         /**
@@ -2956,14 +3607,10 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {number} 上定位修正值
          */
         calcTopRevise = core.calcTopRevise = function (el) {
-            var style = getStyle(el.offsetParent),
-                borderTopWidth = toNumber(style.borderTopWidth);
-
-            return flgFixedOffset
-                ? borderTopWidth
-                : firefoxVersion && style.overflow == 'hidden' && getStyle(el, 'position') == 'absolute'
-                    ? -borderTopWidth
-                    : 0;
+            //__transform__style_o
+            var style = getStyle(el.offsetParent);
+            return !firefoxVersion || style.overflow != 'visible' && getStyle(el, 'position') == 'absolute' ?
+                toNumber(style.borderTopWidth) * flgFixedOffset : 0;
         };
 
         /**
@@ -2975,31 +3622,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {number} 宽度修正值
          */
         calcWidthRevise = core.calcWidthRevise = function (style) {
-            return flgFixedSize
-                ? toNumber(style.borderLeftWidth) + toNumber(style.paddingLeft)
-                    + toNumber(style.paddingRight) + toNumber(style.borderRightWidth)
+            return flgFixedSize ? toNumber(style.borderLeftWidth) + toNumber(style.borderRightWidth) +
+                    toNumber(style.paddingLeft) + toNumber(style.paddingRight)
                 : 0;
-        };
-
-        /**
-         * 创建 ECUI 控件。
-         * 标准的创建 ECUI 控件 的工厂方法，所有的 ECUI 控件 都应该通过 create 方法或者 $create 方法生成。params 参数对象支持的属性如下：
-         * id        {string} 当前控件的 id，提供给 $connect 与 get 方法使用
-         * base      {string} 控件的基本样式，参见 getBaseClass 方法，如果忽略此参数将使用基本 Element 对象的 className 属性
-         * element   {HTMLElement} 与控件绑捆的 Element 对象，参见 getBase 方法，如果忽略此参数将创建 Element 对象与控件绑捆
-         * parent    {ecui.ui.Control} 父控件对象或者父 Element 对象
-         * type      {string} 控件的默认样式，通常情况下省略此参数，使用 "ec-控件名称" 作为控件的默认样式
-         * @public
-         *
-         * @param {string} type 控件的名称
-         * @param {Object} params 初始化参数，参见 ECUI 控件
-         * @return {ecui.ui.Control} ECUI 控件
-         */
-        createControl = core.create = function (type, params) {
-            type = $create(type, params);
-            type.cache();
-            type.init();
-            return type;
         };
 
         /**
@@ -3010,15 +3635,18 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          */
         disposeControl = core.dispose = function (control) {
             var i = 0,
-                type = control instanceof ecui.ui.Control,
+                type = control instanceof UI_CONTROL,
+
                 namedMap = {},
                 o;
 
             // 释放激活的控件
-            type
-                ? loseFocus(control)
-                : focusedControl
-                    && contain(control, focusedControl.getOuter()) && setFocused(findControl(getParent(control)));
+            if (type) {
+                loseFocus(control);
+            }
+            else if (focusedControl && contain(control, focusedControl.getOuter())) {
+                setFocused(findControl(getParent(control)));
+            }
 
             for (o in namedControls) {
                 namedMap[namedControls[o].getUID()] = o;
@@ -3027,8 +3655,10 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             for (; o = allControls[i++]; ) {
                 if (type ? control.contain(o) : contain(control, o.getOuter())) {
                     o.dispose();
-                    o = namedMap[o.getUID()];
-                    o && delete namedControls[o];
+                    remove(independentControls, o);
+                    if (o = namedMap[o.getUID()]) {
+                        delete namedControls[o];
+                    }
                     allControls.splice(--i, 1);
                 }
             }
@@ -3050,9 +3680,11 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          */
         drag = core.drag = function (control, event, range) {
             if (event.type == 'mousedown') {
+                //__gzip_original__currStyle
                 var el = control.getOuter(),
                     parent = el.offsetParent,
-                    style = getStyle(parent);
+                    style = getStyle(parent),
+                    currStyle = el.style;
 
                 copy(dragEnv, parent.tagName == 'BODY' || parent.tagName == 'HTML' ? getView() : {
                     top: 0,
@@ -3067,13 +3699,16 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                 setEnv(dragEnv);
 
                 // 设置样式为absolute，才能拖拽
-                style = el.style;
-                style.top = control.getY() + 'px';
-                style.left = control.getX() + 'px';
-                style.position = 'absolute';
+                currStyle.top = control.getY() + 'px';
+                currStyle.left = control.getX() + 'px';
+                currStyle.position = 'absolute';
 
-                ieVersion && DOCUMENT.body.setCapture();
-                control.ondragstart && control.ondragstart(event) === false || control.$dragstart(event);
+                if (ieVersion) {
+                    DOCUMENT.body.setCapture();
+                }
+                if (!(control.ondragstart && control.ondragstart(event) === false)) {
+                    control.$dragstart(event);
+                }
             }
         };
 
@@ -3094,12 +3729,12 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          */
         standardEvent = core.event = function (event) {
             var body = DOCUMENT.body,
-                o = getParent(body);
+                html = getParent(body);
 
             if (ieVersion) {
                 event = WINDOW.event;
-                event.pageX = o.scrollLeft + body.scrollLeft + event.clientX - body.clientLeft - o.clientLeft;
-                event.pageY = o.scrollTop + body.scrollTop + event.clientY - body.clientTop - o.clientTop;
+                event.pageX = html.scrollLeft + body.scrollLeft - html.clientLeft + event.clientX - body.clientLeft;
+                event.pageY = html.scrollTop + body.scrollTop - html.clientTop + event.clientY - body.clientTop;
                 event.target = event.srcElement;
                 event.which = event.keyCode;
                 event.stopPropagation = stopPropagation;
@@ -3113,36 +3748,6 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             keyCode = event.which || keyCode;
 
             return event;
-        };
-
-        /**
-         * 从指定的 DOM 节点开始，依次向它的父节点查找绑定的 ECUI 控件。
-         * findControl 方法，会返回从当前 DOM 节点开始，依次向它的父节点查找到的第一个绑定的 ECUI 控件。findControl 方法一般在控件创建时使用，用于查找父控件对象。
-         * @public
-         *
-         * @param {HTMLElement} el Element 对象
-         * @return {ecui.ui.Control} ECUI 控件对象，如果不能找到，返回 null
-         */
-        findControl = core.findControl = function (el) {
-            for (; el && el.nodeType == 1; el = getParent(el)) {
-                if (el.getControl) {
-                    return el.getControl();
-                }
-            }
-
-            return null;
-        };
-
-        /**
-         * 设置框架拦截之后的一次点击，并将点击事件发送给指定的 ECUI 控件。
-         * forcibly 方法将下一次的鼠标点击事件转给指定控件的 $forcibly 方法处理，相当于拦截了一次框架的鼠标事件点击操作，框架其它的状态不会自动改变，例如拥有焦点的控件不会改变。如果 $forcibly 方法不返回 false，将自动调用 restore 方法。
-         * @public
-         *
-         * @param {ecui.ui.Control} control ECUI 控件
-         */
-        forcibly = core.forcibly = function (control) {
-            forciblyEnv.target = control;
-            setEnv(forciblyEnv);
         };
 
         /**
@@ -3163,6 +3768,7 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                 namedControls = {};
 
                 // 检测Element宽度与高度的计算方式
+                //__gzip_original__body
                 var body = DOCUMENT.body,
                     o = getParameters(body, 'data-ecui');
 
@@ -3172,18 +3778,21 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                 insertHTML(
                     body,
                     'beforeEnd', 
-                    '<div style="position:relative;width:8px;border:1px solid"><div></div></div>'
+                    '<div style="position:absolute;overflow:scroll;top:-90px;left:-90px;width:80px;height:80px;' +
+                        'border:1px solid"><div style="position:absolute;top:0px;height:90px"></div></div>'
                 );
                 o = body.lastChild;
-                flgFixedSize = o.offsetWidth > 8;
+                flgFixedSize = o.offsetWidth > 80;
                 flgFixedOffset = o.lastChild.offsetTop;
+                scrollNarrow = o.offsetWidth - o.clientWidth - 2;
                 removeDom(o);
                 attachEvent(WINDOW, 'resize', paint);
                 attachEvent(WINDOW, 'unload', onunload);
+                attachEvent(WINDOW, 'scroll', onscroll);
 
                 // 自动初始化所有节点
                 core.init(body);
-                isLoaded = true;
+                status = core.NORMAL;
             }
             return namedControls[id] || null;
         };
@@ -3263,25 +3872,16 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
         getParameters = core.getParameters = function (el, attributeName) {
             attributeName = attributeName || ecuiName;
 
-            var list = el.getAttribute(attributeName),
-                params = {},
-                len;
+            var text = el.getAttribute(attributeName),
+                params = {};
 
-            if (list) {
-                el.removeAttribute(attributeName);
-                list = list.split(';');
-                len = list.length;
+            if (text) {
+                for (el.removeAttribute(attributeName); /\s*([\w-]+)\s*(:\s*|:\s*([^;]+)\s*)?($|;)/.test(text); ) {
+                    text = REGEXP["$'"];
 
-                for (; len--; ) {
-                    var s = list[len].split(/^\s+|\s*:\s*|\s+$/),
-                        name = s[0] || s[1],
-                        value = s[0] ? s[1] : s[2];
-
-                    if (name) {
-                        s = value ? value - 0 : true;
-                        params[toCamelCase(name)] =
-                            isNaN(s) ? value == 'true' || !value ? true : value == 'false' ? false : value : s;
-                    }
+                    el = REGEXP.$3;
+                    params[toCamelCase(REGEXP.$1)] =
+                        !el || el == 'true' ? true : el == 'false' ? false : ISNAN(el - 0) ? el : el - 0;
                 }
             }
 
@@ -3296,17 +3896,29 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {ecui.ui.Control} 处于按压状态的 ECUI 控件，如果不存在返回 null
          */
         getPressed = core.getPressed = function () {
-            return pressedControl;
+            return pressedControl || null;
         };
 
         /**
-         * 判断框架是否加载完毕。
+         * 获取浏览器滚动条相对窄的一边的长度。
+         * getScrollNarrow 方法对于垂直滚动条，返回的是滚动条的宽度，对于水平滚动条，返回的是滚动条的高度。
          * @public
          *
-         * @return {boolean} 框架是否加载完毕
+         * @return {number} 浏览器滚动条相对窄的一边的长度
          */
-        hasLoaded = core.hasLoaded = function () {
-            return isLoaded;
+        getScrollNarrow = core.getScrollNarrow = function () {
+            return scrollNarrow;
+        };
+
+        /**
+         * 获取框架当前的状态。
+         * getStatus 方法返回框架当前的工作状态，目前支持三类工作状态：NORMAL(正常状态)、INIT(加载状态)与PAINT(刷新状态)
+         * @public
+         *
+         * @return {boolean} 框架当前的状态
+         */
+        getStatus = core.getStatus = function () {
+            return status;
         };
 
         /**
@@ -3318,48 +3930,60 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          */
         core.init = function (el) {
             var i = 0,
-                len = 0,
-                o = el.getElementsByTagName('*'),
+                list = [],
+                params = el.all || el.getElementsByTagName('*'),
                 elements = [el],
-                controls = [],
-                j,
-                extParam;
+                o;
 
             if (!initRecursion++) {
                 detachEvent(WINDOW, 'resize', paint);
             }
 
             // 自动初始化控件
-            for (; el = o[i++]; ) {
-                elements[i] = el;
+            for (; o = params[i++]; ) {
+                elements[i] = o;
             }
 
             for (i = 0; el = elements[i]; i++) {
                 if (getParent(el)) {
-                    o = getParameters(el);
-                    o.element = el;
-                    // 以下使用 el 替代 type
-                    if (o.type) {
-                        controls[len++] = el = $create(o.type, o);
+                    params = getParameters(el);
+                    params.element = el;
+                    // 以下使用 el 替代 control
+                    if (el = params.type) {
+                        list.push(el = $create(el, params));
                     }
-                    for (j = 0; extParam = exts[j]; j += 2) {
-                        o[extParam] && exts[j + 1](el, o[extParam]);
-                        el instanceof UI_CONTROL && el['$init' + extParam] && el['$init' + extParam](o);
+                    for (o in plugins) {
+                        if (params[o]) {
+                            plugins[o](el, params[o]);
+                        }
+                        el instanceof UI_CONTROL && el['$init' + o] && el['$init' + o](params);
 
                     }
                 }
             }
 
-            for (i = 0; o = controls[i++]; ) {
+            for (i = 0; o = list[i++]; ) {
                 o.cache();
             }
-            for (i = 0; o = controls[i++]; ) {
+            for (i = 0; o = list[i++]; ) {
                 o.init();
             }
 
             if (!(--initRecursion)) {
                 attachEvent(WINDOW, 'resize', paint);
             }
+        };
+
+        /**
+         * 设置框架拦截之后的一次点击，并将点击事件发送给指定的 ECUI 控件。
+         * intercept 方法将下一次的鼠标点击事件转给指定控件的 $intercept 方法处理，相当于拦截了一次框架的鼠标事件点击操作，框架其它的状态不会自动改变，例如拥有焦点的控件不会改变。如果 $intercept 方法不返回 false，将自动调用 restore 方法。
+         * @public
+         *
+         * @param {ecui.ui.Control} control ECUI 控件
+         */
+        intercept = core.intercept = function (control) {
+            interceptEnv.target = control;
+            setEnv(interceptEnv);
         };
 
         /**
@@ -3380,7 +4004,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {ecui.ui.Control} control ECUI 控件
          */
         loseFocus = core.loseFocus = function (control) {
-            control.contain(focusedControl) && setFocused(control.getParent());
+            if (control.contain(focusedControl)) {
+                setFocused(control.getParent());
+            }
         };
 
         /**
@@ -3392,90 +4018,39 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {number} zIndex 遮罩层的 zIndex 样式值，如果省略使用 32767
          */
         mask = core.mask = function (opacity, zIndex) {
+            //__gzip_original__body
             var i = 0,
                 body = DOCUMENT.body,
-                o;
+                o = getView(),
+                top = MAX(o.top - o.height * 2, 0),
+                left = MAX(o.left - o.width * 2, 0),
+                text = ';top:' + top + 'px;left:' + left +
+                    'px;width:' + MIN(o.width * 5, o.maxWidth - left) +
+                    'px;height:' + MIN(o.height * 5, o.maxHeight - top) + 'px;display:';
 
-            if (opacity === false) {
+            if ('boolean' == typeof opacity) {
+                text += opacity ? 'block' : 'none'; 
                 for (; o = maskElements[i++]; ) {
-                    o.style.display = 'none';
-                }
-            }
-            else if (opacity === true) {
-                for (; o = maskElements[i++]; ) {
-                    o.style.display = '';
-                    setMaskPosition(o);
+                    o.style.cssText += text;
                 }
             }
             else if (opacity === undefined) {
                 removeDom(maskElements.pop());
                 if (!maskElements.length) {
                     removeClass(body, 'mask');
-                    detachEvent(WINDOW, 'scroll', onscroll);
                 }
             }
             else {
                 if (!maskElements.length) {
                     addClass(body, 'mask');
-                    attachEvent(WINDOW, 'scroll', onscroll);
                 }
                 maskElements.push(o = body.appendChild(createDom(
                     '',
-                    'position:absolute;top:0px;left:0px;background-color:#000;z-index:' + (zIndex || 32767)
+                    'position:absolute;background-color:#000;z-index:' + (zIndex || 32767)
                 )));
                 setStyle(o, 'opacity', opacity);
-                setMaskPosition(o);
+                o.style.cssText += text + 'block';
             }
-        };
-
-        /**
-         * 窗体改变大小时的事件处理。
-         * 一些特殊情况下，例如包含框架的页面，页面变化时不会触发 onresize 事件，需要手工调用 paint 函数刷新所有的控件大小。
-         * @public
-         */
-        paint = core.paint = function () {
-            var i = 0,
-                o = DOCUMENT.body,
-                controls = [];
-
-            if (ieVersion) {
-                if (isStrict) {
-                    do {
-                        o = getParent(o);
-                    }
-                    while (o.tagName != 'HTML');
-                }
-                o = o.clientWidth;
-                if (lastClientWidth != o) {
-                    lastClientWidth = o;
-                }
-                else {
-                    // 阻止 ie6 下的重入
-                    return;
-                }
-            }
-
-            o = currEnv.type;
-            mask(false);
-            if (o != 'zoom') {
-                // 改变窗体大小需要清空拖拽状态
-                o == 'drag' && currEnv.mouseup();
-                for (; o = allControls[i++]; ) {
-                    o.getParent() || o.isShow() && controls.push(o);
-                }
-                for (i = 0; o = controls[i++]; ) {
-                    o.paint = blank;
-                    o.resize();
-                    delete o.paint;
-                }
-                for (i = 0; o = controls[i++]; ) {
-                    o.cache(true, true);
-                }
-                for (i = 0; o = controls[i++]; ) {
-                    o.$setSize(o.getWidth(), o.getHeight());
-                }
-            }
-            ieVersion < 8 ? new Timer(mask, 0, null, true) : mask(true);
         };
 
         /**
@@ -3489,21 +4064,20 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {Object} condition 查询条件，如果省略将返回全部的控件
          * @param {Array} 控件列表
          */
-        core.query = function (condition) {
+        query = core.query = function (condition) {
             condition = condition || {};
 
+            //__gzip_original__parent
             for (
                 var i = 0,
                     result = [],
-                    __zip_direct__type = condition.type,
-                    __zip_direct__parent = condition.parent,
-                    __zip_direct__custom = condition.custom,
+                    parent = condition.parent,
+                    custom = condition.custom,
                     o;
-                o = allControls[i++];
+                o = independentControls[i++];
             ) {
-                if ((!__zip_direct__type || (o instanceof __zip_direct__type))
-                        && (__zip_direct__parent === undefined || (o.getParent() == __zip_direct__parent))
-                        && (!__zip_direct__custom || __zip_direct__custom(o))) {
+                if ((!condition.type || (o instanceof condition.type)) &&
+                        (parent === undefined || (o.getParent() == parent)) && (!custom || custom(o))) {
                     result.push(o);
                 }
             }
@@ -3513,7 +4087,7 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
 
         /**
          * 恢复当前框架的状态到上一个状态。
-         * restore 用于恢复调用特殊操作如 drag、forcibly 与 zoom 后改变的框架环境，包括各框架事件处理函数的恢复、控件的焦点设置等。
+         * restore 用于恢复调用特殊操作如 drag、intercept 与 zoom 后改变的框架环境，包括各框架事件处理函数的恢复、控件的焦点设置等。
          * @public
          */
         restore = core.restore = function () {
@@ -3532,38 +4106,50 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {string} className 选择框的样式名称，如果省略将使用 ec-selector
          */
         core.select = function (control, event, className) {
+            function build(name) {
+                selectorControl['$zoom' + name] = function (event) {
+                    if (!(control['onselect' + name] && control['onselect' + name](event) === false)) {
+                        control['$select' + name](event);
+                    }
+                };
+            }
+
             if (event.type == 'mousedown') {
 
                 if (!selectorControl) {
-                    o = DOCUMENT.body;
                     insertHTML(
-                        o,
+                        DOCUMENT.body,
                         'beforeEnd',
-                        '<div class="ec-control ec-selector" style="overflow:hidden"><div class="ec-selector-box"></div></div>'
+                        '<div class="ec-control ec-selector" style="overflow:hidden"><div class="ec-selector-box">' +
+                            '</div></div>'
                     );
-                    selectorControl = $fastCreate(UI_CONTROL, o.lastChild);
+                    selectorControl = $fastCreate(UI_CONTROL, DOCUMENT.body.lastChild);
 
-                    selectorControl.$setSize = setSelectorSize;
-                    for (var i = 3, list = ['start', '', 'end']; i--; ) {
-                        var o = list[i],
-                            selectName = 'select' + o;
-                        selectorControl['$zoom' + o] = new Function(
-                            'e',
-                            'var o=this.target;o.on' + selectName + '&&o.on' + selectName + '(e)===false||o.$'
-                                + selectName + '(e)'
-                        );
-                    }
+                    selectorControl.$setSize = function (width, height) {
+                        //__gzip_original__style
+                        var el = this.getOuter().firstChild,
+                            style = el.style;
+                        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+
+                        style.width = MAX(1, width - calcWidthRevise(el)) + 'px';
+                        style.height = MAX(1, height - calcHeightRevise(el)) + 'px';
+                    };
                 }
+
+                build('start');
+                build('');
+                build('end');
 
                 // 设置选择框的初始信息
                 selectorControl.setPosition(mouseX, mouseY);
                 selectorControl.setSize(1, 1);
-                selectorControl.setClass(className || 'ec-selector'),
+                selectorControl.setClass(className || 'ec-selector');
                 selectorControl.show();
-                selectorControl.target = control;
 
-                zoom(selectorControl, event);
+                core.zoom(selectorControl, event);
             }
+
+            event = null;
         };
 
         /**
@@ -3594,24 +4180,28 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @param {Event} event 事件对象
          * @param {Object} range 控件允许的缩放范围参数
          */
-        zoom = core.zoom = function (control, event, range) {
+        core.zoom = function (control, event, range) {
             if (event.type == 'mousedown') {
 
                 control.getOuter().style.position = 'absolute';
 
                 // 保存现场环境
-                range && copy(zoomEnv, range);
-                copy(zoomEnv, {
-                    left: control.getX(),
-                    top: control.getY(),
-                    width: control.getWidth(),
-                    height: control.getHeight()
-                });
+                if (range) {
+                    copy(zoomEnv, range);
+                }
+                zoomEnv.top = control.getY();
+                zoomEnv.left = control.getX();
+                zoomEnv.width = control.getWidth();
+                zoomEnv.height = control.getHeight();
                 zoomEnv.target = control;
                 setEnv(zoomEnv);
 
-                ieVersion && DOCUMENT.body.setCapture();
-                control.onzoomstart && control.onzoomstart(event) === false || control.$zoomstart(event);
+                if (ieVersion) {
+                    DOCUMENT.body.setCapture();
+                }
+                if (!(control.onzoomstart && control.onzoomstart(event) === false)) {
+                    control.$zoomstart(event);
+                }
             }
         };
 
@@ -3657,8 +4247,8 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             }
 
             // 拖拽状态下，不允许滚动
-            if (currEnv.type == 'drag' || bubble(overedControl, 'mousewheel', event) === false
-                || bubble(focusedControl, 'mousewheel', event) === false) {
+            if (currEnv.type == 'drag' || bubble(overedControl, 'mousewheel', event) === false ||
+                    bubble(focusedControl, 'mousewheel', event) === false) {
                 event.preventDefault();
             }
         };
@@ -3696,13 +4286,11 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                     list2 = [];
 
                 // 向序列中填充父控件
-                while (control1) {
+                for (; control1; control1 = control1.getParent()) {
                     list1.push(control1);
-                    control1 = control1.getParent();
                 }
-                while (control2) {
+                for (; control2; control2 = control2.getParent()) {
                     list2.push(control2);
-                    control2 = control2.getParent();
                 }
 
                 list1.reverse();
@@ -3733,15 +4321,30 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @return {ecui.ui.Control} 控件对象
          */
         function getTarget() {
-            for (var o = findControl(this.target); o; o = o.getParent()) {
-                if (!o.isEnabled()) {
-                    break;
-                }
-                if (o.isCapture()) {
-                    return o;
+            var o = findControl(this.target);
+            if (o && o.isEnabled()) {
+                for (; o; o = o.getParent()) {
+                    if (o.isCapture()) {
+                        return o;
+                    }
                 }
             }
             return null;
+        }
+
+        /**
+         * 判断点击是否发生在滚动条区域。
+         * @private
+         *
+         * @param {Event} event 事件对象
+         * @return {boolean} 点击是否发生在滚动条区域
+         */
+        function isScrollClick(event) {
+            var target = event.target,
+                pos = getPosition(target),
+                style = getStyle(target);
+            return event.pageX - pos.left - toNumber(style.borderLeftWidth) >= target.clientWidth !=
+                event.pageY - pos.top - toNumber(style.borderTopWidth) >= target.clientHeight;
         }
 
         /**
@@ -3757,8 +4360,6 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          * @private
          */
         function onunload() {
-            // 清除闭包中引用的 Element 对象
-            maskElements = DOCUMENT = null;
             for (var i = 0, o; o = allControls[i++]; ) {
                 try {
                     o.dispose();
@@ -3766,6 +4367,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
                 catch (e) {
                 }
             }
+
+            // 清除闭包中引用的 Element 对象
+            DOCUMENT = maskElements = null;
         }
 
         /**
@@ -3805,42 +4409,10 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
          */
         function setHandler(env, remove) {
             for (var i = 0, func = remove ? detachEvent : attachEvent, o; i < 5; ) {
-                o = eventNames[i++];
-                env[o] && func(DOCUMENT, o, env[o]);
+                if (env[o = eventNames[i++]]) {
+                    func(DOCUMENT, o, env[o]);
+                }
             }
-        }
-
-        /**
-         * 设置屏蔽层的位置。
-         * @private
-         *
-         * @param {HTMLElement} mask 屏蔽层 Element 对象
-         * @param {Object} view 浏览器视图对象
-         */
-        function setMaskPosition(mask) {
-            var view = getView(),
-                style = mask.style;
-
-            style.top = view.top + 'px';
-            style.left = view.left + 'px';
-            style.width = view.right - view.left + 'px';
-            style.height = view.bottom - view.top + 'px';
-        }
-
-        /**
-         * 设置选择框控件的大小。
-         * @private
-         *
-         * @param {number} width 选择框的宽度
-         * @param {number} height 选择框的高度
-         */
-        function setSelectorSize(width, height) {
-            var el = this.getOuter().firstChild,
-                style = el.style;
-
-            ui.Control.prototype.$setSize.call(this, width, height);
-            style.width = MAX(1, width - calcWidthRevise(el)) + 'px';
-            style.height = MAX(1, height - calcHeightRevise(el)) + 'px';
         }
 
         /**
@@ -3914,14 +4486,15 @@ $cache$position          - 控件布局方式缓存
      * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
      */
     UI_CONTROL_CLASS.$cache = function (style, cacheSize) {
+        //__gzip_original__el
         for (
             var i = 0,
-                el = this._eBase,
-                fixedSize = isFixedSize(),
                 list = [
                     'borderTopWidth', 'borderLeftWidth', 'borderRightWidth', 'borderBottomWidth',
                     'paddingTop', 'paddingLeft', 'paddingRight', 'paddingBottom'
                 ],
+                el = this._eBase,
+                fixedSize = isFixedSize(),
                 o;
             o = list[i++];
         ) {
@@ -3931,12 +4504,12 @@ $cache$position          - 控件布局方式缓存
         this.$cache$position = style.position;
 
         if (cacheSize !== false) {
-            // 以下使用 o 表示 style
-            o = el.style;
-            this._nWidth = el.offsetWidth
-                || toNumber(style.width || o.width) + (fixedSize ? this.getInvalidWidth(true) : 0);
-            this._nHeight = el.offsetHeight
-                || toNumber(style.height || o.height) + (fixedSize ? this.getInvalidHeight(true) : 0);
+            this._nWidth =
+                el.offsetWidth ||
+                    toNumber(style.width || el.style.width) + (fixedSize ? this.getInvalidWidth(true) : 0);
+            this._nHeight =
+                el.offsetHeight ||
+                    toNumber(style.height || el.style.height) + (fixedSize ? this.getInvalidHeight(true) : 0);
         }
     };
 
@@ -3996,7 +4569,7 @@ $cache$position          - 控件布局方式缓存
         this.$setSize(this.getWidth(), this.getHeight());
 
         if (this.$ready) {
-            if (hasLoaded()) {
+            if (getStatus() != core.INIT) {
                 this.$ready();
             }
             else {
@@ -4074,16 +4647,21 @@ $cache$position          - 控件布局方式缓存
      * @protected
      */
     UI_CONTROL_CLASS.$resize = function () {
-        this._eBase.style.width = this._sWidth;
-        if (ieVersion < 8) {
-            var style = getStyle(this._eBase);
+        //__gzip_original__el
+        //__gzip_original__currStyle
+        var el = this._eBase,
+            currStyle = el.style;
+
+        currStyle.width = this._sWidth;
+        if (ieVersion < 8 && getStatus() != core.PAINT) {
+            // 如果此时浏览器在进行整体的刷新重绘，则不进入此分支
+            var style = getStyle(el);
             if (style.width == 'auto' && style.display == 'block') {
-                this._eBase.style.width = '100%';
-                this._eBase.style.width =
-                    this._eBase.offsetWidth - (isFixedSize() ? this.getInvalidWidth(true) * 2 : 0) + 'px';
+                currStyle.width = '100%';
+                currStyle.width = el.offsetWidth - (isFixedSize() ? this.getInvalidWidth(true) * 2 : 0) + 'px';
             }
         }
-        this._eBase.style.height = this._sHeight;
+        currStyle.height = this._sHeight;
         this.paint();
     };
 
@@ -4128,6 +4706,7 @@ $cache$position          - 控件布局方式缓存
      * @param {number} height 高度，如果不需要设置则省略此参数
      */
     UI_CONTROL_CLASS.$setSize = function (width, height) {
+        //__gzip_original__style
         var style = this._eBase.style,
             flgFixedSize = isFixedSize();
 
@@ -4161,7 +4740,7 @@ $cache$position          - 控件布局方式缓存
     UI_CONTROL_CLASS.alterClass = function (className, isRemoved) {
         (isRemoved ? removeClass : addClass)(
             this._eBase,
-            this._sClass + '-' + className + ' ' + this._sType + '-' + className
+            this._sType + '-' + className + ' ' + this._sClass + '-' + className
         );
     };
 
@@ -4213,7 +4792,9 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.dispose = function () {
         try {
-            this.ondispose && this.ondispose();
+            if (this.ondispose) {
+                this.ondispose();
+            }
         }
         catch (e) {
         }
@@ -4305,8 +4886,8 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.getInvalidHeight = function () {
         this.cache();
-        return this.$cache$borderTopWidth + this.$cache$paddingTop
-            + this.$cache$paddingBottom + this.$cache$borderBottomWidth;
+        return this.$cache$borderTopWidth + this.$cache$borderBottomWidth +
+            this.$cache$paddingTop + this.$cache$paddingBottom;
     };
 
     /**
@@ -4317,8 +4898,8 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.getInvalidWidth = function () {
         this.cache();
-        return this.$cache$borderLeftWidth + this.$cache$paddingLeft
-            + this.$cache$paddingRight + this.$cache$borderRightWidth;
+        return this.$cache$borderLeftWidth + this.$cache$borderRightWidth +
+            this.$cache$paddingLeft + this.$cache$paddingRight;
     };
 
     /**
@@ -4410,7 +4991,9 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.hide = function () {
         if (this.isShow()) {
-            this.onhide && this.onhide() === false || this.$hide();
+            if (!(this.onhide && this.onhide() === false)) {
+                this.$hide();
+            }
         }
     };
 
@@ -4433,9 +5016,8 @@ $cache$position          - 控件布局方式缓存
      * @return {boolean} 控件是否可操作
      */
     UI_CONTROL_CLASS.isEnabled = function () {
-        var parent = this._cParent;
         // 当控件处于可操作状态时，查询父控件是否可用
-        return this._bEnabled && (!parent || parent.isEnabled());
+        return this._bEnabled && (!this._cParent || this._cParent.isEnabled());
     };
 
     /**
@@ -4500,30 +5082,30 @@ $cache$position          - 控件布局方式缓存
      * @param {string} currClass 控件的当前样式
      */
     UI_CONTROL_CLASS.setClass = function (currClass) {
-        var i = 0,
-            el = this._eBase,
-            classes = [],
-            defaultClass = this._sType,
-            oldClass = this._sClass;
+        //__gzip_original__typeClass
+        var status = [' '],
+            styleNames = [''],
+            typeClass = this._sType;
 
-        currClass = currClass || defaultClass;
+        currClass = currClass || typeClass;
 
         // 如果基本样式没有改变不需要执行
-        if (currClass != oldClass) {
+        if (currClass != this._sClass) {
+            this._eBase.className =
+                this._eBase.className.replace(
+                    new REGEXP('(^|\\s+)(' + this._sClass + '|' + typeClass + ')(-[^\\s]+)?', 'g'),
+                    function ($0, $1, $2, $3) {
+                        if (indexOf(status, $3) < 0) {
+                            status.push($3);
+                            styleNames.push(currClass + $3);
+                        }
+                        return '';
+                    }
+                ) + status.join(' ' + typeClass) + styleNames.join(' ');
 
-            el.className.replace(new RegExp('(^|\\s)' + oldClass + '(-[^\\s]+)', 'g'), function ($0, $1, $2) {
-                classes.push(defaultClass + $2);
-                defaultClass != currClass && classes.push(currClass + $2);
-            });
-
-            // 必须拥有缺省样式
-            classes.push(defaultClass);
-            defaultClass != currClass && classes.push(currClass);
-
-            el.className = classes.join(' ');
             this._sClass = currClass;
         }
-    },
+    };
 
     /**
      * 设置控件的可操作状态。
@@ -4539,7 +5121,9 @@ $cache$position          - 控件布局方式缓存
         if (this._bEnabled != status) {
             this.alterClass('disabled', status);
             // 如果控件拥有焦点，设置成不可用状态时需要失去焦点
-            status || loseFocus(this);
+            if (!status) {
+                loseFocus(this);
+            }
             this._bEnabled = status;
         }
     };
@@ -4581,7 +5165,9 @@ $cache$position          - 控件布局方式缓存
         // 触发原来父控件的移除子控件事件
         if (parent != oldParent || parentEl != getParent(el)) {
             if (oldParent) {
-                oldParent.onremove && oldParent.onremove(this);
+                if (oldParent.onremove) {
+                    oldParent.onremove(this);
+                }
                 oldParent.$remove(this);
             }
             if (parent) {
@@ -4590,7 +5176,12 @@ $cache$position          - 控件布局方式缓存
                 }
             }
 
-            parentEl ? parentEl.appendChild(el) : removeDom(el);
+            if (parentEl) {
+                parentEl.appendChild(el);
+            }
+            else {
+                removeDom(el);
+            }
             this.$setParent(parent);
             this.clearCache();
         }
@@ -4618,12 +5209,15 @@ $cache$position          - 控件布局方式缓存
      * @param {number} height 控件的高度
      */
     UI_CONTROL_CLASS.setSize = function (width, height) {
+        //__gzip_original__style
+        var style = this._eBase.style;
+
         this.$setSize(width, height);
         if (width) {
-            this._sWidth = this._eBase.style.width;
+            this._sWidth = style.width;
         }
         if (height) {
-            this._sHeight = this._eBase.style.height;
+            this._sHeight = style.height;
         }
     };
 
@@ -4634,856 +5228,1632 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.show = function () {
         if (!this.isShow()) {
-            this.onshow && this.onshow() === false || this.$show();
+            if (!(this.onshow && this.onshow() === false)) {
+                this.$show();
+            }
         }
     };
 
     (function () {
+        function build(name, enabled) {
+            UI_CONTROL_CLASS[name] = function (event) {
+                if (enabled || this.isEnabled()) {
+                    if (this['on' + name] && this['on' + name](event) === false || 
+                            this['$' + name](event) === false) {
+                        return false;
+                    }
+                }
+            };
+
+            UI_CONTROL_CLASS['$' + name] = UI_CONTROL_CLASS['$' + name] || blank;
+        }
 
         // 初始化事件处理函数，以事件名命名，这些函数行为均是判断控件是否可操作/是否需要调用事件/是否需要执行缺省的事件处理，对应的缺省事件处理函数名以$开头后接事件名，处理函数以及缺省事件处理函数参数均为事件对象，仅执行一次。
         for (var i = 0, o; o = eventNames[i++]; ) {
-            UI_CONTROL_CLASS[o] = new Function(
-                'e',
-                'var o=this;if(' + (i < 17 ? 'o.isEnabled()&&' : '')
-                    + '(o.on' + o + '&&o.on' + o + '(e)===false||o.$' + o + '(e)===false))return false'
-            );
-            UI_CONTROL_CLASS['$' + o] = UI_CONTROL_CLASS['$' + o] || blank;
+            build(o, i > 17 || i == 10);
         }
 
         // 初始化空操作的一些缺省处理
-        UI_CONTROL_CLASS.$forcibly = UI_CONTROL_CLASS.$append = UI_CONTROL_CLASS.$remove
-            = UI_CONTROL_CLASS.$selectstart = UI_CONTROL_CLASS.$select = UI_CONTROL_CLASS.$selectend
-            = UI_CONTROL_CLASS.$zoomstart = UI_CONTROL_CLASS.$zoom = UI_CONTROL_CLASS.$zoomend
-            = UI_CONTROL_CLASS.$dragstart = UI_CONTROL_CLASS.$dragmove = UI_CONTROL_CLASS.$dragend
-            = blank;
+        UI_CONTROL_CLASS.$intercept = UI_CONTROL_CLASS.$append = UI_CONTROL_CLASS.$remove =
+            UI_CONTROL_CLASS.$selectstart = UI_CONTROL_CLASS.$select = UI_CONTROL_CLASS.$selectend =
+            UI_CONTROL_CLASS.$zoomstart = UI_CONTROL_CLASS.$zoom = UI_CONTROL_CLASS.$zoomend =
+            UI_CONTROL_CLASS.$dragstart = UI_CONTROL_CLASS.$dragmove = UI_CONTROL_CLASS.$dragend = blank;
     })();
 
 
 /*
-Scroll - 定义在一个区间轴内移动的基本操作。
-滚动条控件，继承自基础控件，滚动条控件，内部包含三个部件，分别是向前(滚动条的当前值变小)滚动按钮(基础控件)、向后(滚动
-条的当前值变大)滚动按钮(基础控件)与滑动块(基础控件)。滚动条控件是滚动行为的虚拟实现，不允许直接初始化，它的子类通常情
-况下也不会被直接初始化，而是作为控件的一部分用于控制父控件的行为。
+Label - 定义事件转发的基本操作。
+标签控件，继承自基础控件，将事件转发到指定的控件上，通常与 Radio、Checkbox 等控件联合使用，扩大点击响应区域。
+
+标签控件直接HTML初始化的例子:
+<div ecui="type:label;for:checkbox"></div>
 
 属性
-_nTotal         - 滚动条区域允许设置的最大值
-_nStep          - 滚动条移动一次时的基本步长
-_nValue         - 滚动条当前设置的值
-_oTimer         - 定时器的句柄，用于连续滚动处理
-_cButton        - 当前正在执行动作的按钮，用于连续滚动的控制
-_uPrev          - 向前滚动按钮
-_uNext          - 向后滚动按钮
-_uBlock         - 滑动块
-
-滑动块属性
-_oRange         - 滑动块的合法滑动区间
+_cFor - 被转发的控件对象
 */
 
 
     /**
-     * 停止自动滚动
-     * @private
-     *
-     * @param {ecui.ui.Scroll} control 滚动条对象
-     */
-    function UI_SCROLL_STOP(control) {
-        var timer = control._oTimer;
-        timer && timer.stop();
-    }
-
-    /**
-     * 控扭控件自动滚动。
-     * @private
-     *
-     * @param {ecui.ui.Scroll.Button} button 触发滚动的按钮
-     * @param {number} step 单次滚动步长
-     */
-    function UI_SCROLL_MOVE(button, step) {
-        var scroll = button.getParent(),
-            __gzip_direct__value = scroll._nValue,
-            isPrev = scroll._uPrev == button;
-        UI_SCROLL_STOP(scroll);
-
-        if (isPrev && __gzip_direct__value || !isPrev && __gzip_direct__value < scroll._nTotal) {
-            isPrev
-                ? scroll.$allowPrev() && scroll.setValue(__gzip_direct__value - step)
-                : scroll.$allowNext() && scroll.setValue(__gzip_direct__value + step);
-            scroll._oTimer = new Timer(UI_SCROLL_MOVE, 200, null, button, step);
-        }
-    }
-
-    /**
-     * 滑动块拖拽移动事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     * @param {number} x 滑动块实际到达的X轴坐标
-     * @param {number} y 滑动块实际到达的Y轴坐标
-     */
-    UI_SCROLL_BLOCK_CLASS.$dragmove = function (event, x, y) {
-        UI_CONTROL_CLASS.$dragmove.call(this, event, x, y);
-
-        var parent = this.getParent(),
-            value = parent.$calcDragValue(x, y);
-
-        // 应该滚动step的整倍数
-        parent.$setValue(value == parent._nTotal ? value : value - value % parent._nStep);
-        parent.scroll();
-    };
-
-    /**
-     * 鼠标在滑动块区域内按压开始事件的默认处理，触发滑动块拖动功能。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BLOCK_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-
-        drag(this, event, this._oRange);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
-     * 设置滑动块的合法拖拽区间。
-     * @public
-     *
-     * @param {number} top 允许拖拽的最上部区域
-     * @param {number} right 允许拖拽的最右部区域
-     * @param {number} bottom 允许拖拽的最下部区域
-     * @param {number} left 允许拖拽的最左部区域
-     */
-    UI_SCROLL_BLOCK_CLASS.setRange = function (top, right, bottom, left) {
-        this._oRange = {
-            top: top,
-            right: right,
-            bottom: bottom,
-            left: left
-        };
-    };
-
-    /**
-     * 控扭控件按压状态结束事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
-    };
-
-    /**
-     * 控扭控件按压状态中鼠标移出控件区域事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
-        UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
-    };
-
-    /**
-     * 控扭控件按压状态中鼠标移入控件区域事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressover = function (event) {
-        UI_CONTROL_CLASS.$pressover.call(this, event);
-        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_SCROLL_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-
-        this._uPrev.cache(true, true);
-        this._uNext.cache(true, true);
-        this._uBlock.cache(true, true);
-    };
-
-    /**
-     * 隐藏控件。
-     * 隐藏滚动条控件时，滚动条控件的当前值需要复位为0，参见 setValue 与 setTotal 方法。
+     * 鼠标单击控件事件的默认处理。
+     * 将点击事件转发到 setFor 方法指定的控件。如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
      * @protected
      */
-    UI_SCROLL_CLASS.$hide = function () {
-        UI_SCROLL_CLASS.setValue.call(this, 0);
-        return UI_CONTROL_CLASS.$hide.call(this);
-    };
+    UI_LABEL_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
 
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
-     * @protected
-     */
-    UI_SCROLL_CLASS.$init = function () {
-        this._uPrev.$init();
-        this._uNext.$init();
-        this._uBlock.$init();
-        UI_CONTROL_CLASS.$init.call(this);
-    };
-
-    /**
-     * 控件按压状态结束事件的默认处理。
-     * 鼠标左键按压控件结束时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressend 方法触发 onpressend 事件，如果事件返回值不为 false，则调用 $pressend 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this);
-    };
-
-    /**
-     * 控件按压状态中鼠标移出控件区域事件的默认处理。
-     * 控件按压状态中鼠标移出控件区域时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressout 方法触发 onpressout 事件，如果事件返回值不为 false，则调用 $pressout 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressout = function (event) {
-        UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this);
-    };
-
-    /**
-     * 控件按压状态中鼠标移入控件区域事件的默认处理。
-     * 控件按压状态中鼠标移入控件区域开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressover 方法触发 onpressover 事件，如果事件返回值不为 false，则调用 $pressover 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressover = function (event) {
-        UI_CONTROL_CLASS.$pressover.call(this, event);
-        UI_SCROLL_MOVE(this._cButton, this.$getPageStep());
-    };
-
-    /**
-     * 控件按压状态开始事件的默认处理。
-     * 鼠标左键按压控件开始时计算自动滚动的方向，并开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-
-        UI_SCROLL_MOVE(this._cButton = this.$allowPrev() ? this._uPrev : this._uNext, this.$getPageStep());
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
-     * 设置滚动条控件的单页滚动距离。
-     * @protected
-     *
-     * @param {number} value 单页滚动距离
-     */
-    UI_SCROLL_CLASS.$setPageStep = function (value) {
-        this._nPageStep = value;
-    };
-
-    /**
-     * 设置滚动条控件的大小。
-     * @protected
-     *
-     * @param {number} width 控件区域的宽度
-     * @param {number} height 控件区域的高度
-     */
-    UI_SCROLL_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-        this.$locate();
-    };
-
-    /**
-     * 直接设置控件的当前值。
-     * $setValue 仅仅设置控件的参数值，不进行合法性验证，也不改变滑动块的位置信息，用于滑动块滚动时同步设置当前值。
-     * @protected
-     *
-     * @param {number} value 控件的当前值
-     */
-    UI_SCROLL_CLASS.$setValue = function (value) {
-        this._nValue = value;
-    };
-
-    /**
-     * 获取滚动条控件的单次滚动距离。
-     * getStep 方法返回滚动条控件发生滚动时，移动的最小步长值，通过 setStep 设置。
-     * @public
-     *
-     * @return {number} 单次滚动距离
-     */
-    UI_SCROLL_CLASS.getStep = function () {
-        return this._nStep;
-    };
-
-    /**
-     * 获取滚动条控件的最大值。
-     * getTotal 方法返回滚动条控件允许滚动的最大值，最大值、当前值与滑动块控件的实际位置互相影响，通过 setTotal 设置。
-     * @public
-     *
-     * @return {number} 控件的最大值
-     */
-    UI_SCROLL_CLASS.getTotal = function () {
-        return this._nTotal;
-    };
-
-    /**
-     * 获取滚动条控件的当前值。
-     * getValue 方法返回滚动条控件的当前值，最大值、当前值与滑动块控件的实际位置互相影响，但是当前值不允许超过最大值，通过 setValue 方法设置。
-     * @public
-     *
-     * @return {number} 滚动条控件的当前值
-     */
-    UI_SCROLL_CLASS.getValue = function () {
-        return this._nValue;
-    };
-
-    /**
-     * 滚动条滚动。
-     * scroll 方法首先调用 change 方法，之后触发父控件的 onscroll 事件，如果事件返回值不为 false，则调用父控件的 $scroll 方法。
-     * @public
-     */
-    UI_SCROLL_CLASS.scroll = function () {
-        var parent = this.getParent();
-        this.change();
-        parent && (parent.onscroll && parent.onscroll(this) === false || parent.$scroll(this));
-    };
-
-    /**
-     * 设置滚动条控件的单次滚动距离。
-     * setStep 方法设置的值必须大于0，否则不会进行操作。
-     * @public
-     *
-     * @param {number} value 单次滚动距离
-     */
-    UI_SCROLL_CLASS.setStep = function (value) {
-        if (value > 0) {
-            this._nStep = value;
+        //__gzip_original__control
+        var control = this._cFor;
+        if (control) {
+            control.click(event);
         }
     };
 
     /**
-     * 设置滚动条控件的最大值。
-     * setTotal 方法设置的值不能为负数，并且当前值如果大于最大值，将改变当前值，并调用 scroll 方法，最大值发生改变将导致滚动条控件刷新。
+     * 设置控件的事件转发接收控件。
+     * setFor 方法设置事件转发的被动接收者，如果没有设置，则事件不会被转发。
      * @public
      *
-     * @param {number} value 控件的最大值
+     * @param {ecui.ui.Control} control 事件转发接收控件
      */
-    UI_SCROLL_CLASS.setTotal = function (value) {
-        if (value >= 0 && this._nTotal != value) {
-            this._nTotal = value;
-            // 检查滚动条控件的当前值是否已经越界
-            if (this._nValue > value) {
-                // 值发生改变时触发相应的事件
-                this._nValue = value;
-                this.scroll();
-            }
-            this.$flush();
-        }
-    };
-
-    /**
-     * 设置滚动条控件的当前值。
-     * setValue 方法设置的值不能为负数，也不允许超过使用 setTotal 方法设置的控件的最大值，如果当前值不合法，将自动设置为最接近合法值的数值，如果当前值发生改变将导致滚动条控件刷新，并调用 scroll 方法。
-     * @public
-     *
-     * @param {number} value 控件的当前值
-     */
-    UI_SCROLL_CLASS.setValue = function (value) {
-        value = MIN(MAX(0, value), this._nTotal);
-        if (this._nValue != value) {
-            // 值发生改变时触发相应的事件
-            this._nValue = value;
-            this.scroll();
-            this.$flush();
-        }
-    };
-
-    /**
-     * 滚动条控件当前值移动指定的步长次数。
-     * 参数 value 必须是整数, 正数则向最大值方向移动，负数则向0方向移动，允许移动的区间在0-最大值之间，参见 setStep、setTotal 与 setValue 方法。
-     * @public
-     *
-     * @param {number} n 移动的步长次数
-     */
-    UI_SCROLL_CLASS.skip = function (n) {
-        this.setValue(this._nValue + n * this._nStep);
+    UI_LABEL_CLASS.setFor = function (control) {
+        this._cFor = control;
     };
 
 
-    /**
-     * 判断是否允许当前值向最大值方向移动。
-     * 受当前鼠标位置的影响，在当前值向最大值方向移动的过程中需要先判断移动是否得到许可。
-     * @protected
-     *
-     * @return {boolean} 是否允许向最大值方向移动
-     */
-    UI_VSCROLL_CLASS.$allowNext = function () {
-        var block = this._uBlock;
-        return getMouseY(this) > block.getY() + block.getHeight();
-    };
+/*
+Progress - 定义进度显示的基本操作。
+进度条控件，继承自基础控件，面向用户显示一个任务执行的程度。
 
-    /**
-     * 判断是否允许当前值向0方向移动。
-     * 受当前鼠标位置的影响，在当前值向0方向移动的过程中需要先判断移动是否得到许可。
-     * @protected
-     *
-     * @return {boolean} 是否允许向0方向移动
-     */
-    UI_VSCROLL_CLASS.$allowPrev = function () {
-        return getMouseY(this) < this._uBlock.getY();
-    };
-
-    /**
-     * 计算滑动块拖拽时滚动条的当前值。
-     * 虚方法，继承自滚动条控件的控件必须实现。
-     * @protected
-     *
-     * @param {number} x 滑动块实际到达的X轴坐标
-     * @param {number} y 滑动块实际到达的Y轴坐标
-     */
-    UI_VSCROLL_CLASS.$calcDragValue = function (x, y) {
-        var block = this._uBlock,
-            range = block._oRange;
-        return (y - range.top) / (range.bottom - this._uPrev.getHeight() - block.getHeight()) * this._nTotal;
-    };
-
-    /**
-     * 垂直滚动条控件刷新。
-     * 滚动条控件的大小，最大值/当前值发生变化时，调用 $flash 方法刷新滑动块的大小与位置。
-     * @protected
-     */
-    UI_VSCROLL_CLASS.$flush = function () {
-        // 计算滑动块高度与位置
-        var block = this._uBlock,
-            total = this._nTotal,
-            height = this.getHeight(),
-            prevHeight = this._uPrev.getHeight(),
-            bodyHeight = this.getBodyHeight(),
-            blockHeight = MAX(FLOOR(bodyHeight * height / (height + total)), block.getInvalidHeight() + 5);
-
-        if (total) {
-            block.$setSize(0, blockHeight);
-            block.setPosition(0, prevHeight + FLOOR((this._nValue / total) * (bodyHeight - blockHeight)));
-            block.setRange(prevHeight, 0, bodyHeight + prevHeight, 0);
-        }
-    };
-
-    /**
-     * 获取一页的步长。
-     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
-     * @protected
-     *
-     * @return {number} 一页的步长
-     */
-    UI_VSCROLL_CLASS.$getPageStep = function () {
-        var height = this.getHeight();
-        return this._nPageStep || height - height % this._nStep;
-    };
-
-    /**
-     * 设置垂直滚动条控件的大小。
-     * @protected
-     *
-     * @param {number} width 控件区域的宽度
-     * @param {number} height 控件区域的高度
-     */
-    UI_VSCROLL_CLASS.$setSize = function (width, height) {
-        UI_SCROLL_CLASS.$setSize.call(this, width, height);
-
-        var bodyWidth = this.getBodyWidth(),
-            prevHeight = this.$cache$paddingTop,
-            __gzip_direct__next = this._uNext;
-
-        // 设置滚动按钮与滑动块的信息
-        this._uPrev.$setSize(bodyWidth, prevHeight);
-        __gzip_direct__next.$setSize(bodyWidth, this.$cache$paddingBottom);
-        this._uBlock.$setSize(bodyWidth);
-        __gzip_direct__next.setPosition(0, this.getBodyHeight() + prevHeight);
-
-        this.$flush();
-    };
-
-
-    /**
-     * 判断是否允许当前值向最大值方向移动。
-     * 受当前鼠标位置的影响，在当前值向最大值方向移动的过程中需要先判断移动是否得到许可。
-     * @protected
-     *
-     * @return {boolean} 是否允许向最大值方向移动
-     */
-    UI_HSCROLL_CLASS.$allowNext = function () {
-        var block = this._uBlock;
-        return getMouseX(this) > block.getX() + block.getWidth();
-    };
-
-    /**
-     * 判断是否允许当前值向0方向移动。
-     * 受当前鼠标位置的影响，在当前值向0方向移动的过程中需要先判断移动是否得到许可。
-     * @protected
-     *
-     * @return {boolean} 是否允许向0方向移动
-     */
-    UI_HSCROLL_CLASS.$allowPrev = function () {
-        return getMouseX(this) < this._uBlock.getX();
-    };
-
-    /**
-     * 计算滑动块拖拽时滚动条的当前值。
-     * 虚方法，继承自滚动条控件的控件必须实现。
-     * @protected
-     *
-     * @param {number} x 滑动块实际到达的X轴坐标
-     * @param {number} y 滑动块实际到达的Y轴坐标
-     */
-    UI_HSCROLL_CLASS.$calcDragValue = function (x, y) {
-        var block = this._uBlock,
-            range = block._oRange;
-        return (x - range.left) / (range.right - this._uPrev.getWidth() - block.getWidth()) * this._nTotal;
-    };
-
-    /**
-     * 水平滚动条控件刷新。
-     * 滚动条控件的大小，最大值/当前值发生变化时，调用 $flash 方法刷新滑动块的大小与位置。
-     * @protected
-     */
-    UI_HSCROLL_CLASS.$flush = function () {
-        // 计算滑动块高度与位置
-        var block = this._uBlock,
-            total = this._nTotal,
-            width = this.getWidth(),
-            prevWidth = this._uPrev.getWidth(),
-            bodyWidth = this.getBodyWidth(),
-            blockWidth = MAX(FLOOR(bodyWidth * width / (width + total)), block.getInvalidWidth() + 5);
-
-        if (total) {
-            block.$setSize(blockWidth);
-            block.setPosition(prevWidth + FLOOR((this._nValue / total) * (bodyWidth - blockWidth)), 0);
-            block.setRange(0, bodyWidth + prevWidth, 0, prevWidth);
-        }
-    };
-
-    /**
-     * 获取一页的步长。
-     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
-     * @protected
-     *
-     * @return {number} 一页的步长
-     */
-    UI_HSCROLL_CLASS.$getPageStep = function () {
-        var width = this.getWidth();
-        return width - width % this._nStep;
-    };
-
-    /**
-     * 设置水平滚动条控件的大小。
-     * @protected
-     *
-     * @param {number} width 控件区域的宽度
-     * @param {number} height 控件区域的高度
-     */
-    UI_HSCROLL_CLASS.$setSize = function (width, height) {
-        UI_SCROLL_CLASS.$setSize.call(this, width, height);
-
-        var bodyHeight = this.getBodyHeight(),
-            prevWidth = this.$cache$paddingLeft,
-            __gzip_direct__next = this._uNext;
-
-        // 设置滚动按钮与滑动块的信息
-        this._uPrev.$setSize(prevWidth, bodyHeight);
-        __gzip_direct__next.$setSize(this.$cache$paddingRight, bodyHeight);
-        this._uBlock.$setSize(0, bodyHeight);
-        __gzip_direct__next.setPosition(this.getBodyWidth() + prevWidth, 0);
-
-        this.$flush();
-    };
-
-
-﻿/*
-Panel - 定义在一个小区域内截取显示大区域内容的基本操作。
-截面控件，继承自基础控件，内部包含三个部件，分别是垂直滚动条、水平滚动条与两个滚动条之间的夹角(基础控件)。截面控件的内
-容区域可以超过控件实际大小，通过拖拽滚动条显示完整的内容，截面控件可以设置参数决定是否自动显示水平/垂直滚动条，如果设
-置不显示水平/垂直滚动条，水平/垂直内容超出的部分将直接被截断，当设置两个滚动条都不显示时，层控件从显示效果上等同于基础
-控件。在层控件上滚动鼠标滑轮，将控制层控件往垂直方向(如果没有垂直滚动条则在水平方向)前移或者后移滚动条，在获得焦点后，
-通过键盘的方向键也可以操作层控件的滚动条。
-
-层控件直接HTML初始化的例子:
-<div ecui="type:panel;vertical-scroll:true;horizontal-scroll:true;wheel-delta:20;absolute:true">
-    <!-- 这里放内容 -->
-    ...
-</div>
+进度条控件直接HTML初始化的例子:
+<div ecui="type:progress;rate:0.5"></div>
 
 属性
-_bAbsolute                - 是否包含绝对定位的Element
-_nWheelDelta              - 鼠标滚轮滚动一次的差值
-_uVScroll                 - 垂直滚动条控件
-_uHScroll                 - 水平滚动条控件
-_uCorner                  - 夹角控件
-$cache$layoutWidthRevise  - layout区域的宽度修正值
-$cache$layoutHeightRevise - layout区域的高度修正值
-$cache$mainWidth          - layout区域的实际宽度
-$cache$mainHeight         - layout区域的实际高度
+_eText - 内容区域
+_eMask - 完成的进度比例内容区域
 */
 
 
     /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_PANEL_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-
-        var body = this.getBody(),
-            mainWidth = body.offsetWidth,
-            mainHeight = body.offsetHeight;
-
-        // 考虑到内部Element绝对定位的问题，中心区域的宽度与高度修正
-        if (this._bAbsolute) {
-            for (
-                var i = 0,
-                    pos = getPosition(body),
-                    x = pos.left,
-                    y = pos.top,
-                    elements = body.getElementsByTagName('*');
-                // 以下使用 style 代替临时的 DOM 节点对象
-                style = elements[i++];
-            ) {
-                if (style.offsetWidth && getStyle(style, 'position') == 'absolute') {
-                    pos = getPosition(style);
-                    mainWidth = MAX(mainWidth, pos.left - x + style.offsetWidth);
-                    mainHeight = MAX(mainHeight, pos.top - y + style.offsetHeight);
-                }
-            }
-        }
-
-        this.$cache$mainWidth = mainWidth;
-        this.$cache$mainHeight = mainHeight;
-
-        style = getStyle(getParent(body));
-        this.$cache$layoutWidthRevise = calcWidthRevise(style);
-        this.$cache$layoutHeightRevise = calcHeightRevise(style);
-
-        (cacheSize = this._uVScroll) && cacheSize.cache(true, true);
-        (cacheSize = this._uHScroll) && cacheSize.cache(true, true);
-        (cacheSize = this._uCorner) && cacheSize.cache(true, true);
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * 销毁控件的默认处理。
      * @protected
      */
-    UI_PANEL_CLASS.$init = function () {
-        this._uVScroll && this._uVScroll.$init();
-        this._uHScroll && this._uHScroll.$init();
-        this._uCorner && this._uCorner.$init();
-        UI_CONTROL_CLASS.$init.call(this);
-    };
-
-    /**
-     * 控件拥有焦点时，键盘按压事件的默认处理。Opera 下仅用 keydown 不能屏蔽方向键事件，还需要在 keypress 中屏蔽。
-     * 如果控件处于可操作状态(参见 isEnabled)，keydown/keypress 方法触发 onkeydown/onkeypress 事件，如果事件返回值不为 false，则调用 $keydown/$keypress 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_PANEL_CLASS.$keydown = UI_PANEL_CLASS.$keypress = function (event) {
-        var which = getKey(),
-            mod = which % 2,
-            scroll = mod ? this._uHScroll : this._uVScroll;
-
-        if (which >= 37 && which <= 40 && !event.target.value) {
-            scroll && scroll.skip(which + mod - 39);
-            return false;
-        }
-    };
-
-    /**
-     * 鼠标在控件区域滚动滚轮事件的默认处理。
-     * 如果有垂直滚动条，则垂直滚动条随滚轮滚动。如果控件处于可操作状态(参见 isEnabled)，mousewheel 方法触发 onmousewheel 事件，如果事件返回值不为 false，则调用 $mousewheel 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_PANEL_CLASS.$mousewheel = function (event) {
-        scroll = this._uVScroll;
-
-        if (scroll && scroll.isShow()) {
-            // 计算滚动的次数，至少要滚动一次
-            var value = scroll.getValue(),
-                delta = this._nWheelDelta || FLOOR(20 / scroll.getStep()) || 1,
-                scroll;
-            scroll.skip(event.detail > 0 ? delta : -delta);
-            return value == scroll.getValue();
-        }
-    };
-
-    /**
-     * 控件的滚动条发生滚动的默认处理。
-     * 如果控件包含滚动条，滚动条滚动时触发 onscroll 事件，如果事件返回值不为 false，则调用 $scroll 方法。
-     * @protected
-     */
-    UI_PANEL_CLASS.$scroll = function () {
-        var style = this.getBody().style;
-        style.left = -MAX(this.getScrollLeft(), 0) + 'px';
-        style.top = -MAX(this.getScrollTop(), 0) + 'px';
+    UI_PROGRESS_CLASS.$dispose = function () {
+        this._eText = this._eMask = null;
+        UI_CONTROL_CLASS.$dispose.call(this);
     };
 
     /**
      * 设置控件的大小。
-     * $setSize 方法设置控件实际的大小，不改变其它的如缓存等信息。
      * @protected
      *
      * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
      * @param {number} height 高度，如果不需要设置则省略此参数
      */
-    UI_PANEL_CLASS.$setSize = function (width, height) {
+    UI_PROGRESS_CLASS.$setSize = function (width, height) {
         UI_CONTROL_CLASS.$setSize.call(this, width, height);
         this.$locate();
 
-        var paddingWidth = this.$cache$paddingLeft + this.$cache$paddingRight,
-            paddingHeight = this.$cache$paddingTop + this.$cache$paddingBottom,
-            bodyWidth = this.getBodyWidth(),
-            bodyHeight = this.getBodyHeight(),
-            mainWidth = this.$cache$mainWidth,
-            mainHeight = this.$cache$mainHeight,
-            vscroll = this._uVScroll,
-            hscroll = this._uHScroll,
-            corner = this._uCorner,
-            vsWidth = vscroll && vscroll.getWidth(),
-            hsHeight = hscroll && hscroll.getHeight(),
-            innerWidth = bodyWidth - vsWidth,
-            innerHeight = bodyHeight - hsHeight,
-            hsWidth = innerWidth + paddingWidth,
-            vsHeight = innerHeight + paddingHeight;
+        //__gzip_original__style1
+        //__gzip_original__style2
+        var style1 = this._eText.style,
+            style2 = this._eMask.style;
+        style1.width = style2.width = this.getBodyWidth() + 'px';
+        style1.height = style2.height = this.getBodyHeight() + 'px';
+    };
 
-        // 设置垂直与水平滚动条与夹角控件的位置
-        vscroll && vscroll.setPosition(hsWidth, 0);
-        hscroll && hscroll.setPosition(0, vsHeight);
-        corner && corner.setPosition(hsWidth, vsHeight);
+    /**
+     * 设置进度的比例以及需要显示的文本。
+     * @protected
+     *
+     * @param {number} rate 进度比例，在0-1之间
+     * @param {number} text 显示的文本，如果省略将显示成 xx%
+     */
+    UI_PROGRESS_CLASS.setText = function (rate, text) {
+        rate = MIN(MAX(0, rate), 1);
+        if (text !== undefined) {
+            this._eText.innerHTML = this._eMask.innerHTML = text || ROUND(rate * 100) + '%';
+        }
+        this._eMask.style.clip =
+            'rect(0px,' + FLOOR(rate * this.getBodyWidth()) + 'px,' + this.getBodyHeight() + 'px,0px)';
+    };
 
-        if (mainWidth <= bodyWidth && mainHeight <= bodyHeight) {
-            // 宽度与高度都没有超过层控件的宽度与高度，不需要显示滚动条
-            vscroll && vscroll.$hide();
-            hscroll && hscroll.$hide();
-            corner && corner.$hide();
+
+/*
+Form - 定义独立于文档布局的内容区域的基本操作。
+窗体控件，继承自基础控件，内部包含了三个部件，分别是标题栏(基础控件)、关闭按钮(基础控件)与内容区域(截面控件)。窗体控件
+仿真浏览器的多窗体效果，如果在其中包含 iframe 标签，可以在当前页面打开一个新的页面，避免了使用 window.open 在不同浏览
+器下的兼容性问题。多个窗体控件同时工作时，当前激活的窗体在最上层。窗体控件的标题栏默认可以拖拽，窗体可以设置置顶方式显
+示，在置顶模式下，只有当前窗体可以响应操作。窗体控件的 z-index 从4096开始，页面开发请不要使用大于或等于4096的 z-index 
+值。
+
+窗体控件直接HTML初始化的例子:
+<div ecui="type:form;hide:true">
+    <!-- 标题可以没有 -->
+    <label>窗体的标题</label>
+    <!-- 这里放窗体的内容 -->
+    ...
+</div>
+
+属性
+_bHide      - 初始是否自动隐藏
+_bAuto      - 标题栏是否自适应宽度
+_uTitle     - 标题栏
+_uClose     - 关闭按钮
+*/
+
+
+    /**
+     * 标题栏鼠标按压开始事件处理，需要触发拖动，如果当前窗体未得到焦点则得到焦点
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_FORM_TITLE_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS.$pressstart.call(this, event);
+        drag(this.getParent(), event);
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 窗体关闭按钮点击事件，关闭窗体
+     * @protected
+     *
+     * @params {Event} event 事件对象
+     */
+    UI_FORM_CLOSE_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+        this.getParent().hide();
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_FORM_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+
+        style = getStyle(this.getBase().lastChild);
+        this.$cache$mainWidthRevise = calcWidthRevise(style);
+        this.$cache$mainHeightRevise = calcHeightRevise(style);
+        this._uTitle.cache(true, true);
+        this._uClose.cache(true, true);
+    };
+
+    /**
+     * 控件获得焦点事件的默认处理。
+     * 窗体控件获得焦点时需要将自己置于所有窗体控件的顶部。如果控件处于可操作状态(参见 isEnabled)，focus 方法触发 onfocus 事件，如果事件返回值不为 false，则调用 $focus 方法。
+     * @protected
+     */
+    UI_FORM_CLASS.$focus = function () {
+        UI_CONTROL_CLASS.$focus.call(this);
+
+        var i = indexOf(UI_FORM_ALL, this),
+            o;
+
+        if (this.getOuter().style.zIndex < 32768) {
+            // 如果不是showModal模式，将当前窗体置顶
+            UI_FORM_ALL.push(UI_FORM_ALL.splice(i, 1)[0]);
+            for (; o = UI_FORM_ALL[i++]; ) {
+                o.getOuter().style.zIndex = 4095 + i;
+            }
+        }
+    };
+
+    /**
+     * 隐藏控件。
+     * 如果窗体是以 showModal 方式打开的，隐藏窗体时，需要恢复页面的状态。
+     * @protected
+     */
+    UI_FORM_CLASS.$hide = function () {
+        UI_CONTROL_CLASS.$hide.call(this);
+        if (this.getOuter().style.zIndex == 32768) {
+            mask();
+        }
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_FORM_CLASS.$init = function () {
+        UI_CONTROL_CLASS.$init.call(this);
+        this._uTitle.$init();
+        this._uClose.$init();
+        if (this._bHide) {
+            this.$hide();
+        }
+    };
+
+    /**
+     * 设置控件的大小。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_FORM_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+        this.$locate();
+
+        var style = this.getBase().lastChild.style;
+
+        style.width = this.getBodyWidth() - this.$cache$mainWidthRevise + 'px';
+        style.height = this.getBodyHeight() - this.$cache$mainHeightRevise + 'px';
+        if (this._bAuto) {
+            this._uTitle.$setSize(this.getBodyWidth());
+        }
+    };
+
+    /**
+     * 窗体居中显示。
+     * @public
+     */
+    UI_FORM_CLASS.center = function () {
+        o = this.getOuter().offsetParent;
+
+        if (o.tagName == 'BODY' || o.tagName == 'HTML') {
+            var o = getView(),
+                x = o.right + o.left,
+                y = o.bottom + o.top;
         }
         else {
-            while (true) {
-                if (corner) {
-                    // 宽度与高度都超出了显示滚动条后余下的宽度与高度，垂直与水平滚动条同时显示
-                    if (mainWidth > innerWidth && mainHeight > innerHeight) {
-                        hscroll.$setSize(hsWidth);
-                        hscroll.setTotal(mainWidth - innerWidth);
-                        hscroll.$show();
-                        vscroll.$setSize(0, vsHeight);
-                        vscroll.setTotal(mainHeight - innerHeight);
-                        vscroll.$show();
-                        corner.$setSize(vsWidth, hsHeight);
-                        corner.$show();
-                        bodyWidth = innerWidth;
-                        bodyHeight = innerHeight;
-                        break;
+            x = o.offsetWidth;
+            y = o.offsetHeight;
+        }
+
+        this.setPosition((x - this.getWidth()) / 2, (y - this.getHeight()) / 2);
+    };
+
+    /**
+     * 设置窗体控件标题。
+     * @public
+     *
+     * @param {string} text 窗体标题
+     */
+    UI_FORM_CLASS.setTitle = function (text) {
+        this._uTitle.$setBodyHTML(text || '');
+    };
+
+    /**
+     * 显示控件。
+     * 显示窗体控件时，需要将窗体控件设置为获得焦点状态，即窗体控件或者子控件拥有焦点。
+     * @public
+     *
+     * @return {boolean} 显示状态是否改变
+     */
+    UI_FORM_CLASS.show = function () {
+        if (!this.contain(getFocused())) {
+            setFocused(this);
+        }
+        return UI_CONTROL_CLASS.show.call(this);
+    };
+
+    /**
+     * 窗体以独占方式显示
+     * showModal 方法将窗体控件以独占方式显示，此时鼠标点击窗体以外的内容无效，关闭窗体后自动恢复。
+     * @public
+     *
+     * @param {number} opacity 遮罩层透明度，默认为0.05
+     */
+    UI_FORM_CLASS.showModal = function (opacity) {
+        this.show();
+        this.getOuter().style.zIndex = 32768;
+        mask(opacity !== undefined ? opacity : 0.05);
+    };
+
+
+/*
+Collection - 定义批量控件集的事件与基本操作。
+集合控件，继承自基础控件，将大量子控件组合而成的控件。集合控件统一管理，所有子控件的事件允许调用统一的事件方法，可用于日
+历、调色板等。
+
+网格控件直接HTML初始化的例子:
+<div ecui="type:collection"></div>
+
+属性
+_aItem  - 子控件集合
+*/
+
+
+    /**
+     * 获取网格子控件在网格控件中的序号。
+     * 在网格控件的事件中，事件对应的 this 是真正产生事件的网格子控件，通过 getIndex 方法能知道当前的网格子控件在网格控件中的序号，参见 getItem 方法。
+     * @public
+     *
+     * @return {number} 子控件的序号
+     */
+    UI_COLLECTION_ITEM_CLASS.getIndex = function () {
+        return indexOf(this.getParent()._aItem, this);
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_COLLECTION_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+
+        // 以下使用cacheSize表示o，使用style表示i
+        for (style = 0; cacheSize = this._aItem[style++]; ) {
+            cacheSize.cache(false, true);
+        }
+    };
+
+    /**
+     * 获取指定的网格子控件。
+     * 子控件的序号从行到列，逐一累加，例如，一个 3*3 的网格控件，第一行第一列序号为 0，第一行第二列序号为 1，第一行第三列序号为 2，第二行第一列序号为3，行二行第二列序号为 4，依此类推。
+     * @public
+     *
+     * @param {number} index 子控件的序号
+     * @return {ecui.ui.Control} 子控件对象
+     */
+    UI_COLLECTION_CLASS.getItem = function (index) {
+        return this._aItem[index];
+    };
+
+    /**
+     * 初始化事件处理函数，以事件名命名，这些函数行为均是判断控件是否可操作/是否需要调用事件/是否需要执行缺省的事件处
+     * 理，对应的缺省事件处理函数名以$开头后接事件名，处理函数以及缺省事件处理函数参数均为事件对象，仅执行一次。这些函
+     * 数都需要提供给内部的子控件使用，因此需要关联Collection控件。
+     */
+    (function () {
+        function build(name) {
+            UI_COLLECTION_CLASS[name] = blank;
+            UI_COLLECTION_ITEM_CLASS[name] = function (event) {
+                var o = this.getParent();
+                if (this.isEnabled()) {
+                    if (!(o['on' + name] && o['on' + name].call(this, event) === false)) {
+                        o['$' + name].call(this, event);
                     }
-                    corner.$hide();
                 }
-                if (hscroll) {
-                    if (mainWidth > bodyWidth) {
-                        // 宽度超出控件的宽度，高度没有超出显示水平滚动条后余下的高度，只显示水平滚动条
-                        hscroll.$setSize(bodyWidth + paddingWidth);
-                        hscroll.setTotal(mainWidth - bodyWidth);
-                        hscroll.$show();
-                        vscroll && vscroll.$hide();
-                        bodyHeight = innerHeight;
+            };
+        }
+        for (var i = 0; i < 13; ) {
+            build(eventNames[i++]);
+        }
+    })();
+
+
+/*
+Calendar - 定义日历显示的基本操作。
+日历控件，继承自基础控件，内部包含了两个部件，分别是星期名称(网格控件)与日期(网格控件)。在日期网格控件里，第一行包含上
+个月最后几天的信息，最后一行包含下个月最前几天的信息。日历控件不包含年/月/日的快速选择与切换，如果需要实现这些功能，请
+将下拉框(选择月份)、输入框(输入年份)等组合使用建立新的控件或直接在页面上布局并调用接口。
+
+日历控件直接HTML初始化的例子:
+<div ecui="type:calendar;year:2009;month:11"></div>
+
+属性
+_nYear      - 年份
+_nMonth     - 月份(0-11)
+_uName      - 星期名称网格
+_uDate      - 日期网格
+
+子控件属性
+_nDay       - 从本月1号开始计算的天数，如果是上个月，是负数，如果是下个月，会大于当月最大的天数
+*/
+
+
+    /**
+     * 日期网格控件点击处理，将事件转发到日历控件的ondateclick事件上
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_CALENDAR_DATE_COLLECTION_CLASS.$click = function (event) {
+        UI_COLLECTION_CLASS.$click.call(this, event);
+        var calendar = this.getParent().getParent();
+        if (calendar.ondateclick) {
+            calendar.ondateclick(event, new DATE(calendar._nYear, calendar._nMonth, this._nDay));
+        }
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_CALENDAR_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+        this._uName.cache(true, true);
+        this._uDate.cache(true, true);
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_CALENDAR_CLASS.$init = function () {
+        UI_CONTROL_CLASS.$init.call(this);
+        this._uName.$init();
+    };
+
+    /**
+     * 设置控件的大小。
+     * 日历控件与 网格控件 类似，$setSize 方法设置的大小不一定是实际控件的大小，受到了内部部件的影响。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_CALENDAR_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width);
+
+        //__gzip_original__name
+        //__gzip_original__date
+        for (
+            var i = 0,
+                name = this._uName,
+                date = this._uDate,
+                itemWidth = FLOOR((width - this.getInvalidWidth(true)) / 7),
+                itemHeight = FLOOR((height - this.getInvalidHeight(true) - name.getHeight()) / 6);
+            i < 7;
+        ) {
+            name.getItem(i++).$setSize(itemWidth);
+        }
+        for (i = 0; i < 42; ) {
+            date.getItem(i++).$setSize(itemWidth, itemHeight);
+        }
+
+        name.$setSize(itemWidth * 7);
+        date.$setSize(itemWidth * 7);
+    };
+
+    /**
+     * 获取日历控件当前显示的月份。
+     * @public
+     *
+     * @return {number} 月份(1-12)
+     */
+    UI_CALENDAR_CLASS.getMonth = function () {
+        return this._nMonth + 1;
+    };
+
+    /**
+     * 获取日历控件当前显示的年份。
+     * @public
+     *
+     * @return {number} 年份(19xx-20xx)
+     */
+    UI_CALENDAR_CLASS.getYear = function () {
+        return this._nYear;
+    };
+
+    /**
+     * 日历显示移动指定的月份数。
+     * 参数为正整数则表示向当前月份之后的月份移动，负数则表示向当前月份之前的月份移动，设置后日历控件会刷新以显示新的日期。
+     * @public
+     *
+     * @param {number} offsetMonth 日历移动的月份数
+     */
+    UI_CALENDAR_CLASS.move = function (offsetMonth) {
+        var time = new DATE(this._nYear, this._nMonth + offsetMonth, 1);
+        this.setDate(time.getFullYear(), time.getMonth() + 1);
+    };
+
+    /**
+     * 设置日历控件当前显示的日期。
+     * @public
+     *
+     * @param {number} year 年份(19xx-20xx)，如果省略使用浏览器的当前年份
+     * @param {number} month 月份(1-12)，如果省略使用浏览器的当前月份
+     */
+    UI_CALENDAR_CLASS.setDate = function (year, month) {
+        //__gzip_original__date
+        var i = 0,
+            date = this._uDate,
+            today = new DATE(),
+            year = year || today.getFullYear(),
+            month = month ? month - 1 : today.getMonth(),
+            // 得到上个月的最后几天的信息，用于补齐当前月日历的上月信息位置
+            o = new DATE(year, month, 0),
+            day = 1 - (o.getDay() + 1) % 7,
+            lastDayOfLastMonth = o.getDate(),
+            // 得到当前月的天数
+            lastDayOfCurrMonth = new DATE(year, month + 1, 0).getDate();
+
+        if (this._nYear != year || this._nMonth != month) {
+            this._nYear = year;
+            this._nMonth = month;
+
+            for (; month = date.getItem(i++); ) {
+                // 以下year变量表示日期是否为当月的flag，month变量表示日期单元格控件o
+                month.setEnabled(year = day > 0 && day <= lastDayOfCurrMonth);
+                setText(
+                    month.getBody(),
+                    year ? day : day > lastDayOfCurrMonth ? day - lastDayOfCurrMonth : lastDayOfLastMonth + day
+                );
+                month._nDay = day++;
+            }
+
+            year = date.getItem(35).isEnabled();
+            for (i = 35; i < 42; ) {
+                date.getItem(i++).alterClass('extra', year);
+            }
+
+            this.change();
+        }
+    };
+
+
+/*
+Item/Items - 定义选项操作相关的基本操作。
+选项控件，继承自基础控件，用于弹出菜单、下拉框、交换框等控件的单个选项，通常不直接初始化。选项控件必须用在使用选项组接
+口(Items)的控件中，选项控件支持移入操作的缓存，不会因为鼠标移出而改变状态，因此可以通过函数调用来改变移入移出状态，选
+控件默认屏蔽了 DOM 的文本选中操作。选项组不是控件，是一组对选项进行操作的方法的集合，提供了基本的增/删操作，以及对选项
+控件的状态控制的接口，通过将 ecui.ui.Items 对象下的方法复制到类的 prototype 属性下继承接口，最终对象要正常使用还需要在
+类构造器中调用 $initItems 方法。
+*/
+
+
+    /**
+     * 调用指定对象超类的指定方法。
+     * callSuper 用于不确定超类类型时的访问，例如接口内定义的方法，需要注意的是，接口不能被一个类实现两次，否则将会引发死循环。
+     * @public
+     *
+     * @param {Object} object 需要操作的对象
+     * @param {string} name 方法名称
+     * @param {Array} args 调用者的参数
+     * @return {Object} 方法的返回值
+     */
+    function callSuper(object, name) {
+
+        /**
+         * 查找指定的方法对应的超类方法。
+         * @private
+         *
+         * @param {Object} clazz 查找的起始类对象
+         * @param {Function} caller 基准方法，即查找 caller 对应的超类方法
+         * @return {Function} 基准方法对应的超类方法，没有找到基准方法返回 undefined，基准方法没有超类方法返回 null
+         */
+        function findPrototype(clazz, caller) {
+            for (; clazz; clazz = clazz.constructor.superClass) {
+                if (clazz[name] == caller) {
+                    for (; clazz = clazz.constructor.superClass; ) {
+                        if (clazz[name] != caller) {
+                            return clazz[name];
+                        }
                     }
-                    else {
-                        hscroll.$hide();
-                    }
+                    return null;
                 }
-                if (vscroll) {
-                    if (mainHeight > bodyHeight) {
-                        // 高度超出控件的高度，宽度没有超出显示水平滚动条后余下的宽度，只显示水平滚动条
-                        vscroll.$setSize(0, bodyHeight + paddingHeight);
-                        vscroll.setTotal(mainHeight - bodyHeight);
-                        vscroll.$show();
-                        hscroll && hscroll.$hide();
-                        bodyWidth = innerWidth;
-                    }
-                    else {
-                        vscroll.$hide();
-                    }
-                }
-                break;
             }
         }
 
-        bodyWidth -= this.$cache$layoutWidthRevise;
-        bodyHeight -= this.$cache$layoutHeightRevise;
+        //__gzip_original__clazz
+        var clazz = object.constructor.prototype,
+            caller = callSuper.caller,
+            func = findPrototype(clazz, caller);
 
-        vscroll && vscroll.$setPageStep(bodyHeight);
-        hscroll && hscroll.$setPageStep(bodyWidth);
+        if (func === undefined) {
+            // 如果Items的方法直接位于prototype链上，是caller，如果是间接被别的方法调用Items.xxx.call，是caller.caller
+            func = findPrototype(clazz, caller.caller);
+        }
 
-        // 设置内部定位器的大小，以下使用 corner 表示 style
-        corner = getParent(this.getBody()).style;
-        corner.width = bodyWidth + 'px';
-        corner.height = bodyHeight + 'px';
+        if (func) {
+            return func.apply(object, caller.arguments);
+        }
+    }
+
+    /**
+     * 鼠标单击控件事件的默认处理。
+     * 如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_ITEM_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+
+        var parent = this.getParent();
+        if (parent && parent.onitemclick) {
+            parent.onitemclick(event, indexOf(UI_ITEMS[parent.getUID()], this));
+        }
     };
 
     /**
-     * 获取水平滚动条的当前值。
-     * getScrollLeft 方法提供了对水平滚动条当前值的快捷访问方式，参见 getValue。
-     * @public
+     * 鼠标在控件区域内按下事件的默认处理。
+     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
+     * @protected
      *
-     * @return {number} 水平滚动条的当前值，如果没有水平滚动条返回-1
+     * @param {Event} event 事件对象
      */
-    UI_PANEL_CLASS.getScrollLeft = function () {
-        var scroll = this._uHScroll;
-        return scroll ? scroll.getValue() : -1;
+    UI_ITEM_CLASS.$mousedown = function (event) {
+        UI_CONTROL_CLASS.$mousedown.call(this, event);
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
     };
 
     /**
-     * 获取垂直滚动条的当前值。
-     * getScrollTop 方法提供了对水平滚动条当前值的快捷访问方式，参见 getValue。
+     * 鼠标移入控件区域事件的默认处理。
+     * 鼠标移入控件区域时默认调用 $mouseover 方法。如果控件处于可操作状态(参见 isEnabled)，mouseover 方法触发 onmouseover 事件，如果事件返回值不为 false，则调用 $mouseover 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_ITEM_CLASS.$mouseover = function (event) {
+        UI_CONTROL_CLASS.$mouseover.call(this, event);
+        this.getParent().$setActived(this);
+    };
+
+    /**
+     * 控件增加子控件事件的默认处理。
+     * 选项组增加子选项时需要判断子控件的类型，并额外添加引用。
+     * @protected
+     *
+     * @param {ecui.ui.Item} child 选项控件
+     * @return {boolean} 是否允许增加子控件，默认允许
+     */
+    UI_ITEMS.$append = function (child) {
+        // 检查待新增的控件是否为选项控件
+        if (!(child instanceof (findConstructor(this, 'Item') || UI_ITEM)) || callSuper(this, '$append') === false) {
+            return false;
+        }
+        UI_ITEMS[this.getUID()].push(child);
+        this.$alterItems();
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_ITEMS.$cache = function (style, cacheSize) {
+        callSuper(this, '$cache');
+
+        for (var i = 0, list = UI_ITEMS[this.getUID()], o; o = list[i++]; ) {
+            o.cache(true, true);
+        }
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_ITEMS.$init = function () {
+        callSuper(this, '$init');
+        this.$alterItems();
+    };
+
+    /**
+     * 初始化选项组对应的 Element 对象。
+     * 实现了 Items 接口的类在初始化时需要调用 $initItems 方法自动生成选项控件，$initItems 方法保证一个控件对象只允许被调用一次，多次的调用无效。
+     * @protected
+     */
+    UI_ITEMS.$initItems = function () {
+        this.$alterItems = blank;
+
+        // 防止对一个控件进行两次包装操作
+        UI_ITEMS[this.getUID()] = [];
+
+        // 初始化选项控件
+        for (var i = 0, list = children(this.getBody()), o; o = list[i++]; ) {
+            this.add(o);
+        }
+
+        delete this.$alterItems;
+    };
+
+    /**
+     * 控件移除子控件事件的默认处理。
+     * 选项组移除子选项时需要额外移除引用。
+     * @protected
+     *
+     * @param {ecui.ui.Item} child 选项控件
+     */
+    UI_ITEMS.$remove = function (child) {
+        callSuper(this, '$remove');
+        remove(UI_ITEMS[this.getUID()], child);
+        this.$alterItems();
+    };
+
+    /**
+     * 设置激活的选项。
+     * $setActived 方法改变选项组控件中当前激活项的效果。
+     * @protected
+     *
+     * @param {ecui.ui.Item} item 选项控件
+     */
+    UI_ITEMS.$setActived = function (item) {
+        var list = UI_ITEMS[this.getUID()],
+            actived = list._cActive;
+
+        if (actived != item) {
+            if (actived) {
+                actived.alterClass('active', true);
+            }
+            if (item) {
+                item.alterClass('active');
+            }
+            list._cActive = item;
+        }
+    };
+
+    /**
+     * 添加子选项控件。
+     * add 方法中如果位置序号不合法，子选项控件将添加在末尾的位置。
      * @public
      *
-     * @return {number} 垂直滚动条的当前值，如果没有垂直滚动条返回-1
+     * @param {string|HTMLElement|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
+     * @param {number} index 子选项控件需要添加的位置序号
+     * @param {Object} 子控件初始化参数
+     * @return {ecui.ui.Item} 子选项控件
      */
-    UI_PANEL_CLASS.getScrollTop = function () {
-        var scroll = this._uVScroll;
-        return scroll ? scroll.getValue() : -1;
+    UI_ITEMS.add = function (item, index, params) {
+        var list = UI_ITEMS[this.getUID()],
+            o = 'ec-item ' + this.getClass() + '-item ';
+
+        if (item instanceof UI_ITEM) {
+            // 选项控件，直接添加
+            item.setParent(this);
+        }
+        else {
+            // 根据是字符串还是Element对象选择不同的初始化方式
+            if ('string' == typeof item) {
+                this.getBody().appendChild(o = createDom(o));
+                o.innerHTML = item;
+                item = o;
+            }
+            else {
+                item.className = o + item.className;
+            }
+
+            params = params || getParameters(item);
+            params.parent = this;
+            list.push(item = $fastCreate(findConstructor(this, 'Item') || UI_ITEM, item, this, params));
+            this.$alterItems();
+        }
+
+        // 改变选项控件的位置
+        if (item.getParent() && (o = list[index]) && o != item) {
+            insertBefore(item.getOuter(), o.getOuter());
+            list.splice(index, 0, list.pop());
+        }
+
+        return item;
+    };
+
+    /**
+     * 向选项组最后添加子选项控件。
+     * append 方法是 add 方法去掉第二个 index 参数的版本。
+     * @public
+     *
+     * @param {string|Element|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
+     * @param {Object} 子控件初始化参数
+     * @return {ecui.ui.Item} 子选项控件
+     */
+    UI_ITEMS.append = function (item, params) {
+        this.add(item, undefined, params);
+    };
+
+    /**
+     * 销毁控件。
+     * dispose 方法触发 ondispose 事件，然后调用 $dispose 方法，dispose 方法在页面卸载时会被自动调用，通常不需要直接调用。
+     * @public
+     */
+    UI_ITEMS.dispose = function () {
+        delete UI_ITEMS[this.getUID()];
+        callSuper(this, 'dispose');
+    };
+
+    /**
+     * 获取当前处于激活状态的选项。
+     * @public
+     *
+     * @return {ecui.ui.Item} 子选项控件
+     */
+    UI_ITEMS.getActived = function () {
+        return UI_ITEMS[this.getUID()]._cActive || null;
+    };
+
+    /**
+     * 获取全部的子选项控件。
+     * @public
+     *
+     * @return {Array} 子选项控件数组
+     */
+    UI_ITEMS.getItems = function () {
+        return UI_ITEMS[this.getUID()].slice();
+    };
+
+    /**
+     * 移除子选项控件。
+     * @public
+     *
+     * @param {number|ecui.ui.Item} item 选项控件的位置序号/选项控件
+     * @return {ecui.ui.Item} 被移除的子选项控件
+     */
+    UI_ITEMS.remove = function (item) {
+        if ('number' == typeof item) {
+            item = UI_ITEMS[this.getUID()][item];
+        }
+        if (item) {
+            item.setParent();
+        }
+        return item || null;
+    };
+
+    /**
+     * 设置控件内所有子选项控件的大小。
+     * @public
+     *
+     * @param {number} itemWidth 子选项控件的宽度
+     * @param {number} itemHeight 子选项控件的高度
+     */
+    UI_ITEMS.setItemSize = function (itemWidth, itemHeight) {
+        for (var i = 0, list = UI_ITEMS[this.getUID()], o; o = list[i++]; ) {
+            o.$setSize(itemWidth, itemHeight);
+        }
+    };
+
+
+
+/*
+Popup - 定义弹出菜单项的基本操作。
+弹出菜单控件，继承自基础控件，实现了选项组接口。弹出式菜单操作时不会改变当前已经激活的对象，任何点击都将导致弹出菜单消
+失，弹出菜单默认向右展开子菜单，如果右部已经到达浏览器最边缘，将改为向左显示。
+
+弹出菜单控件直接HTML初始化的例子:
+<div ecui="type:popup;name:test">
+    <!-- 这里放选项内容 -->
+    <li>菜单项</li>
+    ...
+    <!-- 包含子菜单项的菜单项 -->
+    <li>
+        <label>菜单项</label>
+        <!-- 这里放子菜单项 -->
+        <li>子菜单项</li>
+        ...
+    </li>
+    ...
+</div>
+
+属性
+_nOptionSize - 弹出菜单选项的显示数量，不设置将全部显示
+_cSuperior   - 上一级被激活的弹出菜单控件
+_cInferior   - 下一级被激活的弹出菜单控件
+_uPrev       - 向上滚动按钮
+_uNext       - 向下滚动按钮
+
+子菜单项属性
+_cPopup      - 是否包含下级弹出菜单
+*/
+
+
+    /**
+     * 弹出菜单选项样式刷新。
+     * @private
+     *
+     * @param {ecui.ui.Popup.Item} item 选项控件
+     */
+    function UI_POPUP_ITEM_FLUSH(item) {
+        if (item) {
+            item.setClass(item.getBaseClass() + (item.getItems().length ? '-complex' : ''));
+        }
+    }
+
+    copy(UI_POPUP_CLASS, UI_ITEMS);
+
+    /**
+     * 鼠标单击控件事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_POPUP_BUTTON_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+
+        //__gzip_original__prev
+        var parent = this.getParent(),
+            style = parent.getBody().style,
+            list = parent.getItems(),
+            height = list[0].getHeight(),
+            prev = parent._uPrev,
+            prevHeight = prev.getHeight(),
+            top = (toNumber(style.top) - prevHeight) / height;
+
+        parent.$setActived();
+        style.top =
+            MIN(MAX(prev == this ? ++top : --top, parent._nOptionSize - list.length), 0) * height + prevHeight + 'px';
+    };
+
+    /**
+     * 鼠标在控件区域内按下事件的默认处理。
+     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_POPUP_BUTTON_CLASS.$mousedown = function (event) {
+        UI_CONTROL_CLASS.$mousedown.call(this, event);
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 菜单项点击的默认处理
+     * @protected
+     *
+     * @params {Event} event 事件对象
+     */
+    UI_POPUP_ITEM_CLASS.$click = function (event) {
+        UI_ITEM_CLASS.$click.call(this, event);
+        if (!this.getItems().length) {
+            UI_POPUP_CHAIN_FIRST.hide();
+        }
+    };
+
+    /**
+     * 菜单项移出的默认处理
+     * @protected
+     *
+     * @params {Event} event 事件对象
+     */
+    UI_POPUP_ITEM_CLASS.$mouseout = function (event) {
+        UI_ITEM_CLASS.$mouseout.call(this, event);
+        if (!this.getItems().length) {
+            this.getParent().$setActived();
+        }
+    };
+
+    /**
+     * 菜单项移入的默认处理
+     * @protected
+     *
+     * @params {Event} event 事件对象
+     */
+    UI_POPUP_ITEM_CLASS.$mouseover = function (event) {
+        // 改变菜单项控件的显示状态
+        UI_ITEM_CLASS.$mouseover.call(this, event);
+
+        var o = getView(),
+            childPopup = this._cPopup,
+            popup = this.getParent(),
+            superior = popup._cSuperior,
+            inferior = popup._cInferior,
+            pos = getPosition(this.getOuter()),
+            x = pos.left,
+            width;
+
+        if (inferior != childPopup) {
+            // 隐藏之前显示的下级弹出菜单控件
+            if (inferior) {
+                inferior.hide();
+            }
+
+            if (this.getItems().length) {
+                childPopup.show();
+
+                // 计算子菜单应该显示的位置，以下使用o表示left
+                width = childPopup.getWidth();
+                inferior = x + this.getWidth() - 4;
+                x -= width - 4;
+
+                // 优先计算延用之前的弹出顺序的应该的位置，显示新的子弹出菜单
+                childPopup.setPosition(
+                    inferior + width > o.right || superior && superior.getX() > popup.getX() && x > o.left ?
+                        x : inferior,
+                    pos.top - 4
+                );
+            }
+        }
+    };
+
+    /**
+     * 菜单项按压结束的默认处理
+     * @protected
+     *
+     * @params {Event} event 事件对象
+     */
+    UI_POPUP_ITEM_CLASS.$pressend = function (event) {
+        UI_ITEM_CLASS.$pressend.call(this, event);
+        if (!this.contain(event.getTarget())) {
+            UI_POPUP_CHAIN_FIRST.hide();
+        }
+    };
+
+    /**
+     * 添加子选项控件。
+     * 弹出菜单控件与弹出菜单子选项控件都包含 add 方法，用于添加子选项控件。如果位置序号不合法，子选项控件将添加在末尾的位置。
+     * @public
+     *
+     * @param {string|Element|ecui.ui.Item} item 选项控件的 html 内容/控件对应的 Element 对象/选项控件
+     * @param {number} index 子选项控件需要添加的位置序号
+     * @return {ecui.ui.Item} 子选项控件
+     */
+    UI_POPUP_ITEM_CLASS.add = function (item, index) {
+        return (this._cPopup =
+            this._cPopup || createControl('Popup', createDom('ec-popup ' + this.getParent().getBaseClass())))
+                .add(item, index);
+    };
+
+    /**
+     * 获取当前菜单选项控件的所有子选项控件。
+     * @public
+     *
+     * @return {Array} 子选项控件列表，如果不存在返回空列表
+     */
+    UI_POPUP_ITEM_CLASS.getItems = function () {
+        return this._cPopup && this._cPopup.getItems() || [];
+    };
+
+    /**
+     * 移除子选项控件。
+     * @public
+     *
+     * @param {number|ecui.ui.Item} item 选项控件的位置序号/选项控件
+     * @return {ecui.ui.Item} 被移除的子选项控件
+     */
+    UI_POPUP_ITEM_CLASS.remove = function (item) {
+        return this._cPopup && this._cPopup.remove(item);
+    };
+
+    /**
+     * 选项控件发生变化的处理。
+     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
+     * @protected
+     */
+    UI_POPUP_CLASS.$alterItems = function () {
+        if (getParent(this.getOuter())) {
+            UI_POPUP_ITEM_FLUSH(this.getParent());
+
+            //__gzip_original__optionSize
+            var list = this.getItems(),
+                len = list.length,
+                height = len && list[0].getHeight(),
+                optionSize = this._nOptionSize,
+                prev = this._uPrev,
+                next = this._uNext,
+                prevHeight = 0,
+                bodyWidth = this.getBodyWidth();
+
+            this.setItemSize(bodyWidth, height);
+
+            height *= MIN(optionSize, len);
+            if (optionSize) {
+                if (len > optionSize) {
+                    prev.show();
+                    next.show();
+                    prev.$setSize(bodyWidth);
+                    next.$setSize(bodyWidth);
+
+                    // 以下使用 prev 代替向上滚动按钮的高度，使用 next 代替向下滚动按钮的高度
+                    prevHeight = prev.getHeight();
+                    next.setPosition(0, prevHeight + height);
+                    height += prevHeight + next.getHeight();
+                }
+                else {
+                    prev.hide();
+                    next.hide();
+                }
+            }
+
+            this.getBody().style.top = prevHeight + 'px';
+            this.setBodySize(0, height);
+        }
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_POPUP_CLASS.$cache = function (style, cacheSize) {
+        UI_ITEMS.$cache.call(this, style, cacheSize);
+
+        if (this._uPrev) {
+            this._uPrev.cache(true, true);
+        }
+        if (this._uNext) {
+            this._uNext.cache(true, true);
+        }
+    };
+
+    /**
+     * 隐藏控件。
+     * 隐藏弹出菜单，同时隐藏所有的子弹出菜单。
+     * @protected
+     */
+    UI_POPUP_CLASS.$hide = function () {
+        UI_CONTROL_CLASS.$hide.call(this);
+
+        // 已经移入的菜单选项需要移出
+        this.$setActived();
+
+        if (UI_POPUP_CHAIN_LAST = this._cSuperior) {
+            UI_POPUP_CHAIN_LAST._cInferior = null;
+        }
+        else {
+            restore();
+        }
+    };
+
+    /**
+     * 界面点击强制拦截事件的默认处理。
+     * 弹出菜单需要强制拦截浏览器的点击事件，关闭弹出菜单。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_POPUP_CLASS.$intercept = function (event) {
+        if (!(findControl(event.target) instanceof UI_POPUP_ITEM)) {
+            UI_POPUP_CHAIN_FIRST.hide();
+        }
+        return false;
+    };
+
+    /**
+     * 设置激活的选项。
+     * $setActived 方法改变选项组控件中当前选中项的效果，不会触发相应的移入移出事件。
+     * @protected
+     *
+     * @param {ecui.ui.Item} item 选项控件
+     */
+    UI_POPUP_CLASS.$setActived = function (item) {
+        UI_ITEMS.$setActived.call(this, item);
+        if (!item) {
+            if (this._cInferior) {
+                this._cInferior.hide();
+            }
+        }
+    };
+
+    /**
+     * 显示控件。
+     * 显示弹出菜单时，必须保证弹出菜单显示在屏幕内，并且子弹出菜单展开的方向尽可能一致。
+     * @protected
+     */
+    UI_POPUP_CLASS.$show = function () {
+        UI_CONTROL_CLASS.$show.call(this);
+
+        var o = getView(),
+            el = this.getOuter(),
+            pos;
+        
+        if (!getParent(el)) {
+            DOCUMENT.body.appendChild(el);
+            this.$alterItems();
+        }
+
+        pos = getPosition(el);
+
+        // 限制弹出菜单不能超出屏幕
+        this.setPosition(
+            MIN(MAX(pos.left, o.left), o.right - this.getWidth()),
+            MIN(MAX(pos.top, o.top), o.bottom - this.getHeight())
+        );
+
+        if (UI_POPUP_CHAIN_LAST) {
+            // 如果之前存在已弹出的菜单
+            el.style.zIndex = toNumber(getStyle(UI_POPUP_CHAIN_LAST.getOuter(), 'zIndex')) + 1;
+            this._cSuperior = UI_POPUP_CHAIN_LAST;
+            UI_POPUP_CHAIN_LAST._cInferior = this;
+        }
+        else {
+            // 第一个弹出菜单，需要屏蔽鼠标点击
+            el.style.zIndex = 32768;
+            intercept(UI_POPUP_CHAIN_FIRST = this);
+        }
+
+        UI_POPUP_CHAIN_LAST = this;
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @public
+     *
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     * @param {boolean} force 是否需要强制刷新缓存，相当于执行了 clearCache 方法，默认不强制刷新
+     */
+    UI_POPUP_CLASS.cache = function (cacheSize, force) {
+        if (getParent(this.getOuter())) {
+            UI_CONTROL_CLASS.cache.call(this, cacheSize, force);
+        }
+    };
+
+    /**
+     * 控件刷新。
+     * paint 方法将导致控件整体重绘，在通常情况下，建议控件改变的状态进行重绘，而不是调用 paint 方法。
+     * @public
+     */
+    UI_POPUP_CLASS.paint = function () {
+        if (getParent(this.getOuter())) {
+            UI_CONTROL_CLASS.paint.call(this);
+        }
+    };
+
+    /**
+     * 设置当前控件的父控件。
+     * 弹出菜单控件只能挂在 document.body 上，因此 setParent 方法无效。
+     * @public
+     *
+     * @param {boolean} parent 设置/取消父控件对象，默认值为 false
+     */
+    UI_POPUP_CLASS.setParent = blank;
+
+
+
+/*
+Tab - 定义分页选项卡的操作。
+选项卡控件，继承自基础控件，实现了选项组接口。每一个选项卡都包含一个头部区域与内容区域，选项卡控件存在互斥性，只有唯一
+的一个选项卡能被选中显卡内容区域。
+
+直接初始化选项卡控件的例子
+<div ecui="type:tab;selected:1">
+    <!-- 包含内容的选项卡 -->
+    <div>
+        <label>标题1</label>
+        <!-- 这里是内容 -->
+        ...
+    </div>
+    <!-- 仅有标题的选项卡，以下selected定义与控件定义是一致的，可以忽略其中之一 -->
+    <label ecui="selected:true">标题2</label>
+</div>
+
+属性
+_bButton         - 向前向后滚动按钮是否显示
+_oSelected       - 初始化时临时保存当前被选中的选项卡
+_aPosition       - 选项卡位置缓存
+_cSelected       - 当前选中的选项卡
+_uPrev           - 向前滚动按钮
+_uNext           - 向后滚动按钮
+
+Item属性
+_sContentDisplay - 内容 DOM 元素的布局属性
+_eContent        - 内容 DOM 元素
+*/
+
+
+    /**
+     * 刷新向前向右滚动按钮的可操作状态。
+     * @private
+     *
+     * @param {ecui.ui.Tab} control Tab 控件对象
+     */
+    function UI_TAB_FLUSH_BUTTON(control) {
+        var left = toNumber(control.getBody().style.left);
+
+        control._uPrev.setEnabled(left < control._uPrev.getWidth());
+        control._uNext.setEnabled(
+            left > control.getBodyWidth() - control.$cache$bodyWidth - control._uNext.getWidth()
+        );
+    }
+
+    copy(UI_TAB_CLASS, UI_ITEMS);
+
+    /**
+     * 鼠标单击控件事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_TAB_BUTTON_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+
+        //__gzip_original__pos
+        var parent = this.getParent(),
+            style = parent.getBody().style,
+            pos = parent._aPosition,
+            index = parent.$getLeftMostIndex();
+
+        index = MIN(
+            MAX(0, index + (parent._uPrev == this ? toNumber(style.left) != pos[index] ? 0 : -1 : 1)),
+            pos.length - 1
+        );
+        style.left =
+            MAX(pos[index], parent.getBodyWidth() - parent.$cache$bodyWidth - parent._uNext.getWidth()) + 'px';
+        UI_TAB_FLUSH_BUTTON(parent);
+    };
+
+    /**
+     * 鼠标在控件区域内按下事件的默认处理。
+     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_TAB_BUTTON_CLASS.$mousedown = function (event) {
+        UI_CONTROL_CLASS.$mousedown.call(this, event);
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_TAB_ITEM_CLASS.$cache = function (style, cacheSize) {
+        UI_ITEM_CLASS.$cache.call(this, style, cacheSize);
+
+        this.$cache$marginLeft = toNumber(style.marginLeft);
+        this.$cache$marginRight = toNumber(style.marginRight);
+    };
+
+    /**
+     * 鼠标单击控件事件的默认处理。
+     * 选项卡控件点击时将当前选项卡设置成为选中状态，同时取消同一个选项卡控件组的其它控件的选中状态。如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_TAB_ITEM_CLASS.$click = function (event) {
+        UI_ITEM_CLASS.$click.call(this, event);
+        this.getParent().setSelected(this);
+    };
+
+    /**
+     * 销毁控件的默认处理。
+     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
+     * @protected
+     */
+    UI_TAB_ITEM_CLASS.$dispose = function () {
+        this._eContent = null;
+        UI_ITEM_CLASS.$dispose.call(this);
+    };
+
+    /**
+     * 直接设置父控件。
+     * @protected
+     *
+     * @param {ecui.ui.Control} parent ECUI 控件对象
+     */
+    UI_TAB_ITEM_CLASS.$setParent = function (parent) {
+        //__gzip_original__el
+        var el = this._eContent;
+
+        UI_ITEM_CLASS.$setParent.call(this, parent);
+        if (el) {
+            if (parent) {
+                parent.getBase().appendChild(el);
+            }
+            else {
+                removeDom(el);
+            }
+        }
+    };
+
+    /**
+     * 获取选项卡对应的内容元素。
+     * @public
+     *
+     * @return {HTMLElement} 选项卡对应的内容 DOM 元素。
+     */
+    UI_TAB_ITEM_CLASS.getContent = function () {
+        return this._eContent;
+    };
+
+    /**
+     * 设置选项卡对应的内容元素。
+     * @public
+     *
+     * @param {HTMLElement} el 选项卡对应的内容 DOM 元素。
+     */
+    UI_TAB_ITEM_CLASS.setContent = function (el) {
+        this._eContent = el;
+        if (el) {
+            this._sContentDisplay = el.style.display;
+        }
+    };
+
+    /**
+     * 选项控件发生变化的处理。
+     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
+     * @protected
+     */
+    UI_TAB_CLASS.$alterItems = function () {
+        // 第一次进入时不需要调用$setSize函数，否则将初始化两次
+        if (this._aPosition) {
+            this.$setSize(this.getWidth());
+        }
+
+        for (
+            var i = 0,
+                list = this.getItems(),
+                pos = this._aPosition = [this._uPrev.getWidth()],
+                lastItem = {$cache$marginRight: 0},
+                o;
+            o = list[i++];
+            lastItem = o
+        ) {
+            pos[i] = pos[i - 1] - MAX(lastItem.$cache$marginRight, o.$cache$marginLeft) - o.getWidth();
+        }
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_TAB_CLASS.$cache = function (style, cacheSize) {
+        UI_ITEMS.$cache.call(this, style, cacheSize);
+
+        this._uPrev.cache(true, true);
+        this._uNext.cache(true, true);
+
+        this.$cache$bodyWidth = this.getBody().offsetWidth;
+    };
+
+    /**
+     * 获得当前显示的选项卡中左边元素的索引，只在能左右滚动时有效。
+     * @protected
+     *
+     * @return {number} 最左边元素的索引
+     */
+    UI_TAB_CLASS.$getLeftMostIndex = function () {
+        for (var left = toNumber(this.getBody().style.left), pos = this._aPosition, i = pos.length; i--; ) {
+            if (left <= pos[i]) {
+                return i;
+            }
+        }
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_TAB_CLASS.$init = function () {
+        this._uPrev.$init();
+        this._uNext.$init();
+        UI_ITEMS.$init.call(this);
+        for (var i = 0, list = this.getItems(), o; o = list[i++];) {
+            o.$setSize(o.getWidth(), o.getHeight());
+        }
+        this.setSelected(this._oSelected);
+    };
+
+     /**
+     * 控件移除子控件事件的默认处理。
+     * 选项组移除子选项时需要额外移除引用。
+     * @protected
+     *
+     * @param {ecui.ui.Tab.Item} child 选项控件
+     */
+    UI_TAB_CLASS.$remove = function (child) {
+        if (this._cSelected == child) {
+            var list = this.getItems(),
+                index = indexOf(list, child);
+
+            // 跳到被删除项的后一项
+            this.setSelected(index == list.length - 1 ? index - 1 : index + 1);
+        }
+
+        UI_ITEMS.$remove.call(this, child);
+    };
+
+    /**
+     * 设置控件的大小。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_TAB_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+
+        //__gzip_original__prev
+        ///__gzip_original__next
+        var prev = this._uPrev,
+            next = this._uNext,
+            style = this.getBody().style;
+
+        width = this.getBodyWidth();
+        if (this.$cache$bodyWidth > width) {
+            width -= next.getWidth();
+            next.getOuter().style.left = width + 'px';
+
+            if (this._bButton) {
+                // 缩小后变大，右边的空白自动填补
+                width -= this.$cache$bodyWidth;
+                if (toNumber(style.left) < width) {
+                    style.left = width + 'px';
+                }
+            }
+            else {
+                prev.$show();
+                next.$show();
+                style.left = prev.getWidth() + 'px';
+                this._bButton = true;
+            }
+
+            UI_TAB_FLUSH_BUTTON(this);
+        }
+        else if (this._bButton) {
+            prev.$hide();
+            next.$hide();
+            style.left = '0px';
+            this._bButton = false;
+        }
+    };
+
+    /**
+     * 获得当前选中的选项卡控件。
+     *
+     * @return {ecui.ui.Tab.Item} 选中的选项卡控件
+     */
+    UI_TAB_CLASS.getSelected = function () {
+        return this._cSelected;
+    };
+
+    /**
+     * 设置被选中的选项卡。
+     * @public
+     *
+     * @param {number|ecui.ui.Tab.Item} 选项卡子选项的索引/选项卡子选项控件
+     */
+    UI_TAB_CLASS.setSelected = function (item) {
+        //__gzip_original__prev
+        var i = 0,
+            list = this.getItems(),
+            prev = this._uPrev,
+            style = this.getBody().style,
+            left = toNumber(style.left),
+            o;
+
+        if ('number' == typeof item) {
+            item = list[item];
+        }
+        if (this._cSelected != item) {
+            for (; o = list[i++]; ) {
+                if (o._eContent) {
+                    o._eContent.style.display = o == item ? o._sContentDisplay : 'none';
+                }
+            }
+
+            if (this._cSelected) {
+                this._cSelected.alterClass('selected', true);
+            }
+
+            if (item) {
+                item.alterClass('selected');
+                o = this._aPosition[indexOf(list, item)] - (prev.isShow() ? 0 : prev.getWidth());
+                if (left < o) {
+                    style.left = o + 'px';
+                }
+                else {
+                    o -= item.getWidth() + prev.getWidth() + this._uNext.getWidth() - this.getBodyWidth();
+                    if (left > o) {
+                        style.left = o + 'px';
+                    }
+                }
+                UI_TAB_FLUSH_BUTTON(this);
+            }
+
+            this._cSelected = item;
+            this.change();
+        }
     };
 
 
@@ -5586,8 +6956,7 @@ _eInput  - INPUT对象
     if (ieVersion) {
         UI_EDIT_INPUT.propertychange = function (event) {
             if (event.propertyName == 'value') {
-                // 以下使用 event 代替 control
-                event = findControl(standardEvent(event).target);
+                event = findControl(event.srcElement);
                 if (!event._nLock) {
                     event._nLock++;
                     event.change();
@@ -5656,16 +7025,11 @@ _eInput  - INPUT对象
      * @param {ecui.ui.Control} parent ECUI 控件对象
      */
     UI_EDIT_CLASS.$setParent = function (parent) {
-        for (var el = this.getOuter(); el; el = getParent(el)) {
-            if (el.tagName == 'FORM') {
-                if (!el.getControl) {
-                    attachEvent(el, 'submit', UI_EDIT_FORM_SUBMIT);
-                    el.getControl = blank;
-                }
-                break;
-            }
-        }
         UI_CONTROL_CLASS.$setParent.call(this, parent);
+        if (parent = this._eInput.form) {
+            detachEvent(parent, 'submit', UI_EDIT_FORM_SUBMIT);
+            attachEvent(parent, 'submit', UI_EDIT_FORM_SUBMIT);
+        }
     };
 
     /**
@@ -5822,10 +7186,19 @@ FormatEdit - 定义格式化输入数据的基本操作。
 </div>
 
 属性
+_bSymbol    - 是否自动进行全半角转换
+_bTrim      - 字符串是否需要过滤两端空白
+_nMinLength - 允许提交的最小长度
+_nMaxLength - 允许提交的最大长度
+_nMinValue  - 允许提交的最小值
+_nMaxValue  - 允许提交的最大值
+_sEncoding  - 字节码编码集
 _sLeft      - 每次操作左边的字符串
 _sSelection - 每次操作被替换的字符串
 _sRight     - 每次操作右边的字符串
 _sInput     - 每次操作输入的字符串
+_oKeyMask   - 允许提交的字符限制正则表达式
+_oFormat    - 允许提交的格式正则表达式
 */
 
 
@@ -5987,40 +7360,6 @@ _sInput     - 每次操作输入的字符串
         value = !err[0];
         value || (this.onerror && this.onerror(err));
         return value;
-    };
-
-
-/*
-Label - 定义事件转发的基本操作。
-标签控件，继承自基础控件，将事件转发到指定的控件上，通常与 Radio、Checkbox 等控件联合使用，扩大点击响应区域。
-
-标签控件直接HTML初始化的例子:
-<div ecui="type:label;for:checkbox"></div>
-
-属性
-_cFor - 被转发的控件对象
-*/
-
-
-    /**
-     * 鼠标单击控件事件的默认处理。
-     * 将点击事件转发到 setFor 方法指定的控件。如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
-     * @protected
-     */
-    UI_LABEL_CLASS.$click = function (event) {
-        var __gzip_direct__control = this._cFor;
-        __gzip_direct__control && __gzip_direct__control.click(event);
-    };
-
-    /**
-     * 设置控件的事件转发接收控件。
-     * setFor 方法设置事件转发的被动接收者，如果没有设置，则事件不会被转发。
-     * @public
-     *
-     * @param {ecui.ui.Control} control 事件转发接收控件
-     */
-    UI_LABEL_CLASS.setFor = function (control) {
-        this._cFor = control;
     };
 
 
@@ -6221,14 +7560,6 @@ Radio - 定义一组选项中选择唯一选项的基本操作。
 <input ecui="type:radio" type="radio" name="test" checked="checked" />
 也可以使用其它标签初始化:
 <div ecui="type:radio;name:test;checked:true"></div>
-
-属性
-_sName  - 控件所属的组名称
-_sValue - 当前单选框的值
-
-组属性
-_eInput - 组对应的Element
-_cCheck - 当前被选中的选项
 */
 
 
@@ -6256,16 +7587,6 @@ _cCheck - 当前被选中的选项
     UI_RADIO_CLASS.$click = function (event) {
         UI_EDIT_CLASS.$click.call(this, event);
         this.checked();
-    };
-
-    /**
-     * 销毁控件的默认处理。
-     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
-     * @protected
-     */
-    UI_RADIO_CLASS.$dispose = function () {
-        this.setName();
-        UI_EDIT_CLASS.$dispose.call(this);
     };
 
     /**
@@ -6316,8 +7637,27 @@ _cCheck - 当前被选中的选项
      * @return {Array} 单选框控件数组
      */
     UI_RADIO_CLASS.getItems = function () {
-        var name = this.getName();
-        return name ? UI_RADIO['ec-' + name].slice() : [this];
+        var i = 0,
+            elements = this.getInput(),
+            o = elements.form,
+            result = [];
+
+        if (o) {
+            elements = o[elements.name];
+            for (; o = elements[i++]; ) {
+                if (o.getControl) {
+                    result.push(o.getControl());
+                }
+            }
+        }
+        else if (elements.name) {
+            return query({type: UI_RADIO, custom: function (control) {
+                return control.getName() == elements.name;
+            }});
+        }
+        else {
+            return [this];
+        }
     };
 
     /**
@@ -6328,1116 +7668,6 @@ _cCheck - 当前被选中的选项
      */
     UI_RADIO_CLASS.isChecked = function () {
         return this.getInput().checked;
-    };
-
-    /**
-     * 设置控件的表单项名称。
-     * 单选框控件可以在表单中被提交，setName 方法设置提交时用的表单项名称，名称相同的单选框位于同一个分组，表单项名称可以使用 getName 方法获取。
-     * @public
-     *
-     * @param {string} name 表单项名称，如果为逻辑非省略将设置成无分组
-     */
-    UI_RADIO_CLASS.setName = function (name) {
-        var o = this.getName(),
-            group = UI_RADIO['ec-' + o];
-
-        if (name != o) {
-            // 如果控件已经属于一个组，需要先释放
-            o && remove(group, this);
-
-            // 控件需要放入新的组
-            if (name) {
-                // 加入新的组需要清除当前的选中状态
-                UI_RADIO_FLUSH(this, false);
-                (UI_RADIO['ec-' + name] = UI_RADIO['ec-' + name] || []).push(this);
-            }
-
-            UI_EDIT_CLASS.setName.call(this, name);
-        }
-    };
-
-
-/*
-Item/Items - 定义选项操作相关的基本操作。
-选项控件，继承自基础控件，用于弹出菜单、下拉框、交换框等控件的单个选项，通常不直接初始化。选项控件必须用在使用选项组接
-口(Items)的控件中，选项控件支持移入操作的缓存，不会因为鼠标移出而改变状态，因此可以通过函数调用来改变移入移出状态，选
-控件默认屏蔽了 DOM 的文本选中操作。选项组不是控件，是一组对选项进行操作的方法的集合，提供了基本的增/删操作，以及对选项
-控件的状态控制的接口，通过将 ecui.ui.Items 对象下的方法复制到类的 prototype 属性下继承接口，最终对象要正常使用还需要在
-类构造器中调用 $initItems 方法。
-*/
-
-
-    /**
-     * 鼠标单击控件事件的默认处理。
-     * 如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_ITEM_CLASS.$click = function (event) {
-        UI_CONTROL_CLASS.$click.call(this, event);
-
-        var parent = this.getParent();
-        parent && parent.onitemclick && parent.onitemclick(event, indexOf(UI_ITEMS[parent.getUID()], this));
-    };
-
-    /**
-     * 鼠标移出控件区域事件的默认处理。
-     * 不进行任何操作。如果控件处于可操作状态(参见 isEnabled)，mouseout 方法触发 onmouseout 事件，如果事件返回值不为 false，则调用 $mouseout 方法。
-     * @protected
-     */
-    UI_ITEM_CLASS.$mouseout = blank;
-
-    /**
-     * 鼠标移入控件区域事件的默认处理。
-     * 鼠标移入控件区域时默认调用 $mouseover 方法，将同一个父控件的其它选项控制设置成移出状态。如果控件处于可操作状态(参见 isEnabled)，mouseover 方法触发 onmouseover 事件，如果事件返回值不为 false，则调用 $mouseover 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_ITEM_CLASS.$mouseover = function (event) {
-        this.getParent().$setOvered(this);
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_ITEM_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        event.preventDefault();
-    };
-
-    /**
-     * 控件增加子控件事件的默认处理。
-     * 选项组增加子选项时需要判断子控件的类型，并额外添加引用。
-     * @protected
-     *
-     * @param {ecui.ui.Item} child 选项控件
-     * @return {boolean} 是否允许增加子控件，默认允许
-     */
-    UI_ITEMS.$append = function (child) {
-        // 检查待新增的控件是否为选项控件
-        if (!(child instanceof UI_ITEM) || findPrototype(this, '$append').call(this, child) === false) {
-            return false;
-        }
-        UI_ITEMS[this.getUID()].push(child);
-        this.$alterItems();
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_ITEMS.$cache = function (style, cacheSize) {
-        findPrototype(this, '$cache').call(this, style, cacheSize);
-
-        for (var i = 0, list = UI_ITEMS[this.getUID()], item; item = list[i++]; ) {
-            item.cache(true, true);
-        }
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
-     * @protected
-     */
-    UI_ITEMS.$init = function () {
-        findPrototype(this, '$init').call(this);
-        this.$alterItems();
-    };
-
-    /**
-     * 初始化选项组对应的 Element 对象。
-     * 实现了 Items 接口的类在初始化时需要调用 $initItems 方法自动生成选项控件，$initItems 方法保证一个控件对象只允许被调用一次，多次的调用无效。
-     * @protected
-     */
-    UI_ITEMS.$initItems = function () {
-        this.$alterItems = blank;
-
-        // 防止对一个控件进行两次包装操作
-        UI_ITEMS[this.getUID()] = [];
-
-        // 初始化选项控件
-        for (var i = 0, list = children(this.getBody()), o; o = list[i++]; ) {
-            this.add(o);
-        }
-
-        delete this.$alterItems;
-    };
-
-    /**
-     * 控件移除子控件事件的默认处理。
-     * 选项组移除子选项时需要额外移除引用。
-     * @protected
-     *
-     * @param {ecui.ui.Item} child 选项控件
-     */
-    UI_ITEMS.$remove = function (child) {
-        findPrototype(this, '$remove').call(this, child);
-        remove(UI_ITEMS[this.getUID()], child);
-        this.$alterItems();
-    };
-
-    /**
-     * 设置移入的选项。
-     * $setOvered 方法改变选项组控件中当前选中项的效果，不会触发相应的移入移出事件。
-     * @protected
-     *
-     * @param {ecui.ui.Item} item 选项控件
-     */
-    UI_ITEMS.$setOvered = function (item) {
-        var __gzip_direct__items = UI_ITEMS[this.getUID()],
-            over = __gzip_direct__items._cOver;
-
-        if (over != item) {
-            over && UI_CONTROL_CLASS.$mouseout.call(over);
-            item && UI_CONTROL_CLASS.$mouseover.call(item);
-            __gzip_direct__items._cOver = item;
-        }
-    };
-
-    /**
-     * 添加子选项控件。
-     * add 方法中如果位置序号不合法，子选项控件将添加在末尾的位置。
-     * @public
-     *
-     * @param {string|HTMLElement|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
-     * @param {number} index 子选项控件需要添加的位置序号
-     * @param {Object} 子控件初始化参数
-     * @return {ecui.ui.Item} 子选项控件
-     */
-    UI_ITEMS.add = function (item, index, params) {
-        var items = UI_ITEMS[this.getUID()],
-            o = 'ec-item ' + this.getClass() + '-item ';
-
-        if (item instanceof UI_ITEM) {
-            // 选项控件，直接添加
-            item.setParent(this);
-        }
-        else {
-            // 根据是字符串还是Element对象选择不同的初始化方式
-            if ('string' == typeof item) {
-                this.getBody().appendChild(o = createDom(o));
-                o.innerHTML = item;
-                item = o;
-            }
-            else {
-                item.className = o + item.className;
-            }
-
-            params = params || getParameters(item);
-            params.parent = this;
-            items.push(item = $fastCreate(findConstructor(this, 'Item') || UI_ITEM, item, this, params));
-            this.$alterItems();
-        }
-
-        // 改变选项控件的位置
-        if (item.getParent() && (o = items[index]) && o != item) {
-            insertBefore(item.getOuter(), o.getOuter());
-            items.splice(index, 0, items.pop());
-        }
-
-        return item;
-    };
-
-    /**
-     * 向选项组最后添加子选项控件。
-     * append 方法是 add 方法去掉第二个 index 参数的版本。
-     * @public
-     *
-     * @param {string|Element|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
-     * @param {Object} 子控件初始化参数
-     * @return {ecui.ui.Item} 子选项控件
-     */
-    UI_ITEMS.append = function (item, params) {
-        this.add(item, undefined, params);
-    };
-
-    /**
-     * 销毁控件。
-     * dispose 方法触发 ondispose 事件，然后调用 $dispose 方法，dispose 方法在页面卸载时会被自动调用，通常不需要直接调用。
-     * @public
-     */
-    UI_ITEMS.dispose = function () {
-        findPrototype(this, 'dispose').call(this);
-        delete UI_ITEMS[this.getUID()];
-    };
-
-    /**
-     * 获取全部的子选项控件。
-     * @public
-     *
-     * @return {Array} 子选项控件数组
-     */
-    UI_ITEMS.getItems = function () {
-        return UI_ITEMS[this.getUID()].slice();
-    };
-
-    /**
-     * 获取当前处于鼠标移入状态的选项。
-     * 选项控件重新实现了鼠标移入移出操作，鼠标移出时，不会马上失去移入状态，需要在下次移入事件触发时才产生移出的操作，getOvered 方法能够获取当前处于移入状态的选项控件。
-     * @public
-     *
-     * @return {ecui.ui.Item} 子选项控件
-     */
-    UI_ITEMS.getOvered = function () {
-        return UI_ITEMS[this.getUID()]._cOver || null;
-    };
-
-    /**
-     * 移除子选项控件。
-     * @public
-     *
-     * @param {number|ecui.ui.Item} item 选项控件的位置序号/选项控件
-     * @return {ecui.ui.Item} 被移除的子选项控件
-     */
-    UI_ITEMS.remove = function (item) {
-        if ('number' == typeof item) {
-            item = UI_ITEMS[this.getUID()][item];
-        }
-        item && item.setParent();
-        return item || null;
-    };
-
-    /**
-     * 设置控件内所有子选项控件的大小。
-     * @public
-     *
-     * @param {number} itemWidth 子选项控件的宽度
-     * @param {number} itemHeight 子选项控件的高度
-     */
-    UI_ITEMS.setItemSize = function (itemWidth, itemHeight) {
-        for (var i = 0, list = UI_ITEMS[this.getUID()], item; item = list[i++]; ) {
-            item.$setSize(itemWidth, itemHeight);
-        }
-    };
-
-
-
-﻿/*
-Select - 定义模拟下拉框行为的基本操作。
-下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基础控件)与下拉选项框
-(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选项数量，在屏幕显示
-不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键盘与滚轮操作，在下
-拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有焦点，就可以通过滚
-轮上下选择选项。
-
-下拉框控件直接HTML初始化的例子:
-<select ecui="type:select;option-size:3" name="test">
-    <!-- 这里放选项内容 -->
-    <option value="值">文本</option>
-    ...
-    <option value="值" selected>文本</option>
-    ...
-</select>
-
-如果需要自定义特殊的选项效果，请按下列方法初始化:
-<div ecui="type:select;name:test;option-size:3">
-    <!-- 这里放选项内容 -->
-    <li ecui="value:值">文本</li>
-    ...
-</div>
-
-属性
-_nOptionSize  - 下接选择框可以用于选择的条目数量
-_cSelected    - 当前选中的选项
-_uText        - 下拉框的文本框
-_uButton      - 下拉框的按钮
-_uOptions     - 下拉选择框
-*/
-
-
-    /**
-     * 下拉框刷新。
-     * @private
-     *
-     * @param {ecui.ui.Select} control 下拉框控件
-     */
-    function UI_SELECT_FLUSH(control) {
-        var options = control._uOptions,
-            scroll = control._cScroll,
-            __gzip_direct__el = options.getOuter(),
-            pos = getPosition(control.getOuter()),
-            selected = control._cSelected,
-            optionTop = pos.top + control.getHeight();
-
-        // 第一次显示时需要进行下拉选项部分的初始化
-        if (!getParent(__gzip_direct__el)) {
-            DOCUMENT.body.appendChild(__gzip_direct__el);
-            control.$alterItems();
-        }
-
-        if (options.isShow()) {
-            control.$setOvered(selected);
-            scroll.setValue(scroll.getStep() * indexOf(control.getItems(), selected));
-
-            // 以下使用control代替optionHeight
-            control = options.getHeight();
-
-            // 如果浏览器下部高度不够，将显示在控件的上部
-            options.setPosition(
-                pos.left,
-                optionTop + control <= getView().bottom ? optionTop : pos.top - control
-            );
-        }
-    }
-
-    copy(UI_SELECT_CLASS, UI_ITEMS);
-
-    /**
-     * 销毁控件的默认处理。
-     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
-     * @protected
-     */
-    UI_SELECT_OPTIONS_CLASS.$dispose = function () {
-        // 下拉选项框处于显示状态，需要先恢复状态
-        if (this.isShow()) {
-            mask();
-            restore();
-        }
-        removeDom(this.getOuter());
-        UI_PANEL_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 获取选项的值。
-     * getValue 方法返回选项控件的值，即选项选中时整个下拉框控件的值。
-     * @public
-     *
-     * @return {string} 选项的值
-     */
-    UI_SELECT_ITEM_CLASS.getValue = function () {
-        return this._sValue;
-    };
-
-    /**
-     * 设置选项的值。
-     * setValue 方法设置选项控件的值，即选项选中时整个下拉框控件的值。
-     * @public
-     *
-     * @param {string} value 选项的值
-     */
-    UI_SELECT_ITEM_CLASS.setValue = function (value) {
-        var parent = this.getParent();
-        this._sValue = value;
-        parent && parent._cSelected == this && UI_EDIT_CLASS.setValue.call(parent, value);
-    };
-
-    /**
-     * 选项控件发生变化的处理。
-     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
-     * @protected
-     */
-    UI_SELECT_CLASS.$alterItems = function () {
-        var options = this._uOptions,
-            scroll = this._cScroll,
-            optionSize = this._nOptionSize,
-            step = this.getBodyHeight(),
-            width = this.getWidth(),
-            itemLength = this.getItems().length;
-
-        if (getParent(options.getOuter())) {
-            // 设置选项框
-            scroll.setStep(step);
-
-            // 为了设置激活状态样式, 因此必须控制下拉框中的选项必须在滚动条以内
-            this.setItemSize(
-                width - options.getInvalidWidth() - (itemLength > optionSize ? scroll.getWidth() : 0),
-                step
-            );
-
-            // 设置options框的大小，如果没有元素，至少有一个单位的高度
-            options.cache(false, true);
-            options.$setSize(width, (MIN(itemLength, optionSize) || 1) * step + options.getInvalidHeight());
-        }
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_SELECT_CLASS.$cache = function (style, cacheSize) {
-        (getParent(this._uOptions.getOuter()) ? UI_ITEMS : UI_EDIT_CLASS).$cache.call(this, style, cacheSize);
-        this._uText.cache(false, true);
-        this._uButton.cache(false, true);
-    };
-
-    /**
-     * 界面点击强制拦截事件的默认处理。
-     * 控件在下拉框展开时，需要拦截浏览器的点击事件，如果点击在下拉选项区域，则选中当前项，否则直接隐藏下拉选项框，但不会改变控件激活状态。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SELECT_CLASS.$forcibly = function (event) {
-        var target = event.getTarget();
-        this._uOptions.hide();
-        mask();
-
-        // 检查点击是否在当前下拉框的选项上
-        if (target instanceof UI_SELECT_ITEM && target != this._cSelected) {
-            this.setSelected(target);
-            this.change();
-        }
-    };
-
-    /**
-     * 控件拥有焦点时，键盘事件的默认处理。
-     * 屏蔽空格键按下事件。Opera 下仅用 keydown 不能屏蔽空格键事件，还需要在 keypress 中屏蔽。如果控件处于可操作状态(参见 isEnabled)，keydown/keypress 方法触发 onkeydown/onkeypress 事件，如果事件返回值不为 false，则调用 $keydown/$keypress 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SELECT_CLASS.$keydown = UI_SELECT_CLASS.$keypress = function (event) {
-        if (UI_EDIT_CLASS['$' + event.type](event) === false) {
-            return false;
-        }
-
-        var options = this._uOptions,
-            scroll = this._cScroll,
-            optionSize = this._nOptionSize,
-            which = event.which,
-            items = this.getItems(),
-            length = items.length,
-            over = this.getOvered(),
-            __gzip_direct__show = options.isShow();
-
-        if (getPressed() != this) {
-            // 当前不能存在鼠标操作，否则屏蔽按键
-            if (which == 40 || which == 38) {
-                if (length) {
-                    if (__gzip_direct__show) {
-                        this.$setOvered(items[which = MIN(MAX(0, indexOf(items, over) + which - 39), length - 1)]);
-                        which -= scroll.getValue() / scroll.getStep();
-                        scroll.skip(which < 0 ? which : which >= optionSize ? which - optionSize + 1 : 0);
-                    }
-                    else {
-                        this.setSelected(MIN(MAX(0, indexOf(items, this._cSelected) + which - 39), length - 1));
-                    }
-                }
-                return false;
-            }
-            else if (which == 27 || which == 13 && __gzip_direct__show) {
-                // 回车键选中，ESC键取消
-                which == 13 && this.setSelected(over);
-                options.hide();
-                mask();
-                restore();
-                return false;
-            }
-        }
-    };
-
-    /**
-     * 鼠标在控件区域滚动滚轮事件的默认处理。
-     * 如果控件拥有焦点，则当前选中项随滚轮滚动而自动指向前一项或者后一项。如果控件处于可操作状态(参见 isEnabled)，mousewheel 方法触发 onmousewheel 事件，如果事件返回值不为 false，则调用 $mousewheel 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SELECT_CLASS.$mousewheel = function (event) {
-        var options = this._uOptions,
-            items = this.getItems(),
-            length = items.length;
-
-        options.isShow()
-            ? options.$mousewheel(event)
-            : this.setSelected(
-                length ? MIN(MAX(0, indexOf(items, this._cSelected) + (event.detail > 0 ? 1 : -1)), length - 1) : null
-            );
-        return false;
-    };
-
-    /**
-     * 控件按压状态结束事件的默认处理。
-     * 鼠标左键按压控件结束时设置下一次点击事件被拦截，需要根据点击的位置选择是关闭展开的下拉框还是选中选项。如果控件处于可操作状态(参见 isEnabled)，pressend 方法触发 onpressend 事件，如果事件返回值不为 false，则调用 $pressend 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SELECT_CLASS.$pressend = function (event) {
-        UI_EDIT_CLASS.$pressend.call(this, event);
-        // 拦截之后的点击，同时屏蔽所有的控件点击事件
-        forcibly(this);
-        mask(0, 65534);
-    };
-
-    /**
-     * 控件按压状态开始事件的默认处理。
-     * 鼠标左键按压控件开始时显示下拉框。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SELECT_CLASS.$pressstart = function (event) {
-        UI_EDIT_CLASS.$pressstart.call(this, event);
-        this._uOptions.show();
-        UI_SELECT_FLUSH(this);
-    };
-
-    /**
-     * 控件自动渲染全部完成后的处理。
-     * 页面刷新时，部分浏览器会回填输入框的值，需要在回填结束后触发设置控件的状态。
-     * @protected
-     */
-    UI_SELECT_CLASS.$ready = function () {
-        this.setValue(this.getValue());
-    };
-
-    /**
-     * 控件移除子控件事件的默认处理。
-     * 下拉框移除子选项时需要检查选项是否被选中，如果被选中需要清除状态。
-     * @protected
-     *
-     * @param {Item} item 选项控件
-     */
-    UI_SELECT_CLASS.$remove = function (item) {
-        this._cSelected == item && this.setSelected();
-        UI_ITEMS.$remove.call(this, item);
-    };
-
-    /**
-     * 设置控件的大小。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_SELECT_CLASS.$setSize = function (width, height) {
-        var __gzip_direct__button = this._uButton;
-
-        UI_EDIT_CLASS.$setSize.call(this, width, height);
-        this.$locate();
-        height = this.getBodyHeight();
-
-        // 设置文本区域
-        this._uText.$setSize(width = this.getBodyWidth() - height, height);
-
-        // 设置下拉按钮
-        __gzip_direct__button.$setSize(height, height);
-        __gzip_direct__button.setPosition(width, 0);
-    };
-
-    /**
-     * 获取被选中的选项控件。
-     * @public
-     *
-     * @return {ecui.ui.Item} 选项控件
-     */
-    UI_SELECT_CLASS.getSelected = function () {
-        return this._cSelected || null;
-    };
-
-    /**
-     * 设置下拉框允许显示的选项数量。
-     * 如果实际选项数量小于这个数量，没有影响，否则将出现垂直滚动条，通过滚动条控制其它选项的显示。
-     * @public
-     *
-     * @param {number} value 显示的选项数量，必须大于 1
-     */
-    UI_SELECT_CLASS.setOptionSize = function (value) {
-        this._nOptionSize = value;
-        this.$alterItems();
-        UI_SELECT_FLUSH(this);
-    };
-
-    /**
-     * 选中选项。
-     * @public
-     *
-     * @param {number|ecui.ui.Item} item 选项的序号/选项控件
-     */
-    UI_SELECT_CLASS.setSelected = function (item) {
-        // 将选项序号转换成选项
-        if ('number' == typeof item) {
-            item = this.getItems()[item];
-        }
-
-        if (this._cSelected !== item) {
-            this._uText.$setBodyHTML(item ? item.getBody().innerHTML : '');
-            UI_EDIT_CLASS.setValue.call(this, item ? item._sValue : '');
-            this._cSelected = item;
-            this._uOptions.isShow() && this.$setOvered(item);
-        }
-    };
-
-    /**
-     * 设置控件的值。
-     * setValue 方法设置控件的值，设置的值必须与一个子选项的值相等，否则将被设置为空，使用 getValue 方法获取设置的值。
-     * @public
-     *
-     * @param {string} value 需要选中的值
-     */
-    UI_SELECT_CLASS.setValue = function (value) {
-        for (var i = 0, items = this.getItems(), o; o = items[i++]; ) {
-            if (o._sValue == value) {
-                this.setSelected(o);
-                return;
-            }
-        }
-
-        // 找不到满足条件的项，将选中的值清除
-        this.setSelected();
-    };
-
-
-﻿/*
-Combox - 定义可输入下拉框行为的基本操作。
-可输入下拉框控件，继承自下拉框控件，在下拉框控件的基础上允许选项框可输入内容。
-
-下拉框控件直接HTML初始化的例子:
-<select ecui="type:combox" name="test">
-    <!-- 这里放选项内容 -->
-    <option value="值">文本</option>
-    ...
-    <option value="值" selected>文本</option>
-    ...
-</select>
-
-如果需要自定义特殊的选项效果，请按下列方法初始化:
-<div ecui="type:combox">
-    <!-- 如果ec中不指定name，也可以在input中指定 -->
-    <input name="test" />
-    <!-- 这里放选项内容 -->
-    <li value="值">文本</li>
-    ...
-</div>
-
-属性
-*/
-
-
-    /**
-     * 设置控件的大小。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_COMBOX_CLASS.$setSize = function (width, height) {
-        UI_SELECT_CLASS.$setSize.call(this, width, height);
-        this.getInput().style.width = this.$getSection('Text').getWidth() + 'px';
-    };
-
-
-/*
-Grid - 定义批量控件集的事件与基本操作。
-网格控件，继承自基础控件，将大量子控件按指定的行与列组合而成的控件。网格控件统一管理，所有子控件的事件允许调用统一的事
-件方法，可用于日历、调色板等。
-
-网格控件直接HTML初始化的例子:
-<div ecui="type:grid"></div>
-
-属性
-_nRow   - 子控件的行数
-_nCol   - 子控件的列数
-_aItem  - 子控件集合
-*/
-
-
-    /**
-     * 获取网格子控件在网格控件中的序号。
-     * 在网格控件的事件中，事件对应的 this 是真正产生事件的网格子控件，通过 getIndex 方法能知道当前的网格子控件在网格控件中的序号，参见 getItem 方法。
-     * @public
-     *
-     * @return {number} 子控件的序号
-     */
-    UI_GRID_ITEM_CLASS.getIndex = function () {
-        return indexOf(this.getParent()._aItem, this);
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_GRID_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-
-        // 以下使用cacheSize表示o，使用style表示i
-        for (style = 0; cacheSize = this._aItem[style++]; ) {
-            cacheSize.cache(false, true);
-        }
-    };
-
-    /**
-     * 获取指定的网格子控件。
-     * 子控件的序号从行到列，逐一累加，例如，一个 3*3 的网格控件，第一行第一列序号为 0，第一行第二列序号为 1，第一行第三列序号为 2，第二行第一列序号为3，行二行第二列序号为 4，依此类推。
-     * @public
-     *
-     * @param {number} index 子控件的序号
-     * @return {ecui.ui.Control} 子控件对象
-     */
-    UI_GRID_CLASS.getItem = function (index) {
-        return this._aItem[index];
-    };
-
-    /**
-     * 初始化事件处理函数，以事件名命名，这些函数行为均是判断控件是否可操作/是否需要调用事件/是否需要执行缺省的事件处
-     * 理，对应的缺省事件处理函数名以$开头后接事件名，处理函数以及缺省事件处理函数参数均为事件对象，仅执行一次。这些函
-     * 数都需要提供给内部的子控件使用，因此需要关联Grid控件。
-     */
-    (function () {
-        for (var i = 0, o; i < 13; ) {
-            o = eventNames[i++];
-            UI_GRID_CLASS[o] = blank;
-            UI_GRID_ITEM_CLASS[o] = new Function(
-                'e',
-                'var o=this,p=o.getParent();o.isEnabled()&&(p.on'
-                    + o + '&&p.on' + o + '.call(o,e)===false||p.$' + o + '.call(o,e))'
-            );
-        }
-    })();
-
-
-/*
-Calendar - 定义日历显示的基本操作。
-日历控件，继承自基础控件，内部包含了两个部件，分别是星期名称(网格控件)与日期(网格控件)。在日期网格控件里，第一行包含上
-个月最后几天的信息，最后一行包含下个月最前几天的信息。日历控件不包含年/月/日的快速选择与切换，如果需要实现这些功能，请
-将下拉框(选择月份)、输入框(输入年份)等组合使用建立新的控件或直接在页面上布局并调用接口。
-
-日历控件直接HTML初始化的例子:
-<div ecui="type:calendar;year:2009;month:11"></div>
-
-属性
-_nYear      - 年份
-_nMonth     - 月份(0-11)
-_uNames     - 星期名称网格
-_uDate      - 日期网格
-
-子控件属性
-_nDay       - 从本月1号开始计算的天数，如果是上个月，是负数，如果是下个月，会大于当月最大的天数
-*/
-
-
-    /**
-     * 日期网格控件点击处理，将事件转发到日历控件的ondateclick事件上
-     * @private
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_CALENDAR_DATE_GRID_CLASS.$click = function (event) {
-        UI_GRID_CLASS.$click.call(this, event);
-        var calendar = this.getParent().getParent();
-        calendar.ondateclick && calendar.ondateclick(event, new Date(calendar._nYear, calendar._nMonth, this._nDay));
-    }
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_CALENDAR_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-        this._uNames.cache(true, true);
-        this._uDate.cache(true, true);
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
-     * @protected
-     */
-    UI_CALENDAR_CLASS.$init = function () {
-        this._uNames.$init();
-        this._uDate.$init();
-        UI_CONTROL_CLASS.$init.call(this);
-    };
-
-    /**
-     * 设置控件的大小。
-     * 日历控件与 网格控件 类似，$setSize 方法设置的大小不一定是实际控件的大小，受到了内部部件的影响。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_CALENDAR_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-
-        var i = 0,
-            names = this._uNames,
-            __gzip_direct__date = this._uDate,
-            itemWidth = FLOOR((width - names.getInvalidWidth()) / 7),
-            itemHeight = FLOOR((height - names.getHeight()) / 6);
-
-        for (; i < 7; ) {
-            names.getItem(i++).$setSize(itemWidth);
-        }
-        for (i = 0; i < 42; ) {
-            __gzip_direct__date.getItem(i++).$setSize(itemWidth, itemHeight);
-        }
-
-        names.$setSize(width);
-        __gzip_direct__date.$setSize(width, itemHeight * 6);
-    };
-
-    /**
-     * 获取日历控件当前显示的月份。
-     * @public
-     *
-     * @return {number} 月份(1-12)
-     */
-    UI_CALENDAR_CLASS.getMonth = function () {
-        return this._nMonth + 1;
-    };
-
-    /**
-     * 获取日历控件当前显示的年份。
-     * @public
-     *
-     * @return {number} 年份(19xx-20xx)
-     */
-    UI_CALENDAR_CLASS.getYear = function () {
-        return this._nYear;
-    };
-
-    /**
-     * 日历显示移动指定的月份数。
-     * 参数为正整数则表示向当前月份之后的月份移动，负数则表示向当前月份之前的月份移动，设置后日历控件会刷新以显示新的日期。
-     * @public
-     *
-     * @param {number} offsetMonth 日历移动的月份数
-     */
-    UI_CALENDAR_CLASS.move = function (offsetMonth) {
-        var time = new Date(this._nYear, this._nMonth + offsetMonth, 1);
-        this.setDate(time.getFullYear(), time.getMonth() + 1);
-    };
-
-    /**
-     * 设置日历控件当前显示的日期。
-     * @public
-     *
-     * @param {number} year 年份(19xx-20xx)，如果省略使用浏览器的当前年份
-     * @param {number} month 月份(1-12)，如果省略使用浏览器的当前月份
-     */
-    UI_CALENDAR_CLASS.setDate = function (year, month) {
-        var i = 0,
-            today = new Date(),
-            year = year || today.getFullYear(),
-            month = month ? month - 1 : today.getMonth(),
-            // 得到上个月的最后几天的信息，用于补齐当前月日历的上月信息位置
-            o = new Date(year, month, 0),
-            day = 1 - (o.getDay() + 1) % 7,
-            lastDayOfLastMonth = o.getDate(),
-            // 得到当前月的天数
-            lastDayOfCurrMonth = new Date(year, month + 1, 0).getDate();
-
-        if (this._nYear != year || this._nMonth != month) {
-            this._nYear = year;
-            this._nMonth = month;
-
-            for (; month = this._uDate.getItem(i++); ) {
-                // 以下year变量表示日期是否为当月的flag，month变量表示日期单元格控件o
-                month.setEnabled(year = day > 0 && day <= lastDayOfCurrMonth);
-                setText(
-                    month.getBody(),
-                    year ? day : day > lastDayOfCurrMonth ? day - lastDayOfCurrMonth : lastDayOfLastMonth + day
-                );
-                month._nDay = day++;
-            }
-
-            this.change();
-        }
-    };
-
-
-/*
-Form - 定义独立于文档布局的内容区域的基本操作。
-窗体控件，继承自基础控件，内部包含了三个部件，分别是标题栏(基础控件)、关闭按钮(基础控件)与内容区域(截面控件)。窗体控件
-仿真浏览器的多窗体效果，如果在其中包含 iframe 标签，可以在当前页面打开一个新的页面，避免了使用 window.open 在不同浏览
-器下的兼容性问题。多个窗体控件同时工作时，当前激活的窗体在最上层。窗体控件的标题栏默认可以拖拽，窗体可以设置置顶方式显
-示，在置顶模式下，只有当前窗体可以响应操作。窗体控件的 z-index 从256开始，页面开发请不要使用大于或等于 256 的 z-index 
-值。
-
-窗体控件直接HTML初始化的例子:
-<div ecui="type:form;hide:true">
-    <!-- 标题可以没有 -->
-    <label>窗体的标题</label>
-    <!-- 这里放窗体的内容 -->
-    ...
-</div>
-
-属性
-_bHide      - 初始是否自动隐藏
-_bTitleAuto - 标题栏是否自适应宽度
-_uTitle     - 标题栏
-_uClose     - 关闭按钮
-*/
-
-
-    /**
-     * 标题栏鼠标按压开始事件处理，需要触发拖动，如果当前窗体未得到焦点则得到焦点
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_FORM_TITLE_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        drag(this.getParent(), event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
-     * 窗体关闭按钮点击事件，关闭窗体
-     * @protected
-     *
-     * @params {Event} event 事件对象
-     */
-    UI_FORM_CLOSE_CLASS.$click = function (event) {
-        UI_CONTROL_CLASS.$click.call(this, event);
-        this.getParent().hide();
-    }
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_FORM_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-        var style = getStyle(this.getBase().lastChild);
-        this.$cache$mainWidthRevise = calcWidthRevise(style);
-        this.$cache$mainHeightRevise = calcHeightRevise(style);
-        this._uTitle.cache(true, true);
-        this._uClose.cache(true, true);
-    };
-
-    /**
-     * 控件获得焦点事件的默认处理。
-     * 窗体控件获得焦点时需要将自己置于所有窗体控件的顶部。如果控件处于可操作状态(参见 isEnabled)，focus 方法触发 onfocus 事件，如果事件返回值不为 false，则调用 $focus 方法。
-     * @protected
-     */
-    UI_FORM_CLASS.$focus = function () {
-        UI_CONTROL_CLASS.$focus.call(this);
-
-        var i = indexOf(UI_FORM_ALL, this),
-            o;
-
-        if (this.getOuter().style.zIndex < 32768) {
-            // 如果不是showModal模式，将当前窗体置顶
-            UI_FORM_ALL.push(UI_FORM_ALL.splice(i, 1)[0]);
-            for (; o = UI_FORM_ALL[i]; ) {
-                o.getOuter().style.zIndex = 4096 + i++;
-            }
-        }
-    };
-
-    /**
-     * 隐藏控件。
-     * 如果窗体是以 showModal 方式打开的，隐藏窗体时，需要恢复页面的状态。
-     * @protected
-     */
-    UI_FORM_CLASS.$hide = function () {
-        UI_CONTROL_CLASS.$hide.call(this);
-        this.getOuter().style.zIndex == 32768 && mask();
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
-     * @protected
-     */
-    UI_FORM_CLASS.$init = function () {
-        this._uTitle.$init();
-        this._uClose.$init();
-        UI_CONTROL_CLASS.$init.call(this);
-        this._bHide && this.$hide();
-    };
-
-    /**
-     * 设置控件的大小。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_FORM_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-        this.$locate();
-
-        var style = this.getBase().lastChild.style;
-
-        style.width = this.getBodyWidth() - this.$cache$mainWidthRevise + 'px';
-        style.height = this.getBodyHeight() - this.$cache$mainHeightRevise + 'px';
-        this._uTitle.$setSize(this._bTitleAuto && this.getBodyWidth());
-    };
-
-    /**
-     * 窗体居中显示。
-     * @public
-     */
-    UI_FORM_CLASS.center = function () {
-        var offsetParent = this.getOuter().offsetParent;
-
-        if (offsetParent.tagName == 'BODY' || offsetParent.tagName == 'HTML') {
-            var o = getView(),
-                x = o.right + o.left,
-                y = o.bottom + o.top;
-        }
-        else {
-            x = offsetParent.offsetWidth;
-            y = offsetParent.offsetHeight;
-        }
-
-        this.setPosition((x - this.getWidth()) / 2, (y - this.getHeight()) / 2);
-    };
-
-    /**
-     * 设置窗体控件标题。
-     * @public
-     *
-     * @param {string} text 窗体标题
-     */
-    UI_FORM_CLASS.setTitle = function (text) {
-        this._uTitle.$setBodyHTML(text || '');
-    };
-
-    /**
-     * 显示控件。
-     * 显示窗体控件时，需要将窗体控件设置为获得焦点状态，即窗体控件或者子控件拥有焦点。
-     * @public
-     *
-     * @return {boolean} 显示状态是否改变
-     */
-    UI_FORM_CLASS.show = function () {
-        this.contain(getFocused()) || setFocused(this);
-        return UI_CONTROL_CLASS.show.call(this);
-    };
-
-    /**
-     * 窗体以独占方式显示
-     * showModal 方法将窗体控件以独占方式显示，此时鼠标点击窗体以外的内容无效，关闭窗体后自动恢复。
-     * @public
-     *
-     * @param {number} opacity 遮罩层透明度，默认为0.05
-     */
-    UI_FORM_CLASS.showModal = function (opacity) {
-        this.show();
-        this.getOuter().style.zIndex = 32768;
-        mask(opacity !== undefined ? opacity : 0.05);
     };
 
 
@@ -7766,6 +7996,8 @@ RadioTree - 定义单选框的树形结构的基本操作。
 </div>
 
 属性
+_sName     - 节点项的名称
+_sValue    - 节点项的值
 _eInput    - 树的根节点拥有，保存树对应的提交 INPUT
 _cSelected - 树的根节点拥有，保存当前选中的项
 */
@@ -7962,6 +8194,2499 @@ _uCheckbox - 复选框控件
 
 
 /*
+Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
+
+属性
+_nRed        - 红色值(0-255)
+_nGreen      - 绿色值(0-255)
+_nBlue       - 蓝色值(0-255)
+_nHue        - 色调(0-1)
+_nSaturation - 饱和度(0-1)
+_nLight      - 亮度(0-1)
+*/
+
+
+    /**
+     * 根据色调计算 RGB 模式下的单系色彩值
+     * @private
+     *
+     * @param {number} minValue HSL 色彩中的最小值
+     * @param {number} maxValue HSL 色彩中的最大值
+     * @param {number} hue 色调
+     * @return {number} 色彩值(0-255)
+     */
+    function COLOR_HUE2RGB(minValue, maxValue, hue) {
+        hue = hue < 0 ? hue + 1 : (hue > 1 ? hue - 1 : hue);
+        hue = hue < 0.5 ? MIN(6 * hue, 1) : MAX(4 - 6 * hue, 0);
+        return ROUND(255 * (minValue + (maxValue - minValue) * hue));
+    }
+
+    /**
+     * 获取 RGB 模式下的蓝色值
+     * @public
+     *
+     * @return {number} 蓝色值(0-255)
+     */
+    COLOR_CLASS.getBlue = function () {
+        return this._nBlue;
+    }
+
+    /**
+     * 获取 RGB 模式下的绿色值
+     * @public
+     *
+     * @return {number} 绿色值(0-255)
+     */
+    COLOR_CLASS.getGreen = function () {
+        return this._nGreen;
+    }
+
+    /**
+     * 获取 HSL 模式下的色调
+     * @public
+     *
+     * @return {number} 色调(0-1)
+     */
+    COLOR_CLASS.getHue = function () {
+        return this._nHue;
+    }
+
+    /**
+     * 获取 HSL 模式下的亮度
+     * @public
+     *
+     * @return {number} 亮度(0-1)
+     */
+    COLOR_CLASS.getLight = function () {
+        return this._nLight;
+    }
+
+    /**
+     * 获取 RGB 模式下 6 字符表示的 16 进制色彩值
+     * @public
+     *
+     * @return {string} 6 字符色彩值(如FFFFFF)
+     */
+    COLOR_CLASS.getRGB = function () {
+        var red = this._nRed,
+            green = this._nGreen,
+            blue = this._nBlue;
+
+        return ((red < 16 ? '0' : '') + red.toString(16)
+            + (green < 16 ? '0' : '') + green.toString(16)
+            + (blue < 16 ? '0' : '') + blue.toString(16)).toUpperCase();
+    }
+
+    /**
+     * 获取 RGB 模式下的红色值
+     * @public
+     *
+     * @return {number} 红色值(0-255)
+     */
+    COLOR_CLASS.getRed = function () {
+        return this._nRed;
+    }
+
+    /**
+     * 获取 HSL 模式下的饱和度
+     * @public
+     *
+     * @return {number} 饱和度(0-1)
+     */
+    COLOR_CLASS.getSaturation = function () {
+        return this._nSaturation;
+    }
+
+    /**
+     * 设置 RGB 模式的色彩
+     * @public
+     *
+     * @param {number} red 红色值(0-255)
+     * @param {number} green 绿色值(0-255)
+     * @param {number} blue 蓝色值(0-255)
+     */
+    COLOR_CLASS.setRGB = function (red, green, blue) {
+        this._nRed = red;
+        this._nGreen = green;
+        this._nBlue = blue;
+
+        red /= 255;
+        green /= 255;
+        blue /= 255;
+
+        var minValue = MIN(red, green, blue),
+            maxValue = MAX(red, green, blue),
+            value = maxValue - minValue,
+            h;
+
+        this._nLight = (maxValue + minValue) / 2;
+        if (value) {
+            h = red == maxValue
+                ? (green - blue) / 6 / value
+                : (green == maxValue ? 1 / 3 + (blue - red) / 6 / value : 2 / 3 + (red - green) / 6 / value);
+            this._nHue = h < 0 ? h += 1 : (h > 1 ? h -= 1 : h);
+            this._nSaturation = this._nLight < 0.5
+                ? value / (maxValue + minValue)
+                : value / (2 - maxValue - minValue);
+        }
+        else {
+            this._nHue = 0;
+            this._nSaturation = 0;
+        }
+    }
+
+    /**
+     * 设置 HSL 模式的色彩
+     * @public
+     *
+     * @param {number} hue 色调(0-1)
+     * @param {number} saturation 饱和度(0-1)
+     * @param {number} light 亮度(0-1)
+     */
+    COLOR_CLASS.setHSL = function (hue, saturation, light) {
+        var maxValue = light + MIN(light, 1 - light) * saturation,
+            minValue = 2 * light - maxValue;
+
+        this._nHue = hue;
+        this._nSaturation = saturation;
+        this._nLight = light;
+
+        this._nRed = COLOR_HUE2RGB(minValue, maxValue, hue + 1 / 3);
+        this._nGreen = COLOR_HUE2RGB(minValue, maxValue, hue);
+        this._nBlue = COLOR_HUE2RGB(minValue, maxValue, hue - 1 / 3);
+    }
+
+
+/*
+HTMLPalette - 定义拾色器的基本操作
+拾色器控件，继承自基础控件，内部包含了多个部件，分别是色彩选择区(基础控件)、色彩选择区箭头(基础控件)、亮度条选择区(基
+础控件)、亮度条选择区箭头(基础控件)、基本色彩选择区(基础控件组)、色彩显示区(基础控件)、输入区域(输入框控件组)与确认按
+钮(基础控件)。
+
+拾色器控件直接HTML初始化的例子:
+<div ecui="type:palette">
+</div>
+
+属性
+_uMain            - 左部色彩选择区
+_uMain._uIcon     - 左部色彩选择区箭头
+_uLightbar        - 中部亮度条选择区
+_uLightbar._uIcon - 中部亮度条选择区箭头
+_uColor           - 右部色彩显示区
+_uConfirm         - 确认按钮
+_aValue           - 右部输入区域
+*/
+
+
+    /**
+     * 刷新色彩值输入框
+     * @private
+     *
+     * @param {ecui.ui.Palette} palette 拾色器控件对象
+     * @param {Array} colors 色彩值数组，依次为 RGB, H, R, S, G, L, B，省略的值将不填充
+     */
+    function UI_PALETTE_VALUES_FLUSH(palette, colors) {
+        for (var i = 0; i < 7; i++) {
+            if (colors[i] !== undefined) {
+                i || (palette._uColor.getBase().style.backgroundColor = '#' + colors[i]);
+                palette._aValue[i].setValue(colors[i]);
+            }
+        }
+    }
+
+    /**
+     * 刷新亮度条选择区
+     * @private
+     *
+     * @param {ecui.ui.Palette} palette 拾色器控件对象
+     * @param {number} hue 色调值(0-1)
+     * @param {number} saturation 饱和度值(0-1)
+     */
+    function UI_PALETTE_LIGHTBAR_FLUSH(palette, hue, saturation) {
+        for (var i = 0, list = children(palette._uLightbar.getBody()), color = new Color(); i < 256; ) {
+            color.setHSL(hue, saturation, 1 - i / 255);
+            list[i++].style.backgroundColor = '#' + color.getRGB();
+        }
+    }
+
+    /**
+     * 刷新箭头位置
+     * @private
+     *
+     * @param {ecui.ui.Palette} palette 拾色器控件对象
+     */
+    function UI_PALETTE_POSITION_FLUSH(palette) {
+        var x = palette._aValue[1].getValue(),
+            y = palette._aValue[3].getValue();
+
+        palette._uMain._uIcon.setPosition(x, 255 - y);
+        palette._uLightbar._uIcon.getOuter().style.top = 255 - palette._aValue[5].getValue() + 'px';
+        UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
+    }
+
+    /**
+     * 刷新 RGB 色彩空间相关区域
+     * @private
+     *
+     * @param {ecui.ui.Palette} palette 拾色器控件对象
+     */
+    function UI_PALETTE_RGB_FLUSH(palette) {
+        var color = new Color();
+
+        color.setHSL(
+            palette._aValue[1].getValue() / 255,
+            palette._aValue[3].getValue() / 255,
+            palette._aValue[5].getValue() / 255
+        );
+
+        UI_PALETTE_VALUES_FLUSH(palette, [
+            color.getRGB(),
+            undefined,
+            color.getRed(),
+            undefined,
+            color.getGreen(),
+            undefined,
+            color.getBlue()
+        ]);
+    }
+
+    /**
+     * 刷新 HSL 色彩空间相关区域
+     * @private
+     *
+     * @param {ecui.ui.Palette} palette 拾色器控件对象
+     */
+    function UI_PALETTE_HSL_FLUSH(palette) {
+        var color = new Color();
+
+        color.setRGB(
+            palette._aValue[2].getValue() - 0,
+            palette._aValue[4].getValue() - 0,
+            palette._aValue[6].getValue() - 0
+        );
+
+        UI_PALETTE_VALUES_FLUSH(palette, [
+            color.getRGB(),
+            ROUND(color.getHue() * 256) % 256,
+            undefined,
+            ROUND(color.getSaturation() * 255),
+            undefined,
+            ROUND(color.getLight() * 255)
+        ]);
+
+        UI_PALETTE_POSITION_FLUSH(palette);
+    }
+
+    /**
+     * 色彩选择区箭头或亮度条选择区箭头拖曳移动事件的默认处理
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     * @param {number} x 移动到的 x 轴座标
+     * @param {number} y 移动到的 y 轴座标
+     */
+    UI_PALETTE_AREA_CLASS.$dragmove = function (event, x, y) {
+        UI_CONTROL_CLASS.$dragmove.call(this, event, x, y);
+
+        var parent = this.getParent(),
+            palette = parent.getParent();
+
+        y = 255 - y;
+        if (parent == palette._uMain) {
+            palette._aValue[1].setValue(x);
+            palette._aValue[3].setValue(y);
+            UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
+        }
+        else {
+            palette._aValue[5].setValue(y);
+        }
+
+        UI_PALETTE_RGB_FLUSH(palette);
+    };
+
+    /**
+     * 色彩选择区或亮度条选择区左键按压开始事件的默认处理
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PALETTE_AREA_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS.$pressstart.call(this, event);
+
+        var isMain = this == this.getParent()._uMain,
+            control = this._uIcon,
+            x = isMain ? getMouseX(this) : control.getX(),
+            y = getMouseY(this),
+            range = {top: 0, bottom: 255 + control.getHeight()};
+
+        if (isMain) {
+            range.left = 0;
+            range.right = 255 + control.getWidth();
+        }
+        else {
+            if (y < 0 || y > 255) {
+                return;
+            }
+            range.left = range.right = x;
+        }
+
+        control.setPosition(x, y);
+        drag(control, event, range);
+        control.$dragmove.call(control, event, x, y);
+    };
+
+    /**
+     * 基本色彩区、确认或取消按钮鼠标点击事件的默认处理
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PALETTE_BUTTON_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+
+        var palette = this.getParent();
+
+        if (this == palette._uConfirm) {
+            palette.onconfirm && palette.onconfirm();
+        }
+        else if (this == palette._uCancel) {
+            palette.hide();
+        }
+        else {
+            // 以下使用 event 表示 text
+            event = UI_PALETTE_BASIC_COLOR[this.getIndex()];
+            UI_PALETTE_VALUES_FLUSH(palette = palette.getParent(), [
+                undefined,
+                undefined,
+                PARSEINT(event.slice(0, 2), 16),
+                undefined,
+                PARSEINT(event.slice(2, 4), 16),
+                undefined,
+                PARSEINT(event.slice(4), 16)
+            ]);
+            UI_PALETTE_HSL_FLUSH(palette);
+        }
+    };
+
+    /**
+     * 色彩输入框内容改变事件的默认处理
+     * @protected
+     */
+    UI_PALETTE_EDIT_CLASS.$change = function () {
+        UI_FORMAT_EDIT_CLASS.$change.call(this);
+
+        var parent = this.getParent(),
+            text = this.getValue();
+
+        if (this == parent._aValue[0]) {
+            text = this.$getInputText();
+            if (text && text.length == 6 && !text.replace(/[0-9a-f]/ig, '')) {
+                parent.setColor(new Color(text));
+            }
+            else {
+                this.restore();
+            }
+        }
+        else {
+            if (!text) {
+                this.setValue(0);
+                new Timer(function () {
+                    this.setCaret(1);
+                }, 0, this);
+            }
+            else if (text.charAt(0) == '0') {
+                this.setValue(text - 0);
+            }
+
+            if (indexOf(parent._aValue, this) % 2) {
+                UI_PALETTE_RGB_FLUSH(parent);
+                UI_PALETTE_POSITION_FLUSH(parent);
+            }
+            else {
+                UI_PALETTE_HSL_FLUSH(parent)
+            }
+        }
+    };
+
+    /**
+     * RGB 色彩输入框键盘按压事件的默认处理
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PALETTE_EDIT_CLASS.$keydown = function (event) {
+        UI_FORMAT_EDIT_CLASS.$keydown.call(this, event);
+
+        var parent = this.getParent(),
+            text = this.getValue(),
+            start = this.getSelectionStart(),
+            end = this.getSelectionEnd(),
+            which = getKey();
+
+        if (!event.ctrlKey && this == parent._aValue[0]) {
+            if (which == 46 || which == 8) {
+                event.preventDefault();
+            }
+            else if (which != 37 && which != 39) {
+                if (start == end) {
+                    end++;
+                }
+
+                which = String.fromCharCode(which).toUpperCase();
+                if (which >= '0' && which <= '9' || which >= 'A' && which <= 'F') {
+                    text = text.slice(0, start) + which + text.slice(end);
+                    if (text.length == 6) {
+                        which = end + end % 2;
+                        parent._aValue[which].setValue(PARSEINT(text.slice(which - 2, which), 16));
+                        UI_PALETTE_HSL_FLUSH(parent);
+                        this.setCaret(end);
+                    }
+                    event.preventDefault();
+                }
+            }
+        }
+    }
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_PALETTE_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+
+        this._uMain.cache(false, true);
+        this._uLightbar.cache(true, true);
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * @protected
+     */
+    UI_PALETTE_CLASS.$init = function () {
+        UI_CONTROL_CLASS.$init.call(this);
+        this.setColor(new Color('808080'));
+    };
+
+    /**
+     * 设置控件的大小。
+     * $setSize 方法设置控件实际的大小，不改变其它的如缓存等信息。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_PALETTE_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+
+        var i = 1;
+
+        this._uMain.setBodySize(256, 256);
+        this._uLightbar.setBodySize(0, 256);
+
+        for (; i < 7; ) {
+            this._aValue[i++].paint();
+        }
+    };
+
+    /**
+     * 获取拾色器当前选中的颜色对象。
+     * @public
+     *
+     * @return {ecui.Color} 拾色器当前选中的颜色对象
+     */
+    UI_PALETTE_CLASS.getColor = function () {
+        return new Color(this._aValue[0].getValue());
+    };
+
+    /**
+     * 设置拾色器当前选中的颜色对象。
+     * @public
+     *
+     * @param {ecui.Color} color 颜色对象
+     */
+    UI_PALETTE_CLASS.setColor = function (color) {
+        UI_PALETTE_VALUES_FLUSH(this, [
+            undefined,
+            undefined,
+            color.getRed(),
+            undefined,
+            color.getGreen(),
+            undefined,
+            color.getBlue()
+        ]);
+        UI_PALETTE_HSL_FLUSH(this);
+    };
+
+
+/*
+Scroll - 定义在一个区间轴内移动的基本操作。
+滚动条控件，继承自基础控件，滚动条控件，内部包含三个部件，分别是向前(滚动条的当前值变小)滚动按钮(基础控件)、向后(滚动
+条的当前值变大)滚动按钮(基础控件)与滑动块(基础控件)。滚动条控件是滚动行为的虚拟实现，不允许直接初始化，它的子类通常情
+况下也不会被直接初始化，而是作为控件的一部分用于控制父控件的行为。
+
+属性
+_nTotal         - 滚动条区域允许设置的最大值
+_nStep          - 滚动条移动一次时的基本步长
+_nValue         - 滚动条当前设置的值
+_oTimer         - 定时器的句柄，用于连续滚动处理
+_cButton        - 当前正在执行动作的按钮，用于连续滚动的控制
+_uPrev          - 向前滚动按钮
+_uNext          - 向后滚动按钮
+_uBlock         - 滑动块
+
+滑动块属性
+_oRange         - 滑动块的合法滑动区间
+*/
+
+
+    /**
+     * 停止自动滚动
+     * @private
+     *
+     * @param {ecui.ui.Scroll} control 滚动条对象
+     */
+    function UI_SCROLL_STOP(control) {
+        var timer = control._oTimer;
+        timer && timer.stop();
+    }
+
+    /**
+     * 控扭控件自动滚动。
+     * @private
+     *
+     * @param {ecui.ui.Scroll.Button} button 触发滚动的按钮
+     * @param {number} step 单次滚动步长
+     */
+    function UI_SCROLL_MOVE(button, step) {
+        var scroll = button.getParent(),
+            __gzip_direct__value = scroll._nValue,
+            isPrev = scroll._uPrev == button;
+        UI_SCROLL_STOP(scroll);
+
+        if (isPrev && __gzip_direct__value || !isPrev && __gzip_direct__value < scroll._nTotal) {
+            isPrev
+                ? scroll.$allowPrev() && scroll.setValue(__gzip_direct__value - step)
+                : scroll.$allowNext() && scroll.setValue(__gzip_direct__value + step);
+            scroll._oTimer = new Timer(UI_SCROLL_MOVE, 200, null, button, step);
+        }
+    }
+
+    /**
+     * 滑动块拖拽移动事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     * @param {number} x 滑动块实际到达的X轴坐标
+     * @param {number} y 滑动块实际到达的Y轴坐标
+     */
+    UI_SCROLL_BLOCK_CLASS.$dragmove = function (event, x, y) {
+        UI_CONTROL_CLASS.$dragmove.call(this, event, x, y);
+
+        var parent = this.getParent(),
+            value = parent.$calcDragValue(x, y);
+
+        // 应该滚动step的整倍数
+        parent.$setValue(value == parent._nTotal ? value : value - value % parent._nStep);
+        parent.scroll();
+    };
+
+    /**
+     * 鼠标在滑动块区域内按压开始事件的默认处理，触发滑动块拖动功能。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_BLOCK_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS.$pressstart.call(this, event);
+
+        drag(this, event, this._oRange);
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 设置滑动块的合法拖拽区间。
+     * @public
+     *
+     * @param {number} top 允许拖拽的最上部区域
+     * @param {number} right 允许拖拽的最右部区域
+     * @param {number} bottom 允许拖拽的最下部区域
+     * @param {number} left 允许拖拽的最左部区域
+     */
+    UI_SCROLL_BLOCK_CLASS.setRange = function (top, right, bottom, left) {
+        this._oRange = {
+            top: top,
+            right: right,
+            bottom: bottom,
+            left: left
+        };
+    };
+
+    /**
+     * 控扭控件按压状态结束事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_BUTTON_CLASS.$pressend = function (event) {
+        UI_CONTROL_CLASS.$pressend.call(this, event);
+        UI_SCROLL_STOP(this.getParent());
+    };
+
+    /**
+     * 控扭控件按压状态中鼠标移出控件区域事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
+        UI_CONTROL_CLASS.$pressout.call(this, event);
+        UI_SCROLL_STOP(this.getParent());
+    };
+
+    /**
+     * 控扭控件按压状态中鼠标移入控件区域事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_BUTTON_CLASS.$pressover = function (event) {
+        UI_CONTROL_CLASS.$pressover.call(this, event);
+        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
+    };
+
+    /**
+     * 控扭控件按压状态开始事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS.$pressstart.call(this, event);
+        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_SCROLL_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+
+        this._uPrev.cache(true, true);
+        this._uNext.cache(true, true);
+        this._uBlock.cache(true, true);
+    };
+
+    /**
+     * 隐藏控件。
+     * 隐藏滚动条控件时，滚动条控件的当前值需要复位为0，参见 setValue 与 setTotal 方法。
+     * @protected
+     */
+    UI_SCROLL_CLASS.$hide = function () {
+        UI_SCROLL_CLASS.setValue.call(this, 0);
+        UI_CONTROL_CLASS.$hide.call(this);
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_SCROLL_CLASS.$init = function () {
+        this._uPrev.$init();
+        this._uNext.$init();
+        this._uBlock.$init();
+        UI_CONTROL_CLASS.$init.call(this);
+    };
+
+    /**
+     * 控件按压状态结束事件的默认处理。
+     * 鼠标左键按压控件结束时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressend 方法触发 onpressend 事件，如果事件返回值不为 false，则调用 $pressend 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_CLASS.$pressend = function (event) {
+        UI_CONTROL_CLASS.$pressend.call(this, event);
+        UI_SCROLL_STOP(this);
+    };
+
+    /**
+     * 控件按压状态中鼠标移出控件区域事件的默认处理。
+     * 控件按压状态中鼠标移出控件区域时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressout 方法触发 onpressout 事件，如果事件返回值不为 false，则调用 $pressout 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_CLASS.$pressout = function (event) {
+        UI_CONTROL_CLASS.$pressout.call(this, event);
+        UI_SCROLL_STOP(this);
+    };
+
+    /**
+     * 控件按压状态中鼠标移入控件区域事件的默认处理。
+     * 控件按压状态中鼠标移入控件区域开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressover 方法触发 onpressover 事件，如果事件返回值不为 false，则调用 $pressover 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_CLASS.$pressover = function (event) {
+        UI_CONTROL_CLASS.$pressover.call(this, event);
+        UI_SCROLL_MOVE(this._cButton, this.$getPageStep());
+    };
+
+    /**
+     * 控件按压状态开始事件的默认处理。
+     * 鼠标左键按压控件开始时计算自动滚动的方向，并开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SCROLL_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS.$pressstart.call(this, event);
+
+        UI_SCROLL_MOVE(this._cButton = this.$allowPrev() ? this._uPrev : this._uNext, this.$getPageStep());
+
+        // 屏蔽普通W3C兼容的浏览器的选择操作
+        event.preventDefault();
+    };
+
+    /**
+     * 设置滚动条控件的单页滚动距离。
+     * @protected
+     *
+     * @param {number} value 单页滚动距离
+     */
+    UI_SCROLL_CLASS.$setPageStep = function (value) {
+        this._nPageStep = value;
+    };
+
+    /**
+     * 设置滚动条控件的大小。
+     * @protected
+     *
+     * @param {number} width 控件区域的宽度
+     * @param {number} height 控件区域的高度
+     */
+    UI_SCROLL_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+        this.$locate();
+    };
+
+    /**
+     * 直接设置控件的当前值。
+     * $setValue 仅仅设置控件的参数值，不进行合法性验证，也不改变滑动块的位置信息，用于滑动块滚动时同步设置当前值。
+     * @protected
+     *
+     * @param {number} value 控件的当前值
+     */
+    UI_SCROLL_CLASS.$setValue = function (value) {
+        this._nValue = value;
+    };
+
+    /**
+     * 获取滚动条控件的单次滚动距离。
+     * getStep 方法返回滚动条控件发生滚动时，移动的最小步长值，通过 setStep 设置。
+     * @public
+     *
+     * @return {number} 单次滚动距离
+     */
+    UI_SCROLL_CLASS.getStep = function () {
+        return this._nStep;
+    };
+
+    /**
+     * 获取滚动条控件的最大值。
+     * getTotal 方法返回滚动条控件允许滚动的最大值，最大值、当前值与滑动块控件的实际位置互相影响，通过 setTotal 设置。
+     * @public
+     *
+     * @return {number} 控件的最大值
+     */
+    UI_SCROLL_CLASS.getTotal = function () {
+        return this._nTotal;
+    };
+
+    /**
+     * 获取滚动条控件的当前值。
+     * getValue 方法返回滚动条控件的当前值，最大值、当前值与滑动块控件的实际位置互相影响，但是当前值不允许超过最大值，通过 setValue 方法设置。
+     * @public
+     *
+     * @return {number} 滚动条控件的当前值
+     */
+    UI_SCROLL_CLASS.getValue = function () {
+        return this._nValue;
+    };
+
+    /**
+     * 滚动条滚动。
+     * scroll 方法首先调用 change 方法，之后触发父控件的 onscroll 事件，如果事件返回值不为 false，则调用父控件的 $scroll 方法。
+     * @public
+     */
+    UI_SCROLL_CLASS.scroll = function () {
+        var parent = this.getParent();
+        this.change();
+        parent && (parent.onscroll && parent.onscroll() === false || parent.$scroll());
+    };
+
+    /**
+     * 设置滚动条控件的单次滚动距离。
+     * setStep 方法设置的值必须大于0，否则不会进行操作。
+     * @public
+     *
+     * @param {number} value 单次滚动距离
+     */
+    UI_SCROLL_CLASS.setStep = function (value) {
+        if (value > 0) {
+            this._nStep = value;
+        }
+    };
+
+    /**
+     * 设置滚动条控件的最大值。
+     * setTotal 方法设置的值不能为负数，并且当前值如果大于最大值，将改变当前值，并调用 scroll 方法，最大值发生改变将导致滚动条控件刷新。
+     * @public
+     *
+     * @param {number} value 控件的最大值
+     */
+    UI_SCROLL_CLASS.setTotal = function (value) {
+        if (value >= 0 && this._nTotal != value) {
+            this._nTotal = value;
+            // 检查滚动条控件的当前值是否已经越界
+            if (this._nValue > value) {
+                // 值发生改变时触发相应的事件
+                this._nValue = value;
+                this.scroll();
+            }
+            this.$flush();
+        }
+    };
+
+    /**
+     * 设置滚动条控件的当前值。
+     * setValue 方法设置的值不能为负数，也不允许超过使用 setTotal 方法设置的控件的最大值，如果当前值不合法，将自动设置为最接近合法值的数值，如果当前值发生改变将导致滚动条控件刷新，并调用 scroll 方法。
+     * @public
+     *
+     * @param {number} value 控件的当前值
+     */
+    UI_SCROLL_CLASS.setValue = function (value) {
+        value = MIN(MAX(0, value), this._nTotal);
+        if (this._nValue != value) {
+            // 值发生改变时触发相应的事件
+            this._nValue = value;
+            this.scroll();
+            this.$flush();
+        }
+    };
+
+    /**
+     * 滚动条控件当前值移动指定的步长次数。
+     * 参数 value 必须是整数, 正数则向最大值方向移动，负数则向0方向移动，允许移动的区间在0-最大值之间，参见 setStep、setTotal 与 setValue 方法。
+     * @public
+     *
+     * @param {number} n 移动的步长次数
+     */
+    UI_SCROLL_CLASS.skip = function (n) {
+        this.setValue(this._nValue + n * this._nStep);
+    };
+
+
+    /**
+     * 判断是否允许当前值向最大值方向移动。
+     * 受当前鼠标位置的影响，在当前值向最大值方向移动的过程中需要先判断移动是否得到许可。
+     * @protected
+     *
+     * @return {boolean} 是否允许向最大值方向移动
+     */
+    UI_VSCROLL_CLASS.$allowNext = function () {
+        var block = this._uBlock;
+        return getMouseY(this) > block.getY() + block.getHeight();
+    };
+
+    /**
+     * 判断是否允许当前值向0方向移动。
+     * 受当前鼠标位置的影响，在当前值向0方向移动的过程中需要先判断移动是否得到许可。
+     * @protected
+     *
+     * @return {boolean} 是否允许向0方向移动
+     */
+    UI_VSCROLL_CLASS.$allowPrev = function () {
+        return getMouseY(this) < this._uBlock.getY();
+    };
+
+    /**
+     * 计算滑动块拖拽时滚动条的当前值。
+     * 虚方法，继承自滚动条控件的控件必须实现。
+     * @protected
+     *
+     * @param {number} x 滑动块实际到达的X轴坐标
+     * @param {number} y 滑动块实际到达的Y轴坐标
+     */
+    UI_VSCROLL_CLASS.$calcDragValue = function (x, y) {
+        var block = this._uBlock,
+            range = block._oRange;
+        return (y - range.top) / (range.bottom - this._uPrev.getHeight() - block.getHeight()) * this._nTotal;
+    };
+
+    /**
+     * 垂直滚动条控件刷新。
+     * 滚动条控件的大小，最大值/当前值发生变化时，调用 $flash 方法刷新滑动块的大小与位置。
+     * @protected
+     */
+    UI_VSCROLL_CLASS.$flush = function () {
+        // 计算滑动块高度与位置
+        var block = this._uBlock,
+            total = this._nTotal,
+            height = this.getHeight(),
+            prevHeight = this._uPrev.getHeight(),
+            bodyHeight = this.getBodyHeight(),
+            blockHeight = MAX(FLOOR(bodyHeight * height / (height + total)), block.getInvalidHeight() + 5);
+
+        if (total) {
+            block.$setSize(0, blockHeight);
+            block.setPosition(0, prevHeight + FLOOR((this._nValue / total) * (bodyHeight - blockHeight)));
+            block.setRange(prevHeight, 0, bodyHeight + prevHeight, 0);
+        }
+    };
+
+    /**
+     * 获取一页的步长。
+     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
+     * @protected
+     *
+     * @return {number} 一页的步长
+     */
+    UI_VSCROLL_CLASS.$getPageStep = function () {
+        var height = this.getHeight();
+        return this._nPageStep || height - height % this._nStep;
+    };
+
+    /**
+     * 设置垂直滚动条控件的大小。
+     * @protected
+     *
+     * @param {number} width 控件区域的宽度
+     * @param {number} height 控件区域的高度
+     */
+    UI_VSCROLL_CLASS.$setSize = function (width, height) {
+        UI_SCROLL_CLASS.$setSize.call(this, width, height);
+
+        var bodyWidth = this.getBodyWidth(),
+            prevHeight = this.$cache$paddingTop,
+            __gzip_direct__next = this._uNext;
+
+        // 设置滚动按钮与滑动块的信息
+        this._uPrev.$setSize(bodyWidth, prevHeight);
+        __gzip_direct__next.$setSize(bodyWidth, this.$cache$paddingBottom);
+        this._uBlock.$setSize(bodyWidth);
+        __gzip_direct__next.setPosition(0, this.getBodyHeight() + prevHeight);
+
+        this.$flush();
+    };
+
+
+    /**
+     * 判断是否允许当前值向最大值方向移动。
+     * 受当前鼠标位置的影响，在当前值向最大值方向移动的过程中需要先判断移动是否得到许可。
+     * @protected
+     *
+     * @return {boolean} 是否允许向最大值方向移动
+     */
+    UI_HSCROLL_CLASS.$allowNext = function () {
+        var block = this._uBlock;
+        return getMouseX(this) > block.getX() + block.getWidth();
+    };
+
+    /**
+     * 判断是否允许当前值向0方向移动。
+     * 受当前鼠标位置的影响，在当前值向0方向移动的过程中需要先判断移动是否得到许可。
+     * @protected
+     *
+     * @return {boolean} 是否允许向0方向移动
+     */
+    UI_HSCROLL_CLASS.$allowPrev = function () {
+        return getMouseX(this) < this._uBlock.getX();
+    };
+
+    /**
+     * 计算滑动块拖拽时滚动条的当前值。
+     * 虚方法，继承自滚动条控件的控件必须实现。
+     * @protected
+     *
+     * @param {number} x 滑动块实际到达的X轴坐标
+     * @param {number} y 滑动块实际到达的Y轴坐标
+     */
+    UI_HSCROLL_CLASS.$calcDragValue = function (x, y) {
+        var block = this._uBlock,
+            range = block._oRange;
+        return (x - range.left) / (range.right - this._uPrev.getWidth() - block.getWidth()) * this._nTotal;
+    };
+
+    /**
+     * 水平滚动条控件刷新。
+     * 滚动条控件的大小，最大值/当前值发生变化时，调用 $flash 方法刷新滑动块的大小与位置。
+     * @protected
+     */
+    UI_HSCROLL_CLASS.$flush = function () {
+        // 计算滑动块高度与位置
+        var block = this._uBlock,
+            total = this._nTotal,
+            width = this.getWidth(),
+            prevWidth = this._uPrev.getWidth(),
+            bodyWidth = this.getBodyWidth(),
+            blockWidth = MAX(FLOOR(bodyWidth * width / (width + total)), block.getInvalidWidth() + 5);
+
+        if (total) {
+            block.$setSize(blockWidth);
+            block.setPosition(prevWidth + FLOOR((this._nValue / total) * (bodyWidth - blockWidth)), 0);
+            block.setRange(0, bodyWidth + prevWidth, 0, prevWidth);
+        }
+    };
+
+    /**
+     * 获取一页的步长。
+     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
+     * @protected
+     *
+     * @return {number} 一页的步长
+     */
+    UI_HSCROLL_CLASS.$getPageStep = function () {
+        var width = this.getWidth();
+        return width - width % this._nStep;
+    };
+
+    /**
+     * 设置水平滚动条控件的大小。
+     * @protected
+     *
+     * @param {number} width 控件区域的宽度
+     * @param {number} height 控件区域的高度
+     */
+    UI_HSCROLL_CLASS.$setSize = function (width, height) {
+        UI_SCROLL_CLASS.$setSize.call(this, width, height);
+
+        var bodyHeight = this.getBodyHeight(),
+            prevWidth = this.$cache$paddingLeft,
+            __gzip_direct__next = this._uNext;
+
+        // 设置滚动按钮与滑动块的信息
+        this._uPrev.$setSize(prevWidth, bodyHeight);
+        __gzip_direct__next.$setSize(this.$cache$paddingRight, bodyHeight);
+        this._uBlock.$setSize(0, bodyHeight);
+        __gzip_direct__next.setPosition(this.getBodyWidth() + prevWidth, 0);
+
+        this.$flush();
+    };
+
+
+﻿/*
+Panel - 定义在一个小区域内截取显示大区域内容的基本操作。
+截面控件，继承自基础控件，内部包含三个部件，分别是垂直滚动条、水平滚动条与两个滚动条之间的夹角(基础控件)。截面控件的内
+容区域可以超过控件实际大小，通过拖拽滚动条显示完整的内容，截面控件可以设置参数决定是否自动显示水平/垂直滚动条，如果设
+置不显示水平/垂直滚动条，水平/垂直内容超出的部分将直接被截断，当设置两个滚动条都不显示时，层控件从显示效果上等同于基础
+控件。在层控件上滚动鼠标滑轮，将控制层控件往垂直方向(如果没有垂直滚动条则在水平方向)前移或者后移滚动条，在获得焦点后，
+通过键盘的方向键也可以操作层控件的滚动条。
+
+层控件直接HTML初始化的例子:
+<div ecui="type:panel;vertical-scroll:true;horizontal-scroll:true;wheel-delta:20;absolute:true">
+    <!-- 这里放内容 -->
+    ...
+</div>
+
+属性
+_bAbsolute                - 是否包含绝对定位的Element
+_nWheelDelta              - 鼠标滚轮滚动一次的差值
+_eBrowser                 - 用于浏览器原生的滚动条实现的Element
+_uVScroll                 - 垂直滚动条控件
+_uHScroll                 - 水平滚动条控件
+_uCorner                  - 夹角控件
+$cache$layoutWidthRevise  - layout区域的宽度修正值
+$cache$layoutHeightRevise - layout区域的高度修正值
+$cache$mainWidth          - layout区域的实际宽度
+$cache$mainHeight         - layout区域的实际高度
+*/
+
+
+    /**
+     * 获取一页的步长。
+     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
+     * @protected
+     *
+     * @return {number} 一页的步长
+     */
+    UI_BROWSER_SCROLL_CLASS.$getPageStep = blank;
+
+    /**
+     * 隐藏控件。
+     * @protected
+     */
+    UI_BROWSER_SCROLL_CLASS.$hide = UI_BROWSER_SCROLL_CLASS.hide = function () {
+        this.getBase().style[this._sOverflow] = 'hidden';
+        UI_BROWSER_SCROLL_CLASS.setValue.call(this, 0);
+    };
+
+    /**
+     * 设置滚动条控件的单页滚动距离。
+     * @protected
+     *
+     * @param {number} value 单页滚动距离
+     */
+    UI_BROWSER_SCROLL_CLASS.$setPageStep = blank;
+
+    /**
+     * 直接设置控件的当前值。
+     * @protected
+     *
+     * @param {number} value 控件的当前值
+     */
+    UI_BROWSER_SCROLL_CLASS.$setValue = UI_BROWSER_SCROLL_CLASS.setValue = function (value) {
+        if (value >= 0 && value < this.getTotal()) {
+            this.getBase()[this._sScrollValue] = value;
+        }
+    };
+
+    /**
+     * 显示控件。
+     * @protected
+     */
+    UI_BROWSER_SCROLL_CLASS.$show = UI_BROWSER_SCROLL_CLASS.show = function () {
+        this.getBase().style[this._sOverflow] = 'scroll';
+    };
+
+    /**
+     * 获取滚动条控件的单次滚动距离。
+     * getStep 方法返回滚动条控件发生滚动时，移动的最小步长值，通过 setStep 设置。
+     * @public
+     *
+     * @return {number} 单次滚动距离
+     */
+    UI_BROWSER_SCROLL_CLASS.getStep = blank;
+
+    /**
+     * 获取滚动条控件的最大值。
+     * getTotal 方法返回滚动条控件允许滚动的最大值，最大值、当前值与滑动块控件的实际位置互相影响，通过 setTotal 设置。
+     * @public
+     *
+     * @return {number} 控件的最大值
+     */
+    UI_BROWSER_SCROLL_CLASS.getTotal = function () {
+        return this.getBase()[this._sScrollTotal];
+    };
+
+    /**
+     * 获取滚动条控件的当前值。
+     * getValue 方法返回滚动条控件的当前值，最大值、当前值与滑动块控件的实际位置互相影响，但是当前值不允许超过最大值，通过 setValue 方法设置。
+     * @public
+     *
+     * @return {number} 滚动条控件的当前值
+     */
+    UI_BROWSER_SCROLL_CLASS.getValue = function () {
+        return this.getBase()[this._sScrollValue];
+    };
+
+    /**
+     * 判断控件是否处于显示状态。
+     * @public
+     *
+     * @return {boolean} 控件是否显示
+     */
+    UI_BROWSER_SCROLL_CLASS.isShow = function () {
+        return getStyle(this.getBase(), this._sOverflow) != 'hidden';
+    };
+
+    /**
+     * 滚动条滚动。
+     * scroll 方法首先调用 change 方法，之后触发父控件的 onscroll 事件，如果事件返回值不为 false，则调用父控件的 $scroll 方法。
+     * @public
+     */
+    UI_BROWSER_SCROLL_CLASS.scroll = function (event) {
+        event = findControl(standardEvent(event).target);
+        event && (event.onscroll && event.onscroll() === false || event.$scroll());
+    };
+
+    /**
+     * 设置滚动条控件的单次滚动距离。
+     * setStep 方法设置的值必须大于0，否则不会进行操作。
+     * @public
+     *
+     * @param {number} value 单次滚动距离
+     */
+    UI_BROWSER_SCROLL_CLASS.setStep = blank;
+
+    /**
+     * 设置滚动条控件的最大值。
+     * setTotal 方法设置的值不能为负数，并且当前值如果大于最大值，将改变当前值，并调用 scroll 方法，最大值发生改变将导致滚动条控件刷新。
+     * @public
+     *
+     * @param {number} value 控件的最大值
+     */
+    UI_BROWSER_SCROLL_CLASS.setTotal = function (value) {
+        this.getBase().lastChild.style[this._sTotal] = value + 'px';
+    };
+
+    /**
+     * 滚动条控件当前值移动指定的步长次数。
+     * 参数 value 必须是整数, 正数则向最大值方向移动，负数则向0方向移动，允许移动的区间在0-最大值之间，参见 setStep、setTotal 与 setValue 方法。
+     * @public
+     *
+     * @param {number} n 移动的步长次数
+     */
+    UI_BROWSER_SCROLL_CLASS.skip = blank;
+
+    UI_BROWSER_SCROLL_CLASS.$cache = UI_BROWSER_SCROLL_CLASS.$init = UI_BROWSER_SCROLL_CLASS.$setSize
+        = UI_BROWSER_SCROLL_CLASS.cache = UI_BROWSER_SCROLL_CLASS.setPosition = blank;
+
+
+    /**
+     * 获取控件区域的高度。
+     * @public
+     *
+     * @return {number} 控件的高度
+     */
+    UI_BROWSER_VSCROLL_CLASS.getHeight = function () {
+        return this.getBase().offsetHeight;
+    };
+
+    /**
+     * 获取控件区域的宽度。
+     * @public
+     *
+     * @return {number} 控件的宽度
+     */
+    UI_BROWSER_VSCROLL_CLASS.getWidth = function () {
+        return getScrollNarrow();
+    };
+
+
+    /**
+     * 获取控件区域的高度。
+     * @public
+     *
+     * @return {number} 控件的高度
+     */
+    UI_BROWSER_HSCROLL_CLASS.getHeight = function () {
+        return getScrollNarrow();
+    };
+
+    /**
+     * 获取控件区域的宽度。
+     * @public
+     *
+     * @return {number} 控件的宽度
+     */
+    UI_BROWSER_HSCROLL_CLASS.getWidth = function () {
+        return this.getBase().offsetWidth;
+    };
+
+
+    UI_BROWSER_CORNER_CLASS.$cache = UI_BROWSER_CORNER_CLASS.$hide = UI_BROWSER_CORNER_CLASS.$init
+        = UI_BROWSER_CORNER_CLASS.$setSize = UI_BROWSER_CORNER_CLASS.$show
+        = UI_BROWSER_CORNER_CLASS.cache = UI_BROWSER_CORNER_CLASS.hide
+        = UI_BROWSER_CORNER_CLASS.setPosition = UI_BROWSER_CORNER_CLASS.show = blank;
+
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_PANEL_CLASS.$cache = function (style, cacheSize) {
+        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
+
+        var body = this.getBody(),
+            mainWidth = body.offsetWidth,
+            mainHeight = body.offsetHeight;
+
+        // 考虑到内部Element绝对定位的问题，中心区域的宽度与高度修正
+        if (this._bAbsolute) {
+            for (
+                var i = 0,
+                    pos = getPosition(body),
+                    x = pos.left,
+                    y = pos.top,
+                    elements = body.getElementsByTagName('*');
+                // 以下使用 style 代替临时的 DOM 节点对象
+                style = elements[i++];
+            ) {
+                if (style.offsetWidth && getStyle(style, 'position') == 'absolute') {
+                    pos = getPosition(style);
+                    mainWidth = MAX(mainWidth, pos.left - x + style.offsetWidth);
+                    mainHeight = MAX(mainHeight, pos.top - y + style.offsetHeight);
+                }
+            }
+        }
+
+        this.$cache$mainWidth = mainWidth;
+        this.$cache$mainHeight = mainHeight;
+
+        style = getStyle(getParent(body));
+        this.$cache$layoutWidthRevise = calcWidthRevise(style);
+        this.$cache$layoutHeightRevise = calcHeightRevise(style);
+
+        this._uVScroll && this._uVScroll.cache(true, true);
+        this._uHScroll && this._uHScroll.cache(true, true);
+        this._uCorner && this._uCorner.cache(true, true);
+    };
+
+    /**
+     * 销毁控件的默认处理。
+     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
+     * @protected
+     */
+    UI_PANEL_CLASS.$dispose = function () {
+        this._eBrowser = null;
+        UI_CONTROL_CLASS.$dispose.call(this);
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_PANEL_CLASS.$init = function () {
+        this._uVScroll && this._uVScroll.$init();
+        this._uHScroll && this._uHScroll.$init();
+        this._uCorner && this._uCorner.$init();
+        UI_CONTROL_CLASS.$init.call(this);
+    };
+
+    /**
+     * 控件拥有焦点时，键盘按压事件的默认处理。Opera 下仅用 keydown 不能屏蔽方向键事件，还需要在 keypress 中屏蔽。
+     * 如果控件处于可操作状态(参见 isEnabled)，keydown/keypress 方法触发 onkeydown/onkeypress 事件，如果事件返回值不为 false，则调用 $keydown/$keypress 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PANEL_CLASS.$keydown = UI_PANEL_CLASS.$keypress = function (event) {
+        var which = getKey(),
+            mod = which % 2,
+            scroll = mod ? this._uHScroll : this._uVScroll;
+
+        if (which >= 37 && which <= 40 && !event.target.value) {
+            scroll && scroll.skip(which + mod - 39);
+            return false;
+        }
+    };
+
+    /**
+     * 鼠标在控件区域滚动滚轮事件的默认处理。
+     * 如果有垂直滚动条，则垂直滚动条随滚轮滚动。如果控件处于可操作状态(参见 isEnabled)，mousewheel 方法触发 onmousewheel 事件，如果事件返回值不为 false，则调用 $mousewheel 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PANEL_CLASS.$mousewheel = function (event) {
+        scroll = this._uVScroll;
+
+        if (scroll && scroll.isShow()) {
+            // 计算滚动的次数，至少要滚动一次
+            var value = scroll.getValue(),
+                delta = this._nWheelDelta || FLOOR(20 / scroll.getStep()) || 1,
+                scroll;
+            scroll.skip(event.detail > 0 ? delta : -delta);
+            return value == scroll.getValue();
+        }
+    };
+
+    /**
+     * 控件的滚动条发生滚动的默认处理。
+     * 如果控件包含滚动条，滚动条滚动时触发 onscroll 事件，如果事件返回值不为 false，则调用 $scroll 方法。
+     * @protected
+     */
+    UI_PANEL_CLASS.$scroll = function () {
+        var style = this.getBody().style;
+        style.left = -MAX(this.getScrollLeft(), 0) + 'px';
+        style.top = -MAX(this.getScrollTop(), 0) + 'px';
+    };
+
+    /**
+     * 设置控件的大小。
+     * $setSize 方法设置控件实际的大小，不改变其它的如缓存等信息。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_PANEL_CLASS.$setSize = function (width, height) {
+        UI_CONTROL_CLASS.$setSize.call(this, width, height);
+        this.$locate();
+
+        var paddingWidth = this.$cache$paddingLeft + this.$cache$paddingRight,
+            paddingHeight = this.$cache$paddingTop + this.$cache$paddingBottom,
+            bodyWidth = this.getBodyWidth(),
+            bodyHeight = this.getBodyHeight(),
+            mainWidth = this.$cache$mainWidth,
+            mainHeight = this.$cache$mainHeight,
+            vscroll = this._uVScroll,
+            hscroll = this._uHScroll,
+            corner = this._uCorner,
+            vsWidth = vscroll && vscroll.getWidth(),
+            hsHeight = hscroll && hscroll.getHeight(),
+            innerWidth = bodyWidth - vsWidth,
+            innerHeight = bodyHeight - hsHeight,
+            hsWidth = innerWidth + paddingWidth,
+            vsHeight = innerHeight + paddingHeight;
+
+        // 设置垂直与水平滚动条与夹角控件的位置
+        vscroll && vscroll.setPosition(hsWidth, 0);
+        hscroll && hscroll.setPosition(0, vsHeight);
+        corner && corner.setPosition(hsWidth, vsHeight);
+
+        if (mainWidth <= bodyWidth && mainHeight <= bodyHeight) {
+            // 宽度与高度都没有超过层控件的宽度与高度，不需要显示滚动条
+            vscroll && vscroll.$hide();
+            hscroll && hscroll.$hide();
+            corner && corner.$hide();
+            innerWidth = bodyWidth;
+            innerHeight = bodyHeight;
+        }
+        else {
+            while (true) {
+                if (corner) {
+                    // 宽度与高度都超出了显示滚动条后余下的宽度与高度，垂直与水平滚动条同时显示
+                    if (mainWidth > innerWidth && mainHeight > innerHeight) {
+                        hscroll.$setSize(hsWidth);
+                        hscroll.setTotal(mainWidth - (this._eBrowser ? 0 : innerWidth));
+                        hscroll.$show();
+                        vscroll.$setSize(0, vsHeight);
+                        vscroll.setTotal(mainHeight - (this._eBrowser ? 0 : innerHeight));
+                        vscroll.$show();
+                        corner.$setSize(vsWidth, hsHeight);
+                        corner.$show();
+                        break;
+                    }
+                    corner.$hide();
+                }
+                if (hscroll) {
+                    if (mainWidth > bodyWidth) {
+                        // 宽度超出控件的宽度，高度没有超出显示水平滚动条后余下的高度，只显示水平滚动条
+                        hscroll.$setSize(bodyWidth + paddingWidth);
+                        hscroll.setTotal(mainWidth - (this._eBrowser ? 0 : bodyWidth));
+                        hscroll.$show();
+                        vscroll && vscroll.$hide();
+                        innerWidth = bodyWidth;
+                    }
+                    else {
+                        hscroll.$hide();
+                    }
+                }
+                if (vscroll) {
+                    if (mainHeight > bodyHeight) {
+                        // 高度超出控件的高度，宽度没有超出显示水平滚动条后余下的宽度，只显示水平滚动条
+                        vscroll.$setSize(0, bodyHeight + paddingHeight);
+                        vscroll.setTotal(mainHeight - (this._eBrowser ? 0 : bodyHeight));
+                        vscroll.$show();
+                        hscroll && hscroll.$hide();
+                        innerHeight = bodyHeight;
+                    }
+                    else {
+                        vscroll.$hide();
+                    }
+                }
+                break;
+            }
+        }
+
+        innerWidth -= this.$cache$layoutWidthRevise;
+        innerHeight -= this.$cache$layoutHeightRevise;
+
+        vscroll && vscroll.$setPageStep(innerHeight);
+        hscroll && hscroll.$setPageStep(innerWidth);
+    
+        // 设置内部定位器的大小，以下使用 corner 表示 style
+        if (this._eBrowser) {
+            corner = this._eBrowser.style;
+            corner.width = bodyWidth + this.$cache$paddingLeft + this.$cache$paddingRight + 'px';
+            corner.height = bodyHeight + this.$cache$paddingTop + this.$cache$paddingBottom + 'px';
+        }
+
+        corner = getParent(this.getBody()).style;
+        corner.width = innerWidth + 'px';
+        corner.height = innerHeight + 'px';
+    };
+
+    /**
+     * 获取水平滚动条的当前值。
+     * getScrollLeft 方法提供了对水平滚动条当前值的快捷访问方式，参见 getValue。
+     * @public
+     *
+     * @return {number} 水平滚动条的当前值，如果没有水平滚动条返回-1
+     */
+    UI_PANEL_CLASS.getScrollLeft = function () {
+        var scroll = this._uHScroll;
+        return scroll ? scroll.getValue() : -1;
+    };
+
+    /**
+     * 获取垂直滚动条的当前值。
+     * getScrollTop 方法提供了对水平滚动条当前值的快捷访问方式，参见 getValue。
+     * @public
+     *
+     * @return {number} 垂直滚动条的当前值，如果没有垂直滚动条返回-1
+     */
+    UI_PANEL_CLASS.getScrollTop = function () {
+        var scroll = this._uVScroll;
+        return scroll ? scroll.getValue() : -1;
+    };
+
+
+﻿/*
+Listbox - 定义了多项选择的基本操作。
+多选框控件，继承自截面控件，实现了选项组接口，扩展了多选的 SelectElement 的功能，允许使用鼠标拖拽进行多项选择，多个交
+换框，可以将选中的选项在互相之间移动。多选框控件也可以单独的使用，选中的选项在表单提交时将被提交。
+
+多选框控件直接HTML初始化的例子:
+<div ecui="type:listbox;name:test">
+    <!-- 这里放选项内容 -->
+    <li>选项</li>
+    ...
+</div>
+
+属性
+_sName  - 多选框内所有input的名称
+
+选项属性
+_eInput - 选项对应的input，form提交时使用
+*/
+
+
+    /**
+     * 计算当前鼠标移入的选项编号
+     * @private
+     *
+     * @param {ecui.ui.Item} control 选项控件
+     */
+    function UI_LISTBOX_OVERED(control) {
+        var parent = control.getParent(),
+            vscroll = parent._cScroll,
+            step = vscroll.getStep(),
+            o = getMouseY(parent),
+            oldTop = control._nTop;
+
+        control._nTop = o;
+
+        if (o > parent.getHeight()) {
+            if (o < oldTop) {
+                // 鼠标回退不需要滚动
+                o = 0;
+            }
+            else {
+                // 超出控件范围，3像素点对应一个选项
+                o = FLOOR((o - MAX(0, oldTop)) / 3);
+                // 如果不滚动，需要恢复原始的移动距离
+                o ? vscroll.skip(o) : (control._nTop = oldTop);
+            }
+            o += control._nLastIndex;
+        }
+        else if (o < 0) {
+            if (o > oldTop) {
+                // 鼠标回退不需要滚动
+                o = 0;
+            }
+            else {
+                // 超出控件范围，3像素点对应一个选项
+                o = CEIL((o - MIN(0, oldTop)) / 3);
+                // 如果不滚动，需要恢复原始的移动距离
+                o ? vscroll.skip(o) : (control._nTop = oldTop);
+            }
+            o += control._nLastIndex;
+        }
+        else {
+            o = FLOOR((parent.getScrollTop() + o) / step);
+        }
+
+        return MIN(MAX(0, o), parent.getItems().length - 1);
+    }
+
+    copy(UI_LISTBOX_CLASS, UI_ITEMS);
+
+    /**
+     * 销毁控件的默认处理。
+     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
+     * @protected
+     */
+    UI_LISTBOX_ITEM_CLASS.$dispose = function () {
+        this._eInput = null;
+        UI_ITEM_CLASS.$dispose.call(this);
+    };
+
+    /**
+     * 鼠标在滑动块区域内按压开始事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_LISTBOX_ITEM_CLASS.$pressstart = function (event) {
+        UI_ITEM_CLASS.$pressstart.call(this, event);
+        core.select(this, event, 'listbox');
+    };
+
+    /**
+     * 选择框选中处理
+     * @protected
+     */
+    UI_LISTBOX_ITEM_CLASS.$select = function () {
+        var startIndex = this._nStartIndex,
+            lastIndex = this._nLastIndex,
+            index = UI_LISTBOX_OVERED(this),
+            items = this.getParent().getItems(),
+            fromCancel = 0,
+            toCancel = -1,
+            fromSelect = 0,
+            toSelect = -1;
+
+        if (index > lastIndex) {
+            if (index < startIndex) {
+                // index与lastIndex都在负方向
+                fromCancel = lastIndex;
+                toCancel = index - 1;
+            }
+            else if (lastIndex < startIndex) {
+                // index与lastIndex位于起始选项两边
+                fromCancel = lastIndex;
+                toCancel = startIndex - 1;
+                fromSelect = startIndex + 1;
+                toSelect = index;
+            }
+            else {
+                // index与lastIndex都在正方向
+                fromSelect = lastIndex + 1;
+                toSelect = index;
+            }
+        }
+        else if (index < lastIndex) {
+            if (index > startIndex) {
+                // index与lastIndex都在正方向
+                fromCancel = index + 1;
+                toCancel = lastIndex;
+            }
+            else if (lastIndex > startIndex) {
+                // index与lastIndex位于起始选项两边
+                fromCancel = startIndex + 1;
+                toCancel = lastIndex;
+                fromSelect = index;
+                toSelect = startIndex - 1;
+            }
+            else {
+                // index与lastIndex都在负方向
+                fromSelect = index;
+                toSelect = lastIndex - 1;
+            }
+        }
+
+        this._nLastIndex = index;
+
+        // 恢复之前的选择状态
+        for (; fromCancel <= toCancel; ) {
+            index = items[fromCancel++];
+            index.alterClass('selected', !index.isSelected());
+        }
+
+        // 选择框内的全部假选中
+        for (; fromSelect <= toSelect; ) {
+            items[fromSelect++].alterClass('selected');
+        }
+    };
+
+    /**
+     * 选择框选中结束
+     * @protected
+     */
+    UI_LISTBOX_ITEM_CLASS.$selectend = function () {
+        var startIndex = this._nStartIndex,
+            index = UI_LISTBOX_OVERED(this),
+            items = this.getParent().getItems(),
+            fromIndex = MIN(startIndex, index),
+            toIndex = MAX(startIndex, index);
+
+        if (startIndex == index) {
+            // 点击的当前条目，进行反选
+            this.setSelected(!this.isSelected());
+        }
+        else {
+            // 否则选择框内的全部选中
+            for (; fromIndex <= toIndex; ) {
+                items[fromIndex++].setSelected();
+            }
+        }
+    };
+
+    /**
+     * 选择框选中开始
+     * @protected
+     */
+    UI_LISTBOX_ITEM_CLASS.$selectstart = function () {
+        this._nStartIndex = this._nLastIndex = UI_LISTBOX_OVERED(this);
+        this.alterClass('selected');
+    };
+
+    /**
+     * 判断多选框的选项控件是否被选中。
+     * @public
+     *
+     * @return {boolean} 选项是否被选中
+     */
+    UI_LISTBOX_ITEM_CLASS.isSelected = function () {
+        return !this._eInput.disabled;
+    };
+
+    /**
+     * 设置当前控件的父控件。
+     * @public
+     *
+     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
+     */
+    UI_LISTBOX_ITEM_CLASS.setParent = function (parent) {
+        UI_ITEM_CLASS.setParent.call(this, parent);
+
+        if (parent instanceof UI_LISTBOX) {
+            this._eInput = setInput(this._eInput, parent._sName);
+        }
+    };
+
+    /**
+     * 设置选中状态。
+     * @public
+     *
+     * @param {boolean} status 是否选中，默认为选中
+     */
+    UI_LISTBOX_ITEM_CLASS.setSelected = function (status) {
+        this.alterClass('selected', this._eInput.disabled = status === false);
+    };
+
+    /**
+     * 选项控件发生变化的处理。
+     * 在 ecui.ui.Items 接口中，选项控件发生增加/减少操作时调用此方法。
+     * @protected
+     */
+    UI_LISTBOX_CLASS.$alterItems = function () {
+        var items = this.getItems(),
+            length = items.length,
+            vscroll = this._cScroll,
+            step = length && items[0].getHeight();
+
+        if (step) {
+            vscroll.setStep(step);
+            this.setItemSize(
+                this.getBodyWidth() - (length * step > this.getBodyHeight() ? vscroll.getWidth() : 0),
+                step
+            );
+            this.paint();
+        }
+    };
+
+    /**
+     * 获取控件的表单项名称。
+     * 多选框控件可以在表单中被提交，getName 方法返回提交时用的表单项名称，表单项名称可以使用 setName 方法改变。
+     * @public
+     *
+     * @return {string} 表单项名称
+     */
+    UI_LISTBOX_CLASS.getName = function () {
+        return this._sName;
+    };
+
+    /**
+     * 获取所有选中的选项。
+     * @public
+     *
+     * @return {Array} 选项数组
+     */
+    UI_LISTBOX_CLASS.getSelected = function () {
+        for (var i = 0, list = this.getItems(), o, result = []; o = list[i++]; ) {
+            o.isSelected() && result.push(o);
+        }
+        return result;
+    };
+
+    /**
+     * 选中所有的选项。
+     * 某些场景下，需要多选框控件的内容都可以被提交，可以在表单的 onsubmit 事件中调用 selectAll 方法全部选择。
+     * @public
+     */
+    UI_LISTBOX_CLASS.selectAll = function () {
+        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
+            o.setSelected();
+        }
+    };
+
+    /**
+     * 设置控件的表单项名称。
+     * 多选框控件可以在表单中被提交，setName 方法设置提交时用的表单项名称，表单项名称可以使用 getName 方法获取。
+     * @public
+     *
+     * @param {string} name 提交用的名称
+     */
+    UI_LISTBOX_CLASS.setName = function (name) {
+        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
+            // 需要将下属所有的输入框名称全部改变
+            o._eInput = setInput(o._eInput, name);
+        }
+        this._sName = name;
+    };
+
+
+﻿/*
+Select - 定义模拟下拉框行为的基本操作。
+下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基础控件)与下拉选项框
+(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选项数量，在屏幕显示
+不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键盘与滚轮操作，在下
+拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有焦点，就可以通过滚
+轮上下选择选项。
+
+下拉框控件直接HTML初始化的例子:
+<select ecui="type:select;option-size:3" name="test">
+    <!-- 这里放选项内容 -->
+    <option value="值">文本</option>
+    ...
+    <option value="值" selected>文本</option>
+    ...
+</select>
+
+如果需要自定义特殊的选项效果，请按下列方法初始化:
+<div ecui="type:select;name:test;option-size:3">
+    <!-- 这里放选项内容 -->
+    <li ecui="value:值">文本</li>
+    ...
+</div>
+
+属性
+_nOptionSize  - 下接选择框可以用于选择的条目数量
+_cSelected    - 当前选中的选项
+_uText        - 下拉框的文本框
+_uButton      - 下拉框的按钮
+_uOptions     - 下拉选择框
+*/
+
+
+    /**
+     * 下拉框刷新。
+     * @private
+     *
+     * @param {ecui.ui.Select} control 下拉框控件
+     */
+    function UI_SELECT_FLUSH(control) {
+        var options = control._uOptions,
+            scroll = options.$getSection('VScroll'),
+            el = options.getOuter(),
+            pos = getPosition(control.getOuter()),
+            selected = control._cSelected,
+            optionTop = pos.top + control.getHeight();
+
+        // 第一次显示时需要进行下拉选项部分的初始化
+        if (!getParent(el)) {
+            DOCUMENT.body.appendChild(el);
+            control.$alterItems();
+        }
+
+        if (options.isShow()) {
+            control.$setActived(selected);
+            scroll.setValue(scroll.getStep() * indexOf(control.getItems(), selected));
+
+            // 以下使用control代替optionHeight
+            control = options.getHeight();
+
+            // 如果浏览器下部高度不够，将显示在控件的上部
+            options.setPosition(
+                pos.left,
+                optionTop + control <= getView().bottom ? optionTop : pos.top - control
+            );
+        }
+    }
+
+    copy(UI_SELECT_CLASS, UI_ITEMS);
+
+    /**
+     * 销毁控件的默认处理。
+     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
+     * @protected
+     */
+    UI_SELECT_OPTIONS_CLASS.$dispose = function () {
+        // 下拉选项框处于显示状态，需要先恢复状态
+        if (this.isShow()) {
+            mask();
+            restore();
+        }
+        removeDom(this.getOuter());
+        UI_PANEL_CLASS.$dispose.call(this);
+    };
+
+    /**
+     * 获取选项的值。
+     * getValue 方法返回选项控件的值，即选项选中时整个下拉框控件的值。
+     * @public
+     *
+     * @return {string} 选项的值
+     */
+    UI_SELECT_ITEM_CLASS.getValue = function () {
+        return this._sValue;
+    };
+
+    /**
+     * 设置选项的值。
+     * setValue 方法设置选项控件的值，即选项选中时整个下拉框控件的值。
+     * @public
+     *
+     * @param {string} value 选项的值
+     */
+    UI_SELECT_ITEM_CLASS.setValue = function (value) {
+        var parent = this.getParent();
+        this._sValue = value;
+        parent && parent._cSelected == this && UI_EDIT_CLASS.setValue.call(parent, value);
+    };
+
+    /**
+     * 选项控件发生变化的处理。
+     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
+     * @protected
+     */
+    UI_SELECT_CLASS.$alterItems = function () {
+        var options = this._uOptions,
+            scroll = options.$getSection('VScroll'),
+            optionSize = this._nOptionSize,
+            step = this.getBodyHeight(),
+            width = this.getWidth(),
+            itemLength = this.getItems().length;
+
+        if (getParent(options.getOuter())) {
+            // 设置选项框
+            scroll.setStep(step);
+
+            // 为了设置激活状态样式, 因此必须控制下拉框中的选项必须在滚动条以内
+            this.setItemSize(
+                width - options.getInvalidWidth() - (itemLength > optionSize ? scroll.getWidth() : 0),
+                step
+            );
+
+            // 设置options框的大小，如果没有元素，至少有一个单位的高度
+            options.cache(false, true);
+            options.$setSize(width, (MIN(itemLength, optionSize) || 1) * step + options.getInvalidHeight());
+        }
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_SELECT_CLASS.$cache = function (style, cacheSize) {
+        (getParent(this._uOptions.getOuter()) ? UI_ITEMS : UI_EDIT_CLASS).$cache.call(this, style, cacheSize);
+        this._uText.cache(false, true);
+        this._uButton.cache(false, true);
+    };
+
+    /**
+     * 界面点击强制拦截事件的默认处理。
+     * 控件在下拉框展开时，需要拦截浏览器的点击事件，如果点击在下拉选项区域，则选中当前项，否则直接隐藏下拉选项框，但不会改变控件激活状态。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SELECT_CLASS.$intercept = function (event) {
+        //__transform__control_o
+        var control = findControl(event.target);
+        this._uOptions.hide();
+        mask();
+
+        // 检查点击是否在当前下拉框的选项上
+        if (control instanceof UI_SELECT_ITEM && control != this._cSelected) {
+            this.setSelected(control);
+            this.change();
+        }
+    };
+
+    /**
+     * 控件拥有焦点时，键盘事件的默认处理。
+     * 屏蔽空格键按下事件。Opera 下仅用 keydown 不能屏蔽空格键事件，还需要在 keypress 中屏蔽。如果控件处于可操作状态(参见 isEnabled)，keydown/keypress 方法触发 onkeydown/onkeypress 事件，如果事件返回值不为 false，则调用 $keydown/$keypress 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SELECT_CLASS.$keydown = UI_SELECT_CLASS.$keypress = function (event) {
+        if (UI_EDIT_CLASS['$' + event.type](event) === false) {
+            return false;
+        }
+
+        var options = this._uOptions,
+            scroll = options.$getSection('VScroll'),
+            optionSize = this._nOptionSize,
+            which = event.which,
+            items = this.getItems(),
+            length = items.length,
+            active = this.getActived(),
+            show = options.isShow();
+
+        if (getPressed() != this) {
+            // 当前不能存在鼠标操作，否则屏蔽按键
+            if (which == 40 || which == 38) {
+                if (length) {
+                    if (show) {
+                        this.$setActived(items[which = MIN(MAX(0, indexOf(items, active) + which - 39), length - 1)]);
+                        which -= scroll.getValue() / scroll.getStep();
+                        scroll.skip(which < 0 ? which : which >= optionSize ? which - optionSize + 1 : 0);
+                    }
+                    else {
+                        this.setSelected(MIN(MAX(0, indexOf(items, this._cSelected) + which - 39), length - 1));
+                    }
+                }
+                return false;
+            }
+            else if (which == 27 || which == 13 && show) {
+                // 回车键选中，ESC键取消
+                which == 13 && this.setSelected(active);
+                options.hide();
+                mask();
+                restore();
+                return false;
+            }
+        }
+    };
+
+    /**
+     * 鼠标在控件区域滚动滚轮事件的默认处理。
+     * 如果控件拥有焦点，则当前选中项随滚轮滚动而自动指向前一项或者后一项。如果控件处于可操作状态(参见 isEnabled)，mousewheel 方法触发 onmousewheel 事件，如果事件返回值不为 false，则调用 $mousewheel 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SELECT_CLASS.$mousewheel = function (event) {
+        var options = this._uOptions,
+            items = this.getItems(),
+            length = items.length;
+
+        options.isShow()
+            ? options.$mousewheel(event)
+            : this.setSelected(
+                length ? MIN(MAX(0, indexOf(items, this._cSelected) + (event.detail > 0 ? 1 : -1)), length - 1) : null
+            );
+        return false;
+    };
+
+    /**
+     * 控件按压状态开始事件的默认处理。
+     * 鼠标左键按压控件开始时显示下拉框。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_SELECT_CLASS.$pressstart = function (event) {
+        UI_EDIT_CLASS.$pressstart.call(this, event);
+        debug = true;
+        this._uOptions.show();
+        // 拦截之后的点击，同时屏蔽所有的控件点击事件
+        intercept(this);
+        mask(0, 65534);
+        UI_SELECT_FLUSH(this);
+    };
+
+    /**
+     * 控件自动渲染全部完成后的处理。
+     * 页面刷新时，部分浏览器会回填输入框的值，需要在回填结束后触发设置控件的状态。
+     * @protected
+     */
+    UI_SELECT_CLASS.$ready = function () {
+        this.setValue(this.getValue());
+    };
+
+    /**
+     * 控件移除子控件事件的默认处理。
+     * 下拉框移除子选项时需要检查选项是否被选中，如果被选中需要清除状态。
+     * @protected
+     *
+     * @param {Item} item 选项控件
+     */
+    UI_SELECT_CLASS.$remove = function (item) {
+        this._cSelected == item && this.setSelected();
+        UI_ITEMS.$remove.call(this, item);
+    };
+
+    /**
+     * 设置控件的大小。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_SELECT_CLASS.$setSize = function (width, height) {
+        var __gzip_direct__button = this._uButton;
+
+        UI_EDIT_CLASS.$setSize.call(this, width, height);
+        this.$locate();
+        height = this.getBodyHeight();
+
+        // 设置文本区域
+        this._uText.$setSize(width = this.getBodyWidth() - height, height);
+
+        // 设置下拉按钮
+        __gzip_direct__button.$setSize(height, height);
+        __gzip_direct__button.setPosition(width, 0);
+    };
+
+    /**
+     * 获取被选中的选项控件。
+     * @public
+     *
+     * @return {ecui.ui.Item} 选项控件
+     */
+    UI_SELECT_CLASS.getSelected = function () {
+        return this._cSelected || null;
+    };
+
+    /**
+     * 设置下拉框允许显示的选项数量。
+     * 如果实际选项数量小于这个数量，没有影响，否则将出现垂直滚动条，通过滚动条控制其它选项的显示。
+     * @public
+     *
+     * @param {number} value 显示的选项数量，必须大于 1
+     */
+    UI_SELECT_CLASS.setOptionSize = function (value) {
+        this._nOptionSize = value;
+        this.$alterItems();
+        UI_SELECT_FLUSH(this);
+    };
+
+    /**
+     * 选中选项。
+     * @public
+     *
+     * @param {number|ecui.ui.Item} item 选项的序号/选项控件
+     */
+    UI_SELECT_CLASS.setSelected = function (item) {
+        // 将选项序号转换成选项
+        item = 'number' == typeof item ? this.getItems()[item] : item || null;
+
+        if (this._cSelected !== item) {
+            this._uText.$setBodyHTML(item ? item.getBody().innerHTML : '');
+            UI_EDIT_CLASS.setValue.call(this, item ? item._sValue : '');
+            this._cSelected = item;
+            this._uOptions.isShow() && this.$setActived(item);
+        }
+    };
+
+    /**
+     * 设置控件的值。
+     * setValue 方法设置控件的值，设置的值必须与一个子选项的值相等，否则将被设置为空，使用 getValue 方法获取设置的值。
+     * @public
+     *
+     * @param {string} value 需要选中的值
+     */
+    UI_SELECT_CLASS.setValue = function (value) {
+        for (var i = 0, items = this.getItems(), o; o = items[i++]; ) {
+            if (o._sValue == value) {
+                this.setSelected(o);
+                return;
+            }
+        }
+
+        // 找不到满足条件的项，将选中的值清除
+        this.setSelected();
+    };
+
+
+﻿/*
+Combox - 定义可输入下拉框行为的基本操作。
+可输入下拉框控件，继承自下拉框控件，在下拉框控件的基础上允许选项框可输入内容。
+
+下拉框控件直接HTML初始化的例子:
+<select ecui="type:combox" name="test">
+    <!-- 这里放选项内容 -->
+    <option value="值">文本</option>
+    ...
+    <option value="值" selected>文本</option>
+    ...
+</select>
+
+如果需要自定义特殊的选项效果，请按下列方法初始化:
+<div ecui="type:combox">
+    <!-- 如果ec中不指定name，也可以在input中指定 -->
+    <input name="test" />
+    <!-- 这里放选项内容 -->
+    <li value="值">文本</li>
+    ...
+</div>
+*/
+
+
+    /**
+     * 设置控件的大小。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_COMBOX_CLASS.$setSize = function (width, height) {
+        UI_SELECT_CLASS.$setSize.call(this, width, height);
+        this.getInput().style.width = this.$getSection('Text').getWidth() + 'px';
+    };
+
+
+/*
+MultiSelect - 定义多选下拉框行为的基本操作。
+多选下拉框控件，继承自输入框控件，实现了选项组接口，参见下拉框控件。
+
+下拉框控件直接HTML初始化的例子:
+<select ecui="type:multi-select;option-size:3" name="test">
+    <!-- 这里放选项内容 -->
+    <option value="值">文本</option>
+    ...
+    <option value="值" selected>文本</option>
+    ...
+</select>
+
+如果需要自定义特殊的选项效果，请按下列方法初始化:
+<div ecui="type:multi-select;name:test;option-size:3">
+    <!-- 这里放选项内容 -->
+    <li ecui="value:值">文本</li>
+    ...
+</div>
+
+Item属性
+_eInput - 多选项的INPUT对象
+*/
+
+
+    /**
+     * 刷新显示区域的选中值列表。
+     * @private
+     *
+     * @param {ecui.ui.MultiSelect} control 多选下拉框控件
+     */
+    function UI_MULTI_SELECT_FLUSH_TEXT(control) {
+        if (control) {
+            for (var i = 0, items = control.getItems(), o, text = []; o = items[i++]; ) {
+                o.isSelected() && text.push(getText(o.getOuter()));
+            }
+            control.$getSection('Text').$setBodyHTML(text.join(','));
+        }
+    }
+
+    copy(UI_MULTI_SELECT_CLASS, UI_ITEMS);
+
+    /**
+     * 鼠标单击控件事件的默认处理。
+     * 控件点击时将改变当前的选中状态。如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_ITEM_CLASS.$click = function (event) {
+        UI_SELECT_ITEM_CLASS.$click.call(this, event);
+        this.setSelected(!this.isSelected());
+    };
+
+    /**
+     * 销毁控件的默认处理。
+     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
+     * @protected
+     */
+    UI_MULTI_SELECT_ITEM_CLASS.$dispose = function () {
+        this._eInput = null;
+        UI_SELECT_ITEM.$dispose.call(this);
+    };
+
+    /**
+     * 判断当前选项是否选中。
+     * @protected
+     *
+     * @return {boolean} 当前项是否选中
+     */
+    UI_MULTI_SELECT_ITEM_CLASS.isSelected = function () {
+        return this._eInput.checked;
+    };
+
+    /**
+     * 设置当前选项是否选中。
+     * @protected
+     *
+     * @param {boolean} status 当前项是否选中，默认选中
+     */
+    UI_MULTI_SELECT_ITEM_CLASS.setSelected = function (status) {
+        this.alterClass('selected', status === false);
+        this._eInput.checked = status !== false;
+        UI_MULTI_SELECT_FLUSH_TEXT(this.getParent());
+    };
+
+    /**
+     * 选项控件发生变化的处理。
+     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
+     * @protected
+     */
+    UI_MULTI_SELECT_CLASS.$alterItems = function () {
+        UI_SELECT_CLASS.$alterItems.call(this);
+        UI_MULTI_SELECT_FLUSH_TEXT(this);
+    };
+
+    /**
+     * 控件增加子控件事件的默认处理。
+     * 选项组增加子选项时需要判断子控件的类型，并额外添加引用。
+     * @protected
+     *
+     * @param {ecui.ui.Item} child 选项控件
+     * @return {boolean} 是否允许增加子控件，默认允许
+     */
+    UI_MULTI_SELECT_CLASS.$append = function (item) {
+        UI_SELECT_CLASS.$append.call(this, item);
+        this.getBase().appendChild(setInput(item._eInput, this.getName()));
+    };
+
+    /**
+     * 计算控件的缓存。
+     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
+     * @protected
+     *
+     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
+     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
+     */
+    UI_MULTI_SELECT_CLASS.$cache = UI_SELECT_CLASS.$cache;
+
+    /**
+     * 界面点击强制拦截事件的默认处理。
+     * 控件在多选下拉框展开时，需要拦截浏览器的点击事件，如果点击在下拉选项区域，则选中当前项，否则直接隐藏下拉选项框，但不会改变控件激活状态。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_CLASS.$intercept = function (event) {
+        if (findControl(event.target) instanceof UI_MULTI_SELECT_ITEM) {
+            return false;
+        }
+        this.$getSection('Options').hide();
+        mask();
+    };
+
+    /**
+     * 控件拥有焦点时，键盘弹起事件的默认处理。
+     * 如果控件处于可操作状态(参见 isEnabled)，keyup 方法触发 on，keyup 事件，如果事件返回值不为 false，则调用 $keyup 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_CLASS.$keyup = function (event) {
+        if (!this.$getSection('Options').isShow() || UI_EDIT_CLASS.$keyup.call(this, event) === false) {
+            return false;
+        }
+
+        if (event.which == 13 || event.which == 32) {
+            this.getActived().$click();
+        }
+    };
+
+    /**
+     * 鼠标在控件区域滚动滚轮事件的默认处理。
+     * 如果控件拥有焦点，则当前选中项随滚轮滚动而自动指向前一项或者后一项。如果控件处于可操作状态(参见 isEnabled)，mousewheel 方法触发 onmousewheel 事件，如果事件返回值不为 false，则调用 $mousewheel 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_CLASS.$mousewheel = function (event) {
+        var options = this.$getSection('Options');
+        options.isShow() && options.$mousewheel(event);
+        return false;
+    };
+
+    /**
+     * 控件按压状态结束事件的默认处理。
+     * 鼠标左键按压控件结束时设置下一次点击事件被拦截，需要根据点击的位置选择是关闭展开的下拉框还是选中选项。如果控件处于可操作状态(参见 isEnabled)，pressend 方法触发 onpressend 事件，如果事件返回值不为 false，则调用 $pressend 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_CLASS.$pressend = UI_SELECT_CLASS.$pressend;
+
+    /**
+     * 控件按压状态开始事件的默认处理。
+     * 鼠标左键按压控件开始时显示下拉框。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_MULTI_SELECT_CLASS.$pressstart = UI_SELECT_CLASS.$pressstart;
+
+    /**
+     * 控件自动渲染全部完成后的处理。
+     * 页面刷新时，部分浏览器会回填输入框的值，需要在回填结束后触发设置控件的状态。
+     * @protected
+     */
+    UI_MULTI_SELECT_CLASS.$ready = function () {
+        UI_MULTI_SELECT_FLUSH_TEXT(this);
+    };
+
+    /**
+     * 控件移除子控件事件的默认处理。
+     * 选项组移除子选项时需要额外移除引用。
+     * @protected
+     *
+     * @param {ecui.ui.Item} child 选项控件
+     */
+    UI_MULTI_SELECT_CLASS.$remove = function (item) {
+        UI_SELECT_CLASS.$remove.call(this, item);
+        this.getBase().removeChild(item._eInput);
+    };
+
+    /**
+     * 设置控件的大小。
+     * @protected
+     *
+     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
+     * @param {number} height 高度，如果不需要设置则省略此参数
+     */
+    UI_MULTI_SELECT_CLASS.$setSize = UI_SELECT_CLASS.$setSize;
+
+    /**
+     * 获取全部选中的选项控件。
+     * @protected
+     *
+     * @return {Array} 选项控件列表
+     */
+    UI_MULTI_SELECT_CLASS.getSelected = function () {
+        for (var i = 0, items = this.getItems(), o, result = []; o = items[i++]; ) {
+            o.isSelected() && result.push(o);
+        }
+        return result;
+    };
+
+    /**
+     * 设置下拉框允许显示的选项数量。
+     * 如果实际选项数量小于这个数量，没有影响，否则将出现垂直滚动条，通过滚动条控制其它选项的显示。
+     * @public
+     *
+     * @param {number} value 显示的选项数量，必须大于 1
+     */
+    UI_MULTI_SELECT_CLASS.setOptionSize = UI_SELECT_CLASS.setOptionSize;
+
+    /**
+     * 设置控件的值。
+     * @public
+     *
+     * @param {Array} values 控件被选中的值列表
+     */
+    UI_MULTI_SELECT_CLASS.setValue = function (values) {
+        for (var i = 0, items = this.getItems(), o; o = items[i++]; ) {
+            o.setSelected(indexOf(values, o._eInput.value) >= 0);
+        }
+        UI_MULTI_SELECT_FLUSH_TEXT(this);
+    };
+
+
+/*
 Table - 定义由行列构成的表格的基本操作。
 表格控件，继承自截面控件，内部包含一个部件——标题区(基础控件)。表格控件对基本的 TableElement 功能进行了扩展，表头固定，
 不会随表格的垂直滚动条滚动而滚动，在行列滚动时，支持整行整列移动，允许直接对表格的数据进行增加/删除/修改操作。
@@ -8000,19 +10725,6 @@ $cache$pos   - 行的坐标
 _aCol        - 行的列Element对象，如果当前列需要向左合并为null，需要向上合并为false
 */
 
-
-    /**
-     * 在需要时初始化单元格控件。
-     * 表格控件的单元格控件不是在初始阶段生成，而是在单元格控件第一次被调用时生成，参见核心的 getControl 方法。
-     * @private
-     *
-     * @return {ecui.ui.Control} 单元格控件
-     */
-    function UI_TABLE_INIT_GETCONTROL() {
-        this.getControl = null;
-        $fastCreate(UI_TABLE_CELL, this, getParent(this).getControl());
-        return this.getControl();
-    }
 
     /**
      * 表格控件初始化一行的宽度。
@@ -8085,7 +10797,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      */
     UI_TABLE_ROW_CLASS.$click = function (event) {
         var table = this.getParent();
-        table.onrowclick && table.onrowclick(event) !== false || ecui.ui.Control.prototype.$click.call(this, event);
+        table.onrowclick && table.onrowclick(event) !== false || UI_CONTROL_CLASS.$click.call(this, event);
     };
 
     /**
@@ -8227,7 +10939,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      */
     UI_TABLE_CELL_CLASS.$click = function (event) {
         var table = this.getParent().getParent();
-        table.oncellclick && table.oncellclick(event) !== false || ecui.ui.Control.prototype.$click.call(this, event);
+        table.oncellclick && table.oncellclick(event) !== false || UI_CONTROL_CLASS.$click.call(this, event);
     };
 
     /**
@@ -8341,8 +11053,8 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      */
     UI_TABLE_CLASS.$setSize = function (width, height) {
         var body = this.getBody(),
-            vscroll = this._cVScroll,
-            hscroll = this._cHScroll,
+            vscroll = this.$getSection('VScroll'),
+            hscroll = this.$getSection('HScroll'),
             __gzip_direct__mainWidth = this.$cache$mainWidth,
             __gzip_direct__mainHeight = this.$cache$mainHeight,
             vsWidth = vscroll && vscroll.getWidth(),
@@ -8900,6 +11612,7 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
     UI_LOCKED_TABLE_CLASS.$setSize = function (width, height) {
         var i = 0,
             o = this.getBase().style,
+            layout = getParent(this.getBody()),
             lockedHead = this._uLockedHead,
             style = getParent(getParent(lockedHead.getBody())).style;
 
@@ -8914,8 +11627,12 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
         this._uLockedMain.$setSize(o, this.getBodyHeight());
         style.width = this._uLockedMain.getBody().lastChild.style.width = o + 'px';
 
-        width = getParent(this.getBody()).style.width;
+        width = layout.style.width;
         lockedHead._eFill.style.width = width;
+
+        style = layout.previousSibling.style;
+        style.width = toNumber(width) + this.$cache$paddingLeft + this.$cache$paddingRight + 'px';
+        style.height = toNumber(layout.style.height) + this.$cache$paddingTop + 'px';
 
         // 以下使用 lockedHead 代替 lockedRow
         for (; lockedHead = this._aLockedRow[i++]; ) {
@@ -8941,8 +11658,10 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      * @return {ecui.ui.Table.Col} 列控件
      */
     UI_LOCKED_TABLE_CLASS.addCol = function (params, index) {
-        index >= 0 && index < this._nLeft && this._nLeft++;
-        index < this._nRight && this._nRight++;
+        if (index >= 0) {
+            index < this._nLeft && this._nLeft++;
+            index < this._nRight && this._nRight++;
+        }
         return UI_TABLE_CLASS.addCol.call(this, params, index);
     };
 
@@ -8985,8 +11704,10 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      */
     UI_LOCKED_TABLE_CLASS.removeCol = function (index) {
         UI_TABLE_CLASS.removeCol.call(this, index);
-        index >= 0 && index < this._nLeft && this._nLeft--;
-        index < this._nRight && this._nRight--;
+	if (index >= 0) {
+            index < this._nLeft && this._nLeft--;
+            index < this._nRight && this._nRight--;
+	}
     };
 
     /**
@@ -9004,1708 +11725,6 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             );
         }
     })();
-
-
-/*
-Popup - 定义弹出菜单项的基本操作。
-弹出菜单控件，继承自基础控件，实现了选项组接口。弹出式菜单操作时不会改变当前已经激活的对象，任何点击都将导致弹出菜单消
-失，弹出菜单默认向右展开子菜单，如果右部已经到达浏览器最边缘，将改为向左显示。
-
-弹出菜单控件直接HTML初始化的例子:
-<div ecui="type:popup;name:test">
-    <!-- 这里放选项内容 -->
-    <li>菜单项</li>
-    ...
-    <!-- 包含子菜单项的菜单项 -->
-    <li>
-        <label>菜单项</label>
-        <!-- 这里放子菜单项 -->
-        <li>子菜单项</li>
-        ...
-    </li>
-    ...
-</div>
-
-属性
-_nOptionSize - 弹出菜单选项的显示数量，不设置将全部显示
-_cSuperior   - 上一级被激活的弹出菜单控件
-_cInferior   - 下一级被激活的弹出菜单控件
-_uPrev       - 向上滚动按钮
-_uNext       - 向下滚动按钮
-
-子菜单项属性
-_cPopup      - 是否包含下级弹出菜单
-*/
-
-
-    /**
-     * 弹出菜单选项样式刷新。
-     * @private
-     *
-     * @param {ecui.ui.Popup.Item} item 选项控件
-     */
-    function UI_POPUP_ITEM_FLUSH(item) {
-        item && item.setClass(item.getBaseClass() + (item.getItems().length ? '-complex' : ''))
-    }
-
-    copy(UI_POPUP_CLASS, UI_ITEMS);
-
-    /**
-     * 鼠标单击控件事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_POPUP_BUTTON_CLASS.$click = function (event) {
-        UI_CONTROL_CLASS.$click.call(this, event);
-
-        var parent = this.getParent(),
-            body = parent.getBody(),
-            items = parent.getItems(),
-            height = items[0].getHeight(),
-            __gzip_direct__prev = parent._uPrev,
-            prevHeight = __gzip_direct__prev.getHeight(),
-            top = (toNumber(body.style.top) - prevHeight) / height;
-
-        parent.$setOvered();
-        body.style.top =
-            MIN(MAX(__gzip_direct__prev == this ? ++top : --top, parent._nOptionSize - items.length), 0) * height
-                + prevHeight + 'px';
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_POPUP_BUTTON_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        event.preventDefault();
-    };
-
-    /**
-     * 菜单项点击的默认处理
-     * @protected
-     *
-     * @params {Event} event 事件对象
-     */
-    UI_POPUP_ITEM_CLASS.$click = function (event) {
-        UI_ITEM_CLASS.$click.call(this, event);
-        this.getItems().length || UI_POPUP_FOCUS.$blur();
-    };
-
-    /**
-     * 菜单项移出的默认处理
-     * @protected
-     *
-     * @params {Event} event 事件对象
-     */
-    UI_POPUP_ITEM_CLASS.$mouseout = function (event) {
-        UI_ITEM_CLASS.$mouseout.call(this, event);
-        this.getItems().length || this.getParent().$setOvered();
-    };
-
-    /**
-     * 菜单项移入的默认处理
-     * @protected
-     *
-     * @params {Event} event 事件对象
-     */
-    UI_POPUP_ITEM_CLASS.$mouseover = function (event) {
-        // 改变菜单项控件的显示状态
-        UI_ITEM_CLASS.$mouseover.call(this, event);
-
-        var childPopup = this._cPopup,
-            popup = this.getParent(),
-            superior = popup._cSuperior,
-            o = popup._cInferior,
-            pos = getPosition(this.getOuter()),
-            x = pos.left,
-            view = getView(),
-            width;
-
-        if (o != childPopup) {
-            // 隐藏之前显示的下级弹出菜单控件
-            o && o.hide();
-
-            if (childPopup && childPopup.getItems().length) {
-                childPopup.setParent(true);
-
-                // 计算子菜单应该显示的位置
-                width = childPopup.getWidth();
-                o = x + this.getWidth() - 4;
-                x -= width - 4;
-
-                // 优先计算延用之前的弹出顺序的应该的位置，显示新的子弹出菜单
-                childPopup.setPosition(
-                    o + width > view.right || superior && superior.getX() > popup.getX() && x > view.left ? x : o,
-                    pos.top - 4
-                );
-                childPopup.show();
-            }
-        }
-    };
-
-    /**
-     * 菜单项按压结束的默认处理
-     * @protected
-     *
-     * @params {Event} event 事件对象
-     */
-    UI_POPUP_ITEM_CLASS.$pressend = function (event) {
-        UI_ITEM_CLASS.$pressend.call(this, event);
-        event.getTarget() != this && UI_POPUP_FOCUS.$blur();
-    };
-
-    /**
-     * 添加子选项控件。
-     * 弹出菜单控件与弹出菜单子选项控件都包含 add 方法，用于添加子选项控件。如果位置序号不合法，子选项控件将添加在末尾的位置。
-     * @public
-     *
-     * @param {string|Element|ecui.ui.Item} item 选项控件的 html 内容/控件对应的 Element 对象/选项控件
-     * @param {number} index 子选项控件需要添加的位置序号
-     * @return {ecui.ui.Item} 子选项控件
-     */
-    UI_POPUP_ITEM_CLASS.add = function (item, index) {
-        return (this._cPopup =
-            this._cPopup || $fastCreate(UI_POPUP, createDom('ec-popup ' + this.getParent().getBaseClass()), this))
-                .add(item, index);
-    };
-
-    /**
-     * 获取当前菜单选项控件的所有子选项控件。
-     * @public
-     *
-     * @return {Array} 子选项控件列表，如果不存在返回空列表
-     */
-    UI_POPUP_ITEM_CLASS.getItems = function () {
-        return this._cPopup && this._cPopup.getItems() || [];
-    };
-
-    /**
-     * 移除子选项控件。
-     * @public
-     *
-     * @param {number|ecui.ui.Item} item 选项控件的位置序号/选项控件
-     * @return {ecui.ui.Item} 被移除的子选项控件
-     */
-    UI_POPUP_ITEM_CLASS.remove = function (item) {
-        return this._cPopup && this._cPopup.remove(item);
-    };
-
-    /**
-     * 选项控件发生变化的处理。
-     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
-     * @protected
-     */
-    UI_POPUP_CLASS.$alterItems = function () {
-        if (getParent(this.getOuter())) {
-            UI_POPUP_ITEM_FLUSH(this.getParent());
-
-            var items = this.getItems(),
-                len = items.length,
-                height = len && items[0].getHeight(),
-                optionSize = this._nOptionSize || Number.MAX_VALUE,
-                prev = this._uPrev,
-                next = this._uNext,
-                bodyWidth = this.getBodyWidth(),
-                style = this.getBase().style;
-
-            this.setItemSize(bodyWidth, height);
-
-            height *= MIN(optionSize, len);
-            if (len > optionSize) {
-                prev.show();
-                next.show();
-                prev.$setSize(bodyWidth);
-                next.$setSize(bodyWidth);
-
-                // 以下使用 prev 代替向上滚动按钮的高度，使用 next 代替向下滚动按钮的高度
-                prev = prev.getHeight();
-                next.setPosition(0, prev + height);
-                next = next.getHeight();
-            }
-            else {
-                if (prev) {
-                    prev.hide();
-                    next.hide();
-                }
-                prev = next = 0;
-            }
-
-            style.paddingTop = this.getBody().style.top = prev + 'px';
-            style.paddingBottom = next + 'px';
-            this.cache(false, true);
-            this.setBodySize(0, height);
-        }
-    };
-
-    /**
-     * 控件失去焦点事件的默认处理。
-     * 弹出菜单控件失去焦点时需要隐藏自己，参见 hide 方法。如果控件处于可操作状态(参见 isEnabled)，blur 方法触发 onblur 事件，如果事件返回值不为 false，则调用 $blur 方法。
-     * @protected
-     */
-    UI_POPUP_CLASS.$blur = function () {
-        for (var popup = this, o; o = popup._cSuperior; popup = o) {};
-        popup.hide();
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_POPUP_CLASS.$cache = function (style, cacheSize) {
-        UI_ITEMS.$cache.call(this, style, cacheSize);
-
-        // 以下使用 cacheSize 代替临时对象 o
-        (cacheSize = this._uPrev) && cacheSize.cache(true, true);
-        (cacheSize = this._uNext) && cacheSize.cache(true, true);
-    };
-
-    /**
-     * 销毁控件的默认处理。
-     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
-     * @protected
-     */
-    UI_POPUP_CLASS.$dispose = function () {
-        this.setParent();
-        UI_CONTROL_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 界面点击强制拦截事件的默认处理。
-     * 弹出菜单需要强制拦截浏览器的点击事件，关闭弹出菜单。
-     * @protected
-     */
-    UI_POPUP_CLASS.$forcibly = function () {
-        UI_POPUP_FOCUS.$blur();
-        return false;
-    };
-
-    /**
-     * 隐藏控件。
-     * 隐藏弹出菜单，同时隐藏所有的子弹出菜单。
-     * @protected
-     */
-    UI_POPUP_CLASS.$hide = function () {
-        UI_CONTROL_CLASS.$hide.call(this);
-
-        // 已经移入的菜单选项需要移出
-        this.$setOvered();
-
-        UI_POPUP_FOCUS = this._cSuperior;
-        UI_POPUP_FOCUS ? (UI_POPUP_FOCUS._cInferior = null) : restore();
-    };
-
-    /**
-     * 设置移入的选项。
-     * $setOvered 方法改变选项组控件中当前选中项的效果，不会触发相应的移入移出事件。
-     * @protected
-     *
-     * @param {ecui.ui.Item} item 选项控件
-     */
-    UI_POPUP_CLASS.$setOvered = function (item) {
-        UI_ITEMS.$setOvered.call(this, item);
-        item || this._cInferior && this._cInferior.hide();
-    };
-
-    /**
-     * 显示控件。
-     * 显示弹出菜单时，必须保证弹出菜单显示在屏幕内，并且子弹出菜单展开的方向尽可能一致。
-     * @protected
-     */
-    UI_POPUP_CLASS.$show = function () {
-        UI_CONTROL_CLASS.$show.call(this);
-        this.setParent(true);
-
-        var el = this.getOuter(),
-            view = getView(),
-            pos = getPosition(el);
-
-        // 限制弹出菜单不能超出屏幕
-        this.setPosition(
-            MIN(MAX(pos.left, view.left), view.right - this.getWidth()),
-            MIN(MAX(pos.top, view.top), view.bottom - this.getHeight())
-        );
-
-        if (UI_POPUP_FOCUS) {
-            // 如果之前存在已弹出的菜单
-            el.style.zIndex = toNumber(getStyle(UI_POPUP_FOCUS.getOuter(), 'zIndex')) + 1;
-            this._cSuperior = UI_POPUP_FOCUS;
-            UI_POPUP_FOCUS._cInferior = this;
-        }
-        else {
-            // 第一个弹出菜单，需要屏蔽鼠标点击
-            el.style.zIndex = 32768;
-            forcibly(this);
-        }
-
-        UI_POPUP_FOCUS = this;
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @public
-     *
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     * @param {boolean} force 是否需要强制刷新缓存，相当于执行了 clearCache 方法，默认不强制刷新
-     */
-    UI_POPUP_CLASS.cache = function (cacheSize, force) {
-        getParent(this.getOuter()) && UI_CONTROL_CLASS.cache.call(this, cacheSize, force);
-    };
-
-    /**
-     * 控件刷新。
-     * paint 方法将导致控件整体重绘，在通常情况下，建议控件改变的状态进行重绘，而不是调用 paint 方法。
-     * @public
-     */
-    UI_POPUP_CLASS.paint = function () {
-        getParent(this.getOuter()) && UI_CONTROL_CLASS.paint.call(this);
-    };
-
-    /**
-     * 设置当前控件的父控件。
-     * 弹出菜单控件只能挂在 document.body 上，因此 setParent 方法仅支持设置/取消父控件。
-     * @public
-     *
-     * @param {boolean} parent 设置/取消父控件对象，默认值为 false
-     */
-    UI_POPUP_CLASS.setParent = function (parent) {
-        var el = this.getOuter();
-        if (parent) {
-            if (!getParent(el)) {
-                DOCUMENT.body.appendChild(el);
-                this.$alterItems();
-            }
-        }
-        else {
-            this.hide();
-            removeDom(el);
-        }
-    };
-
-
-﻿/*
-Listbox - 定义了多项选择的基本操作。
-多选框控件，继承自截面控件，实现了选项组接口，扩展了多选的 SelectElement 的功能，允许使用鼠标拖拽进行多项选择，多个交
-换框，可以将选中的选项在互相之间移动。多选框控件也可以单独的使用，选中的选项在表单提交时将被提交。
-
-多选框控件直接HTML初始化的例子:
-<div ecui="type:listbox;name:test">
-    <!-- 这里放选项内容 -->
-    <li>选项</li>
-    ...
-</div>
-
-属性
-_sName  - 多选框内所有input的名称
-
-选项属性
-_eInput - 选项对应的input，form提交时使用
-*/
-
-
-    /**
-     * 计算当前鼠标移入的选项编号
-     * @private
-     *
-     * @param {ecui.ui.Item} control 选项控件
-     */
-    function UI_LISTBOX_OVERED(control) {
-        var parent = control.getParent(),
-            vscroll = parent._cScroll,
-            step = vscroll.getStep(),
-            o = getMouseY(parent),
-            oldTop = control._nTop;
-
-        control._nTop = o;
-
-        if (o > parent.getHeight()) {
-            if (o < oldTop) {
-                // 鼠标回退不需要滚动
-                o = 0;
-            }
-            else {
-                // 超出控件范围，3像素点对应一个选项
-                o = FLOOR((o - MAX(0, oldTop)) / 3);
-                // 如果不滚动，需要恢复原始的移动距离
-                o ? vscroll.skip(o) : (control._nTop = oldTop);
-            }
-            o += control._nLastIndex;
-        }
-        else if (o < 0) {
-            if (o > oldTop) {
-                // 鼠标回退不需要滚动
-                o = 0;
-            }
-            else {
-                // 超出控件范围，3像素点对应一个选项
-                o = CEIL((o - MIN(0, oldTop)) / 3);
-                // 如果不滚动，需要恢复原始的移动距离
-                o ? vscroll.skip(o) : (control._nTop = oldTop);
-            }
-            o += control._nLastIndex;
-        }
-        else {
-            o = FLOOR((parent.getScrollTop() + o) / step);
-        }
-
-        return MIN(MAX(0, o), parent.getItems().length - 1);
-    }
-
-    copy(UI_LISTBOX_CLASS, UI_ITEMS);
-
-    /**
-     * 销毁控件的默认处理。
-     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
-     * @protected
-     */
-    UI_LISTBOX_ITEM_CLASS.$dispose = function () {
-        this._eInput = null;
-        UI_ITEM_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 鼠标在滑动块区域内按压开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_LISTBOX_ITEM_CLASS.$pressstart = function (event) {
-        UI_ITEM_CLASS.$pressstart.call(this, event);
-        core.select(this, event, 'listbox');
-    };
-
-    /**
-     * 选择框选中处理
-     * @protected
-     */
-    UI_LISTBOX_ITEM_CLASS.$select = function () {
-        var startIndex = this._nStartIndex,
-            lastIndex = this._nLastIndex,
-            index = UI_LISTBOX_OVERED(this),
-            items = this.getParent().getItems(),
-            fromCancel = 0,
-            toCancel = -1,
-            fromSelect = 0,
-            toSelect = -1;
-
-        if (index > lastIndex) {
-            if (index < startIndex) {
-                // index与lastIndex都在负方向
-                fromCancel = lastIndex;
-                toCancel = index - 1;
-            }
-            else if (lastIndex < startIndex) {
-                // index与lastIndex位于起始选项两边
-                fromCancel = lastIndex;
-                toCancel = startIndex - 1;
-                fromSelect = startIndex + 1;
-                toSelect = index;
-            }
-            else {
-                // index与lastIndex都在正方向
-                fromSelect = lastIndex + 1;
-                toSelect = index;
-            }
-        }
-        else if (index < lastIndex) {
-            if (index > startIndex) {
-                // index与lastIndex都在正方向
-                fromCancel = index + 1;
-                toCancel = lastIndex;
-            }
-            else if (lastIndex > startIndex) {
-                // index与lastIndex位于起始选项两边
-                fromCancel = startIndex + 1;
-                toCancel = lastIndex;
-                fromSelect = index;
-                toSelect = startIndex - 1;
-            }
-            else {
-                // index与lastIndex都在负方向
-                fromSelect = index;
-                toSelect = lastIndex - 1;
-            }
-        }
-
-        this._nLastIndex = index;
-
-        // 恢复之前的选择状态
-        for (; fromCancel <= toCancel; ) {
-            index = items[fromCancel++];
-            index.alterClass('selected', !index.isSelected());
-        }
-
-        // 选择框内的全部假选中
-        for (; fromSelect <= toSelect; ) {
-            items[fromSelect++].alterClass('selected');
-        }
-    };
-
-    /**
-     * 选择框选中结束
-     * @protected
-     */
-    UI_LISTBOX_ITEM_CLASS.$selectend = function () {
-        var startIndex = this._nStartIndex,
-            index = UI_LISTBOX_OVERED(this),
-            items = this.getParent().getItems(),
-            fromIndex = MIN(startIndex, index),
-            toIndex = MAX(startIndex, index);
-
-        if (startIndex == index) {
-            // 点击的当前条目，进行反选
-            this.setSelected(!this.isSelected());
-        }
-        else {
-            // 否则选择框内的全部选中
-            for (; fromIndex <= toIndex; ) {
-                items[fromIndex++].setSelected();
-            }
-        }
-    };
-
-    /**
-     * 选择框选中开始
-     * @protected
-     */
-    UI_LISTBOX_ITEM_CLASS.$selectstart = function () {
-        this._nStartIndex = this._nLastIndex = UI_LISTBOX_OVERED(this);
-        this.alterClass('selected');
-    };
-
-    /**
-     * 判断多选框的选项控件是否被选中。
-     * @public
-     *
-     * @return {boolean} 选项是否被选中
-     */
-    UI_LISTBOX_ITEM_CLASS.isSelected = function () {
-        return !this._eInput.disabled;
-    };
-
-    /**
-     * 设置当前控件的父控件。
-     * @public
-     *
-     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
-     */
-    UI_LISTBOX_ITEM_CLASS.setParent = function (parent) {
-        UI_ITEM_CLASS.setParent.call(this, parent);
-
-        if (parent instanceof UI_LISTBOX) {
-            this._eInput = setInput(this._eInput, parent._sName);
-        }
-    };
-
-    /**
-     * 设置选中状态。
-     * @public
-     *
-     * @param {boolean} status 是否选中，默认为选中
-     */
-    UI_LISTBOX_ITEM_CLASS.setSelected = function (status) {
-        this.alterClass('selected', this._eInput.disabled = status === false);
-    };
-
-    /**
-     * 选项控件发生变化的处理。
-     * 在 ecui.ui.Items 接口中，选项控件发生增加/减少操作时调用此方法。
-     * @protected
-     */
-    UI_LISTBOX_CLASS.$alterItems = function () {
-        var items = this.getItems(),
-            length = items.length,
-            vscroll = this._cScroll,
-            step = length && items[0].getHeight();
-
-        if (step) {
-            vscroll.setStep(step);
-            this.setItemSize(
-                this.getBodyWidth() - (length * step > this.getBodyHeight() ? vscroll.getWidth() : 0),
-                step
-            );
-            this.paint();
-        }
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_LISTBOX_CLASS.$cache = function (style, cacheSize) {
-        UI_ITEMS.$cache.call(this, style, cacheSize);
-
-        // 以下使用 cacheSize 代替临时对象 o
-        for (var i = 0, items = this.getItems(); cacheSize = items[i++]; ) {
-            cacheSize.$cache(false, true);
-        }
-    };
-
-    /**
-     * 获取控件的表单项名称。
-     * 多选框控件可以在表单中被提交，getName 方法返回提交时用的表单项名称，表单项名称可以使用 setName 方法改变。
-     * @public
-     *
-     * @return {string} 表单项名称
-     */
-    UI_LISTBOX_CLASS.getName = function () {
-        return this._sName;
-    };
-
-    /**
-     * 获取所有选中的选项。
-     * @public
-     *
-     * @return {Array} 选项数组
-     */
-    UI_LISTBOX_CLASS.getSelected = function () {
-        for (var i = 0, list = this.getItems(), o, result = []; o = list[i++]; ) {
-            o.isSelected() && result.push(o);
-        }
-        return result;
-    };
-
-    /**
-     * 选中所有的选项。
-     * 某些场景下，需要多选框控件的内容都可以被提交，可以在表单的 onsubmit 事件中调用 selectAll 方法全部选择。
-     * @public
-     */
-    UI_LISTBOX_CLASS.selectAll = function () {
-        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
-            o.setSelected();
-        }
-    };
-
-    /**
-     * 设置控件的表单项名称。
-     * 多选框控件可以在表单中被提交，setName 方法设置提交时用的表单项名称，表单项名称可以使用 getName 方法获取。
-     * @public
-     *
-     * @param {string} name 提交用的名称
-     */
-    UI_LISTBOX_CLASS.setName = function (name) {
-        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
-            // 需要将下属所有的输入框名称全部改变
-            o._eInput = setInput(o._eInput, name);
-        }
-        this._sName = name;
-    };
-
-
-/*
-Progress - 定义进度显示的基本操作。
-进度条控件，继承自基础控件，面向用户显示一个任务执行的程度。
-
-进度条控件直接HTML初始化的例子:
-<div ecui="type:progress;rate:0.5"></div>
-
-属性
-_eText - 内容区域
-_eMask - 完成的进度比例内容区域
-*/
-
-
-    /**
-     * 销毁控件的默认处理。
-     * @protected
-     */
-    UI_PROGRESS_CLASS.$dispose = function () {
-        this._eText = this._eMask = null;
-        UI_CONTROL_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 设置控件的大小。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_PROGRESS_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-        this.$locate();
-
-        var style1 = this._eText.style,
-            style2 = this._eMask.style;
-        style1.width = style2.width = this.getBodyWidth() + 'px';
-        style1.height = style2.height = this.getBodyHeight() + 'px';
-    };
-
-    /**
-     * 设置进度的比例以及需要显示的文本。
-     * @protected
-     *
-     * @param {number} rate 进度比例，在0-1之间
-     * @param {number} text 显示的文本，如果省略将显示成 xx%
-     */
-    UI_PROGRESS_CLASS.setText = function (rate, text) {
-        rate = MIN(MAX(0, rate), 1);
-        this._eText.innerHTML = this._eMask.innerHTML = text || ROUND(rate * 100) + '%';
-        this._eMask.style.clip =
-            'rect(0px,' + FLOOR(rate * this.getBodyWidth()) + 'px,' + this.getBodyHeight() + 'px,0px)';
-    };
-
-
-/*
-Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
-
-属性
-_nRed        - 红色值(0-255)
-_nGreen      - 绿色值(0-255)
-_nBlue       - 蓝色值(0-255)
-_nHue        - 色调(0-1)
-_nSaturation - 饱和度(0-1)
-_nLight      - 亮度(0-1)
-*/
-
-
-    /**
-     * 根据色调计算 RGB 模式下的单系色彩值
-     * @private
-     *
-     * @param {number} minValue HSL 色彩中的最小值
-     * @param {number} maxValue HSL 色彩中的最大值
-     * @param {number} hue 色调
-     * @return {number} 色彩值(0-255)
-     */
-    function COLOR_HUE2RGB(minValue, maxValue, hue) {
-        hue = hue < 0 ? hue + 1 : (hue > 1 ? hue - 1 : hue);
-        hue = hue < 0.5 ? MIN(6 * hue, 1) : MAX(4 - 6 * hue, 0);
-        return ROUND(255 * (minValue + (maxValue - minValue) * hue));
-    }
-
-    /**
-     * 获取 RGB 模式下的蓝色值
-     * @public
-     *
-     * @return {number} 蓝色值(0-255)
-     */
-    COLOR_CLASS.getBlue = function () {
-        return this._nBlue;
-    }
-
-    /**
-     * 获取 RGB 模式下的绿色值
-     * @public
-     *
-     * @return {number} 绿色值(0-255)
-     */
-    COLOR_CLASS.getGreen = function () {
-        return this._nGreen;
-    }
-
-    /**
-     * 获取 HSL 模式下的色调
-     * @public
-     *
-     * @return {number} 色调(0-1)
-     */
-    COLOR_CLASS.getHue = function () {
-        return this._nHue;
-    }
-
-    /**
-     * 获取 HSL 模式下的亮度
-     * @public
-     *
-     * @return {number} 亮度(0-1)
-     */
-    COLOR_CLASS.getLight = function () {
-        return this._nLight;
-    }
-
-    /**
-     * 获取 RGB 模式下 6 字符表示的 16 进制色彩值
-     * @public
-     *
-     * @return {string} 6 字符色彩值(如FFFFFF)
-     */
-    COLOR_CLASS.getRGB = function () {
-        var red = this._nRed,
-            green = this._nGreen,
-            blue = this._nBlue;
-
-        return ((red < 16 ? '0' : '') + red.toString(16)
-            + (green < 16 ? '0' : '') + green.toString(16)
-            + (blue < 16 ? '0' : '') + blue.toString(16)).toUpperCase();
-    }
-
-    /**
-     * 获取 RGB 模式下的红色值
-     * @public
-     *
-     * @return {number} 红色值(0-255)
-     */
-    COLOR_CLASS.getRed = function () {
-        return this._nRed;
-    }
-
-    /**
-     * 获取 HSL 模式下的饱和度
-     * @public
-     *
-     * @return {number} 饱和度(0-1)
-     */
-    COLOR_CLASS.getSaturation = function () {
-        return this._nSaturation;
-    }
-
-    /**
-     * 设置 RGB 模式的色彩
-     * @public
-     *
-     * @param {number} red 红色值(0-255)
-     * @param {number} green 绿色值(0-255)
-     * @param {number} blue 蓝色值(0-255)
-     */
-    COLOR_CLASS.setRGB = function (red, green, blue) {
-        this._nRed = red;
-        this._nGreen = green;
-        this._nBlue = blue;
-
-        red /= 255;
-        green /= 255;
-        blue /= 255;
-
-        var minValue = MIN(red, green, blue),
-            maxValue = MAX(red, green, blue),
-            value = maxValue - minValue,
-            h;
-
-        this._nLight = (maxValue + minValue) / 2;
-        if (value) {
-            h = red == maxValue
-                ? (green - blue) / 6 / value
-                : (green == maxValue ? 1 / 3 + (blue - red) / 6 / value : 2 / 3 + (red - green) / 6 / value);
-            this._nHue = h < 0 ? h += 1 : (h > 1 ? h -= 1 : h);
-            this._nSaturation = this._nLight < 0.5
-                ? value / (maxValue + minValue)
-                : value / (2 - maxValue - minValue);
-        }
-        else {
-            this._nHue = 0;
-            this._nSaturation = 0;
-        }
-    }
-
-    /**
-     * 设置 HSL 模式的色彩
-     * @public
-     *
-     * @param {number} hue 色调(0-1)
-     * @param {number} saturation 饱和度(0-1)
-     * @param {number} light 亮度(0-1)
-     */
-    COLOR_CLASS.setHSL = function (hue, saturation, light) {
-        var maxValue = light + MIN(light, 1 - light) * saturation,
-            minValue = 2 * light - maxValue;
-
-        this._nHue = hue;
-        this._nSaturation = saturation;
-        this._nLight = light;
-
-        this._nRed = COLOR_HUE2RGB(minValue, maxValue, hue + 1 / 3);
-        this._nGreen = COLOR_HUE2RGB(minValue, maxValue, hue);
-        this._nBlue = COLOR_HUE2RGB(minValue, maxValue, hue - 1 / 3);
-    }
-
-
-/*
-HTMLPalette - 定义拾色器的基本操作
-拾色器控件，继承自基础控件，内部包含了多个部件，分别是色彩选择区(基础控件)、色彩选择区箭头(基础控件)、亮度条选择区(基
-础控件)、亮度条选择区箭头(基础控件)、基本色彩选择区(基础控件组)、色彩显示区(基础控件)、输入区域(输入框控件组)与确认按
-钮(基础控件)。
-
-拾色器控件直接HTML初始化的例子:
-<div ecui="type:palette">
-</div>
-
-属性
-_uMain            - 左部色彩选择区
-_uMain._uIcon     - 左部色彩选择区箭头
-_uLightbar        - 中部亮度条选择区
-_uLightbar._uIcon - 中部亮度条选择区箭头
-_uColor           - 右部色彩显示区
-_uConfirm         - 确认按钮
-_aValue           - 右部输入区域
-*/
-
-
-    /**
-     * 刷新色彩值输入框
-     * @private
-     *
-     * @param {ecui.ui.Palette} palette 拾色器控件对象
-     * @param {Array} colors 色彩值数组，依次为 RGB, H, R, S, G, L, B，省略的值将不填充
-     */
-    function UI_PALETTE_VALUES_FLUSH(palette, colors) {
-        for (var i = 0; i < 7; i++) {
-            if (colors[i] !== undefined) {
-                i || (palette._uColor.getBase().style.backgroundColor = '#' + colors[i]);
-                palette._aValue[i].setValue(colors[i]);
-            }
-        }
-    }
-
-    /**
-     * 刷新亮度条选择区
-     * @private
-     *
-     * @param {ecui.ui.Palette} palette 拾色器控件对象
-     * @param {number} hue 色调值(0-1)
-     * @param {number} saturation 饱和度值(0-1)
-     */
-    function UI_PALETTE_LIGHTBAR_FLUSH(palette, hue, saturation) {
-        for (var i = 0, list = children(palette._uLightbar.getBody()), color = new Color(); i < 256; ) {
-            color.setHSL(hue, saturation, 1 - i / 255);
-            list[i++].style.backgroundColor = '#' + color.getRGB();
-        }
-    }
-
-    /**
-     * 刷新箭头位置
-     * @private
-     *
-     * @param {ecui.ui.Palette} palette 拾色器控件对象
-     */
-    function UI_PALETTE_POSITION_FLUSH(palette) {
-        var x = palette._aValue[1].getValue(),
-            y = palette._aValue[3].getValue();
-
-        palette._uMain._uIcon.setPosition(x, 255 - y);
-        palette._uLightbar._uIcon.getOuter().style.top = 255 - palette._aValue[5].getValue() + 'px';
-        UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
-    }
-
-    /**
-     * 刷新 RGB 色彩空间相关区域
-     * @private
-     *
-     * @param {ecui.ui.Palette} palette 拾色器控件对象
-     */
-    function UI_PALETTE_RGB_FLUSH(palette) {
-        var color = new Color();
-
-        color.setHSL(
-            palette._aValue[1].getValue() / 255,
-            palette._aValue[3].getValue() / 255,
-            palette._aValue[5].getValue() / 255
-        );
-
-        UI_PALETTE_VALUES_FLUSH(palette, [
-            color.getRGB(),
-            undefined,
-            color.getRed(),
-            undefined,
-            color.getGreen(),
-            undefined,
-            color.getBlue()
-        ]);
-    }
-
-    /**
-     * 刷新 HSL 色彩空间相关区域
-     * @private
-     *
-     * @param {ecui.ui.Palette} palette 拾色器控件对象
-     */
-    function UI_PALETTE_HSL_FLUSH(palette) {
-        var color = new Color();
-
-        color.setRGB(
-            palette._aValue[2].getValue() - 0,
-            palette._aValue[4].getValue() - 0,
-            palette._aValue[6].getValue() - 0
-        );
-
-        UI_PALETTE_VALUES_FLUSH(palette, [
-            color.getRGB(),
-            ROUND(color.getHue() * 256) % 256,
-            undefined,
-            ROUND(color.getSaturation() * 255),
-            undefined,
-            ROUND(color.getLight() * 255)
-        ]);
-
-        UI_PALETTE_POSITION_FLUSH(palette);
-    }
-
-    /**
-     * 色彩选择区箭头或亮度条选择区箭头拖曳移动事件的默认处理
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     * @param {number} x 移动到的 x 轴座标
-     * @param {number} y 移动到的 y 轴座标
-     */
-    UI_PALETTE_AREA_CLASS.$dragmove = function (event, x, y) {
-        UI_CONTROL_CLASS.$dragmove.call(this, event, x, y);
-
-        var parent = this.getParent(),
-            palette = parent.getParent();
-
-        y = 255 - y;
-        if (parent == palette._uMain) {
-            palette._aValue[1].setValue(x);
-            palette._aValue[3].setValue(y);
-            UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
-        }
-        else {
-            palette._aValue[5].setValue(y);
-        }
-
-        UI_PALETTE_RGB_FLUSH(palette);
-    };
-
-    /**
-     * 色彩选择区或亮度条选择区左键按压开始事件的默认处理
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_PALETTE_AREA_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-
-        var isMain = this == this.getParent()._uMain,
-            control = this._uIcon,
-            x = isMain ? getMouseX(this) : control.getX(),
-            y = getMouseY(this),
-            range = {top: 0, bottom: 255 + control.getHeight()};
-
-        if (isMain) {
-            range.left = 0;
-            range.right = 255 + control.getWidth();
-        }
-        else {
-            if (y < 0 || y > 255) {
-                return;
-            }
-            range.left = range.right = x;
-        }
-
-        control.setPosition(x, y);
-        drag(control, event, range);
-        control.$dragmove.call(control, event, x, y);
-    };
-
-    /**
-     * 基本色彩区、确认或取消按钮鼠标点击事件的默认处理
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_PALETTE_BUTTON_CLASS.$click = function (event) {
-        UI_CONTROL_CLASS.$click.call(this, event);
-
-        var palette = this.getParent();
-
-        if (this == palette._uConfirm) {
-            palette.onconfirm && palette.onconfirm();
-        }
-        else if (this == palette._uCancel) {
-            palette.hide();
-        }
-        else {
-            // 以下使用 event 表示 text
-            event = UI_PALETTE_BASIC_COLOR[this.getIndex()];
-            UI_PALETTE_VALUES_FLUSH(palette = palette.getParent(), [
-                undefined,
-                undefined,
-                PARSEINT(event.slice(0, 2), 16),
-                undefined,
-                PARSEINT(event.slice(2, 4), 16),
-                undefined,
-                PARSEINT(event.slice(4), 16)
-            ]);
-            UI_PALETTE_HSL_FLUSH(palette);
-        }
-    };
-
-    /**
-     * 色彩输入框内容改变事件的默认处理
-     * @protected
-     */
-    UI_PALETTE_EDIT_CLASS.$change = function () {
-        UI_FORMAT_EDIT_CLASS.$change.call(this);
-
-        var parent = this.getParent(),
-            text = this.getValue();
-
-        if (this == parent._aValue[0]) {
-            text = this.$getInputText();
-            if (text && text.length == 6 && !text.replace(/[0-9a-f]/ig, '')) {
-                parent.setColor(new Color(text));
-            }
-            else {
-                this.restore();
-            }
-        }
-        else {
-            if (!text) {
-                this.setValue(0);
-                new Timer(function () {
-                    this.setCaret(1);
-                }, 0, this);
-            }
-            else if (text.charAt(0) == '0') {
-                this.setValue(text - 0);
-            }
-
-            if (indexOf(parent._aValue, this) % 2) {
-                UI_PALETTE_RGB_FLUSH(parent);
-                UI_PALETTE_POSITION_FLUSH(parent);
-            }
-            else {
-                UI_PALETTE_HSL_FLUSH(parent)
-            }
-        }
-    };
-
-    /**
-     * RGB 色彩输入框键盘按压事件的默认处理
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_PALETTE_EDIT_CLASS.$keydown = function (event) {
-        UI_FORMAT_EDIT_CLASS.$keydown.call(this, event);
-
-        var parent = this.getParent(),
-            text = this.getValue(),
-            start = this.getSelectionStart(),
-            end = this.getSelectionEnd(),
-            which = getKey();
-
-        if (!event.ctrlKey && this == parent._aValue[0]) {
-            if (which == 46 || which == 8) {
-                event.preventDefault();
-            }
-            else if (which != 37 && which != 39) {
-                if (start == end) {
-                    end++;
-                }
-
-                which = String.fromCharCode(which).toUpperCase();
-                if (which >= '0' && which <= '9' || which >= 'A' && which <= 'F') {
-                    text = text.slice(0, start) + which + text.slice(end);
-                    if (text.length == 6) {
-                        which = end + end % 2;
-                        parent._aValue[which].setValue(PARSEINT(text.slice(which - 2, which), 16));
-                        UI_PALETTE_HSL_FLUSH(parent);
-                        this.setCaret(end);
-                    }
-                    event.preventDefault();
-                }
-            }
-        }
-    }
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_PALETTE_CLASS.$cache = function (style, cacheSize) {
-        UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
-
-        this._uMain.cache(false, true);
-        this._uLightbar.cache(true, true);
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * @protected
-     */
-    UI_PALETTE_CLASS.$init = function () {
-        UI_CONTROL_CLASS.$init.call(this);
-        this.setColor(new Color('808080'));
-    };
-
-    /**
-     * 设置控件的大小。
-     * $setSize 方法设置控件实际的大小，不改变其它的如缓存等信息。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_PALETTE_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-
-        var i = 1;
-
-        this._uMain.setBodySize(256, 256);
-        this._uLightbar.setBodySize(0, 256);
-
-        for (; i < 7; ) {
-            this._aValue[i++].paint();
-        }
-    };
-
-    /**
-     * 获取拾色器当前选中的颜色对象。
-     * @public
-     *
-     * @return {ecui.Color} 拾色器当前选中的颜色对象
-     */
-    UI_PALETTE_CLASS.getColor = function () {
-        return new Color(this._aValue[0].getValue());
-    };
-
-    /**
-     * 设置拾色器当前选中的颜色对象。
-     * @public
-     *
-     * @param {ecui.Color} color 颜色对象
-     */
-    UI_PALETTE_CLASS.setColor = function (color) {
-        UI_PALETTE_VALUES_FLUSH(this, [
-            undefined,
-            undefined,
-            color.getRed(),
-            undefined,
-            color.getGreen(),
-            undefined,
-            color.getBlue()
-        ]);
-        UI_PALETTE_HSL_FLUSH(this);
-    };
-
-
-/*
-Tab - 定义分页选项卡的操作。
-选项卡控件，继承自基础控件，实现了选项组接口。每一个选项卡都包含一个头部区域与内容区域，选项卡控件存在互斥性，只有唯一
-的一个选项卡能被选中显卡内容区域。
-
-直接初始化选项卡控件的例子
-<div ecui="type:tab;selected:1">
-    <!-- 包含内容的选项卡 -->
-    <div>
-        <label>标题1</label>
-        <!-- 这里是内容 -->
-        ...
-    </div>
-    <!-- 仅有标题的选项卡，以下selected定义与控件定义是一致的，可以忽略其中之一 -->
-    <label ecui="selected:true">标题2</label>
-</div>
-
-属性
-_bButton         - 向前向后滚动按钮是否显示
-_bKeep           - 是否持续自动滚动
-_nStep           - 自动滚动的步长
-_nTimeout        - 自动滚动的时间间隔
-_nIndex          - 需要移动到的选项序号
-_oSelected       - 初始化时临时保存当前被选中的选项卡
-_oTimer          - 自动滚动定时器
-_aPosition       - 选项卡位置缓存
-_cSelected       - 当前选中的选项卡
-_uPrev           - 向前滚动按钮
-_uNext           - 向后滚动按钮
-
-Item属性
-_bSelected       - 初始化时临时保存当前选项卡是否选中
-_sContentDisplay - 内容 DOM 元素的布局属性
-_eContent        - 内容 DOM 元素
-*/
-
-
-    /**
-     * 刷新向前向右滚动按钮的可操作状态。
-     * @private
-     *
-     * @param {ecui.ui.Tab} control Tab 控件对象
-     */
-    function UI_TAB_FLUSH_BUTTON(control) {
-        var left = toNumber(control.getBody().style.left);
-
-        control._uPrev.setEnabled(left < control._uPrev.getWidth());
-        control._uNext.setEnabled(
-            left > control.getBodyWidth() - control.$cache$bodyWidth - control._uNext.getWidth()
-        );
-    }
-
-    copy(UI_TAB_CLASS, UI_ITEMS);
-
-    /**
-     * 控扭控件按压状态结束事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_TAB_BUTTON_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-
-        var parent = this.getParent();
-        parent._bKeep = false;
-        parent._nTimeout = 10;
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_TAB_BUTTON_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-
-    	var parent = this.getParent();
-        parent._bKeep = true;
-        parent._nTimeout = 20;
-        parent.move(this == parent._uPrev ? -1 : 1);
-
-        event.preventDefault();
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_TAB_ITEM_CLASS.$cache = function (style, cacheSize) {
-        UI_ITEM_CLASS.$cache.call(this, style, cacheSize);
-
-        this.$cache$marginLeft = toNumber(style.marginLeft);
-        this.$cache$marginRight = toNumber(style.marginRight);
-    };
-
-    /**
-     * 鼠标单击控件事件的默认处理。
-     * 选项卡控件点击时将当前选项卡设置成为选中状态，同时取消同一个选项卡控件组的其它控件的选中状态。如果控件处于可操作状态(参见 isEnabled)，click 方法触发 onclick 事件，如果事件返回值不为 false，则调用 $click 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_TAB_ITEM_CLASS.$click = function (event) {
-        UI_ITEM_CLASS.$click.call(this, event);
-        this.getParent().setSelected(this);
-    };
-
-    /**
-     * 销毁控件的默认处理。
-     * 页面卸载时将销毁所有的控件，释放循环引用，防止在 IE 下发生内存泄漏，$dispose 方法的调用不会受到 ondispose 事件返回值的影响。
-     * @protected
-     */
-    UI_TAB_ITEM_CLASS.$dispose = function () {
-        this._eContent = null;
-        UI_ITEM_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 获取选项卡对应的内容元素。
-     * @public
-     *
-     * @return {HTMLElement} 选项卡对应的内容 DOM 元素。
-     */
-    UI_TAB_ITEM_CLASS.getContent = function () {
-        return this._eContent;
-    };
-
-    /**
-     * 设置选项卡对应的内容元素。
-     * @public
-     *
-     * @param {HTMLElement} el 选项卡对应的内容 DOM 元素。
-     */
-    UI_TAB_ITEM_CLASS.setContent = function (el) {
-        this._eContent = el;
-        if (el) {
-            this._sContentDisplay = el.style.display;
-        }
-    };
-
-    /**
-     * 选项控件发生变化的处理。
-     * 在 选项组接口 中，选项控件发生增加/减少操作时调用此方法。
-     * @protected
-     */
-    UI_TAB_CLASS.$alterItems = function () {
-        // 第一次进入时不需要调用$setSize函数
-        this._aPosition && this.$setSize(this.getWidth());
-
-        for (
-            var i = 0,
-                pos = this._aPosition = [this._uPrev.getWidth()],
-                lastItem = {$cache$marginRight: 0},
-                items = this.getItems(),
-                o;
-            o = items[i++];
-        ) {
-            pos[i] = pos[i - 1] - MAX(lastItem.$cache$marginRight, o.$cache$marginLeft) - o.getWidth();
-            lastItem = o;
-        }
-    };
-
-    /**
-     * 计算控件的缓存。
-     * 控件缓存部分核心属性的值，提高控件属性的访问速度，在子控件或者应用程序开发过程中，如果需要避开控件提供的方法(setSize、alterClass 等)直接操作 Element 对象，操作完成后必须调用 clearCache 方法清除控件的属性缓存，否则将引发错误。
-     * @protected
-     *
-     * @param {CssStyle} style 基本 Element 对象的 Css 样式对象
-     * @param {boolean} cacheSize 是否需要缓存控件大小，如果控件是另一个控件的部件时，不缓存大小能加快渲染速度，默认缓存
-     */
-    UI_TAB_CLASS.$cache = function (style, cacheSize) {
-        UI_ITEMS.$cache.call(this, style, cacheSize);
-
-        this._uPrev.cache(true, true);
-        this._uNext.cache(true, true);
-
-        this.$cache$bodyWidth = this.getBody().offsetWidth;
-    };
-
-    /**
-     * 获得当前显示的选项卡中左边元素的索引，只在能左右滚动时有效。
-     * @protected
-     *
-     * @return {number} 最左边元素的索引
-     */
-    UI_TAB_CLASS.$getLeftMostIndex = function () {
-        for (var left = toNumber(this.getBody().style.left), pos = this._aPosition, i = pos.length; i--; ) {
-            if (left <= pos[i]) {
-                return i;
-            }
-        }
-    };
-
-    /**
-     * 控件渲染完成后初始化的默认处理。
-     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
-     * @protected
-     */
-    UI_TAB_CLASS.$init = function () {
-        this._uPrev.$init();
-        this._uNext.$init();
-        UI_ITEMS.$init.call(this);
-        for (var i = 0, items = this.getItems(), o; o = items[i++];) {
-            o.$setSize(o.getWidth(), o.getHeight());
-            if (o._bSelected) {
-                this._oSelected = o;
-            }
-        }
-        this.setSelected(this._oSelected);
-    };
-
-     /**
-     * 控件移除子控件事件的默认处理。
-     * 选项组移除子选项时需要额外移除引用。
-     * @protected
-     *
-     * @param {ecui.ui.Tab.Item} child 选项控件
-     */
-    UI_TAB_CLASS.$remove = function (child) {
-         if (this.getSelected() == child) {
-             var items = this.getItems(),
-                 index = indexOf(items, child);
-
-             // 跳到被删除项的后一项
-             this.setSelected(index == items.length - 1 ? index - 1 : index + 1);
-         }
-
-         UI_ITEMS.$remove.call(this, child);
-         child._eContent && removeDom(child._eContent);
-    };
-
-    /**
-     * 设置控件的大小。
-     * @protected
-     *
-     * @param {number} width 宽度，如果不需要设置则将参数设置为等价于逻辑非的值
-     * @param {number} height 高度，如果不需要设置则省略此参数
-     */
-    UI_TAB_CLASS.$setSize = function (width, height) {
-        UI_CONTROL_CLASS.$setSize.call(this, width, height);
-
-        // 以下使用height表示style
-        var __gzip_direct__prev = this._uPrev,
-            __gzip_direct__next = this._uNext,
-            height = this.getBody().style;
-
-        width = this.getBodyWidth();
-        if (this.$cache$bodyWidth > width) {
-            width -= __gzip_direct__next.getWidth();
-            __gzip_direct__next.getOuter().style.left = width + 'px';
-
-            if (this._bButton) {
-                // 缩小后变大，右边的空白自动填补
-                width -= this.$cache$bodyWidth;
-                if (toNumber(height.left) < width) {
-                    height.left = width + 'px';
-                }
-            }
-            else {
-                __gzip_direct__prev.$show();
-                __gzip_direct__next.$show();
-                height.left = __gzip_direct__prev.getWidth() + 'px';
-                this._bButton = true;
-            }
-
-            UI_TAB_FLUSH_BUTTON(this);
-        }
-        else if (this._bButton) {
-            __gzip_direct__prev.$hide();
-            __gzip_direct__next.$hide();
-            height.left = '0px';
-            this._bButton = false;
-        }
-    };
-
-    /**
-     * 添加子选项控件。
-     * add 方法中如果位置序号不合法，子选项控件将添加在末尾的位置。
-     * @public
-     *
-     * @param {string|HTMLElement|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
-     * @param {number} index 子选项控件需要添加的位置序号
-     * @param {Object} 子控件初始化参数
-     * @return {ecui.ui.Item} 子选项控件
-     */
-    UI_TAB_CLASS.add = function (item, index, params) {
-        if ('string' == typeof item) {
-            item = createDom('', '', 'label');
-        }
-        return UI_ITEMS.add.call(this, item, index, params);
-    };
-
-    /**
-     * 获得当前选中的选项卡控件。
-     *
-     * @return {ecui.ui.Tab.Item} 选中的选项卡控件
-     */
-    UI_TAB_CLASS.getSelected = function () {
-        return this._cSelected;
-    };
-
-    /**
-     * 移动分页选项头部
-     * @public
-     *
-     * @param {number} skip 移动头部指定个数的选项卡数量，正数向后，负数向前
-     */
-    UI_TAB_CLASS.move = function (skip) {
-        if (skip && this._oTimer) {
-            // 防止重入
-            this._nIndex += skip;
-        }
-        else {
-            var style = this.getBody().style,
-                __gzip_direct__pos = this._aPosition,
-                items = this.getItems(),
-                index = this.$getLeftMostIndex(),
-                left = toNumber(style.left),
-                toIndex = MAX(
-                    skip ? index + skip + (skip < 0 && left != __gzip_direct__pos[index] ? 1 : 0) : this._nIndex,
-                    0
-                ),
-                minRight = this.getBodyWidth() - this.$cache$bodyWidth - this._uNext.getWidth();
-
-            this._oTimer = null;
-
-            if (skip) {
-                this._nStep = skip > 0 ? -5 : 5;
-            }
-            else {
-                left += this._nStep;
-            }
-
-            while (1) {
-                if (left < minRight) {
-                    // 已经移动到右边界
-                    left = minRight;
-                    this._bKeep = false;
-                    break;
-                }
-                else {
-                    if (this._nStep > 0 && left >= __gzip_direct__pos[toIndex]) {
-                        if (!toIndex) {
-                            // 已经移动到左边界
-                            this._bKeep = false;
-                        }
-                        // 向左移动时到达目的地边界，检查是否需要保持移动
-                        if (!this._bKeep) {
-                            left = __gzip_direct__pos[toIndex];
-                            break;
-                        }
-                        toIndex--;
-                    }
-                    else if (this._nStep < 0 && left <= __gzip_direct__pos[toIndex]) {
-                        // 向右移动时到达目的地边界，检查是否需要保持移动
-                        if (!this._bKeep) {
-                            left = __gzip_direct__pos[toIndex];
-                            break;
-                        }
-                        toIndex++;
-                    }
-                    this._nIndex = toIndex;
-                    this._oTimer = new Timer(this.move, this._nTimeout, this);
-                    break;
-                }
-            }
-            style.left = left + 'px';
-            UI_TAB_FLUSH_BUTTON(this);
-        }
-    };
-
-    /**
-     * 设置被选中的选项卡。
-     * @public
-     *
-     * @param {number|ecui.ui.Tab.Item} 选项卡子选项的索引/选项卡子选项控件
-     */
-    UI_TAB_CLASS.setSelected = function (item) {
-        var i = 0,
-            items = this.getItems(),
-            style = this.getBody().style,
-            left = toNumber(style.left),
-            o;
-
-        if ('number' == typeof item) {
-            item = items[item];
-        }
-        if (this._cSelected != item) {
-            for (; o = items[i++]; ) {
-                if (o._eContent) {
-                    o._eContent.style.display = o == item ? o._sContentDisplay : 'none';
-                }
-            }
-
-            this._cSelected && this._cSelected.alterClass('selected', true);
-
-            if (item) {
-                item.alterClass('selected');
-                o = this._aPosition[indexOf(items, item)] - (this._uPrev.isShow() ? 0 : this._uPrev.getWidth());
-                if (left < o) {
-                    style.left = o + 'px';
-                }
-                else {
-                    o -= item.getWidth() + this._uPrev.getWidth() + this._uNext.getWidth() - this.getBodyWidth();
-                    if (left > o) {
-                        style.left = o + 'px';
-                    }
-                }
-                UI_TAB_FLUSH_BUTTON(this);
-            }
-
-            this._cSelected = item;
-        }
-    };
 
 
 /*
@@ -11034,6 +12053,19 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
             }
         }
     };
+
+
+
+/*
+Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
+              通过访问Decorator的属性来得到，属性名为控件对象
+
+属性
+_sClass  - 装饰器样式
+_eOuter  - 装饰器外框Element
+_oInner  - 内层装饰器或者控件对象
+*/
+
 
 
 
