@@ -1,0 +1,7 @@
+.ec-pager {zoom:1}
+.ec-pager:after {content:".";display:block;height:0;clear:both;visibility:hidden}
+.ec-pager-item {float:left;border:1px solid #EEE;margin:2px;cursor:pointer}
+.ec-pager-item-press {background-color:yellow}
+.page-num{width:30px;text-align:center}
+.ec-pager-item-disabled{color:#EEE;background-color:#FEFEFE}
+.ec-pager-item-cur {font-weight:bold;color:#FFF;background-color:blue}

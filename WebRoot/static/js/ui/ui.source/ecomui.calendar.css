@@ -1,0 +1,70 @@
+/* ------------------------------------------- 
+ * 直销日历样式 
+ * -------------------------------------------*/
+
+/*  整体控制 */
+.ec-calendar {margin:1px auto 0;width:175px;text-align:center;}
+
+/* 单日历 */
+.time-single {height:168px;width:177px;border:1px solid #95AAC9;background:#FFF}
+.date-content-sel {height:25px;padding:0;}
+.date-content-sel table {background:#EBF9E9 url(img/calendar.blue.gif) repeat-x scroll left bottom;margin:2px auto 0; width:177px;border-collapse:collapse}
+.date-content-sel table td {padding:0 0 2px;height:19px;line-height:19px;}
+
+/* 双日历 */
+.ec-ecom-calendar-range{background:#FFF;padding:5px 0px 5px 10px;border:1px #DCDCDC solid;width:375px;height:224px;z-index:32769}
+.time-begin,.time-end{margin-bottom:5px;width:184px;display:inline-block;*display:inline;*zoom:1;}
+.time-reset{cursor:pointer;width:14px;height:14px;background:url(img/calendar.blue.gif) no-repeat -88px -4px;margin:0 0 0px 5px;}
+.calendar-error{color:red;}
+.ec-range-calendar-begin-error .begin{display:inline;}
+.ec-range-calendar-end-error .end{display:inline;}
+
+.ec-ecom-calendar-range .ec-edit{border:0 none}
+.time-single .text-label,.ec-range-calendar .text-label{display:block;position:relative;top:2px;left:-2px}
+
+/* 星期子网格 */
+.ec-calendar-name{height:20px;}
+.ec-calendar-name-item{color:#000;font-weight:bold;border-left:1px #E2F6E0 solid;border-top:1px #E2F6E0 solid;background:#F1F4F9;padding-top:3px;}
+
+/*  日期子网格  */
+.ec-calendar-date{height:120px;border:0px;}
+.ec-calendar-date-item {font-size:11px;cursor:pointer;padding-top:3px; color:#000; /*border-left:1px #FFF solid;border-top:1px #FFF solid;*/background:#FFF}
+.ec-calendar-date-item-over{background:#F1F4F9;}
+.ec-calendar-date-item-disabled {color:#CCC;}
+.ec-calendar-date-item-selected {background:#F9BE24;color:#FFF}
+
+
+/* 日历输入框 */
+.ec-ecom-calendar-edit {margin:0;height:20px;}
+.ec-ecom-calendar-edit-single, .ec-ecom-calendar-edit-range{border:0 none;width:110px;padding:0;border:1px solid #7F9DB9;background:#FFF url("img/calendar.blue.gif") no-repeat scroll right -22px;width:100px\9}
+.ec-ecom-calendar-edit-range {width:200px;width:180px\9}
+.ec-ecom-calendar-edit-single input, .ec-ecom-calendar-edit-range input{border:0 none;width:75px;background:transparent;margin:0;width:65px\9}
+.ec-ecom-calendar-edit-range input{width:170px;width:150px\9}
+
+/* 清除按钮 */
+.ec-ecom-calendar-clear {margin-left:-6px;margin-left:-12px\9;margin-top:3px;display:inline-block;*display:inline;zoom:1;cursor:pointer;width:14px;height:14px;background:url(img/calendar.blue.gif) no-repeat -88px -4px;}
+
+/* 双日历子输入框 */
+.ec-edit {border:1px solid black;width:106px;height:18px}
+
+/*  年月下拉 */
+.ec-select {margin-bottom:-1px;}
+.ec-text, .ec-select {width:40px;height:17px;border:1px solid #CCC;background:#FFF;}
+.ec-select-options {border:1px solid #CCC;border:1px solid #CCC;}
+.ec-select-options-layout {background:#FFF}
+.ec-select-button {background:url(img/select.jpg) 0px 0px no-repeat}
+.ec-select-over .ec-select-button {background:url(img/select.jpg) -17px 0px no-repeat}
+.ec-select-press .ec-select-button {background:url(img/select.jpg) -34px 0px no-repeat}
+.ec-select-item {height:15px;cursor:default;line-height:15px;line-height:16px;}
+.ec-select-text {cursor:default;height:15px;line-height:15px;padding-left:2px;_padding-top:1px;line-height:16px;}
+.ec-select-item-over {background:#7D9FFF;color:#FFF;}
+.year-select{width:55px;}
+.month-select{width:45px;}
+
+
+/* 前后月导航 */
+.prev, .next{cursor:hand;padding:0;cursor:pointer;width:21px;height:18px;background:url("img/calendar.blue.gif") no-repeat -21px -2px;margin-bottom:-4px;}
+.next{background-position:-42px -2px;float:right}
+.prev-disabled{background-position:-1px -2px;}
+.next-disabled{background-position:-63px -2px;}
+

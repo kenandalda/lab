@@ -1,0 +1,75 @@
+<tc>
+<alias>
+    <compress cmd="%php% %tc_modules_dir%/compress/run.php" />
+    <find cmd="%php% %tc_modules_dir%/find/run.php" />
+    <TCL cmd="%php% %tc_modules_dir%/tcl/run.php" />
+    <checkoffline cmd="%php% %tc_modules_dir%/checkoffline/run.php" />
+    <iconv cmd="%php% %tc_modules_dir%/iconv/run.php" />
+    <merge cmd="%php% %tc_modules_dir%/merge/run.php" />
+    <tangram cmd="%php% %tc_modules_dir%/tangram/run.php" />
+</alias>
+
+<process>
+    <!--去掉svn，cvs目录-->
+    <find type="file" pattern=".*\.svn.*|.*CVS.*|.*\.xml|.*\.bat|.*archive.*" invert="true" />
+
+    <find type="file" pattern=".*\.js">
+        <merge to="%output_dir%../ui.js" />
+        <compress engine="YUI" encode="utf8" type="js" />
+    </find>
+
+    <find type="file" pattern=".*\.css">
+        <merge to="%output_dir%../ui.css" />
+        <compress engine="YUI" encode="utf8" type="css" />
+    </find>
+</process>
+
+<bak>
+    <!--找到subdir中的css-->
+    <find type="file" pattern=".*subdir1.*\.css">
+        <!--合并成一个-->
+        <merge to="%output_dir%subdir1/all.css" />
+        <!--压缩-->
+        <compress engine="YUI" encode="utf8" type="css" />
+    </find>
+
+    <!--转换gbk到utf8-->
+    <find type="file" pattern=".*gbk\.html">
+        <iconv from="gbk" to="utf8" />
+    </find>
+
+    <!--找到subdir中的js-->
+    <find type="file" pattern=".*subdir.*js">
+        <!--压缩到指定文件夹-->
+        <compress engine="YUI" encode="utf8" type="js" outputDir="%output_dir%subdir_compressed" />
+    </find>
+
+    <!--找到subdir中的css-->
+    <find type="file" pattern=".*subdir1.*\.css">
+        <!--合并成一个-->
+        <merge to="%output_dir%subdir1/all.css" />
+        <!--压缩-->
+        <compress engine="YUI" encode="utf8" type="css" />
+    </find>
+    
+    <!--找到所有js文件-->
+    <find type="file" pattern=".*\.js">
+        <!--去掉subdir中的-->
+        <find type="file" pattern=".*subdir.*" invert="true">
+            <!--压缩-->
+            <compress engine="YUI" encode="utf8" type="js" />
+        </find>
+    </find>
+
+    <!--检查线下地址-->
+    <find type="file" pattern=".*html">
+        <checkoffline blacklist="space" whitelist="" />
+    </find>
+    <!--处理tcl语法-->
+    <find type="file" pattern=".*\.tcl">
+        <TCL />
+    </find>
+	<!-- 清除空行 -->
+	<clearEmpty />
+</bak>
+</tc>

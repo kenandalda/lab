@@ -1,0 +1,34 @@
+.ec-combox {width:120px;height:17px;border:1px solid #CCC;background:#FFF}
+/*.ec-select {display:inline-block;_display:inline;zoom:1}*/
+.ec-combox-options {border:1px solid #CCC;border:1px solid #CCC;}
+.ec-combox-options-layout {background:#FFF}
+.ec-combox-button {background:url(img/select.jpg) 0px 0px no-repeat}
+.ec-combox-over .ec-combox-button {background:url(img/select.jpg) -17px 0px no-repeat}
+.ec-combox-press .ec-combox-button {background:url(img/select.jpg) -34px 0px no-repeat}
+.ec-combox-item {height:15px;cursor:default;line-height:15px;line-height:16px\9;}
+.ec-combox-text {cursor:default;height:15px;line-height:15px;padding-left:2px;_padding-top:1px;line-height:16px\9;}
+/*.ec-select-focus .ec-select-text {background:#7D9FFF;color:#FFF;border:1px dotted #333}*/
+.ec-combox-item-over {background:#7D9FFF;color:#FFF;}
+
+.ec-combox-options .ec-vscroll {background:#F0F0F0;width:15px;padding:15px 0px 15px 0px;font-size:1px}
+.ec-combox-options .ec-hscroll {background:#F0F0F0;height:15px;padding:0px 15px 0px 15px;font-size:1px}
+.ec-combox-options .ec-hscroll-block {background:url(img/hscroll.jpg) -2px -30px repeat-x}
+.ec-combox-options .ec-vscroll-block {background:url(img/scroll.jpg) 0px 0px repeat-y}
+.ec-combox-options .ec-hscroll-block-over {background:url(img/hscroll.jpg) -0px -45px repeat-x}
+.ec-combox-options .ec-hscroll-block-press {background:url(img/hscroll.jpg) -0px -60px repeat-x}
+.ec-combox-options .ec-vscroll-block-over {background:url(img/scroll.jpg) -15px 0px repeat-y}
+.ec-combox-options .ec-vscroll-block-press {background:url(img/scroll.jpg) -30px 0px repeat-y}
+.ec-combox-options .ec-vscroll-prev {background:url(img/scroll.jpg) -45px -40px no-repeat;}
+.ec-combox-options .ec-vscroll-prev-over {background:url(img/scroll.jpg) -75px -40px no-repeat;}
+.ec-combox-options .ec-vscroll-prev-press {background:url(img/scroll.jpg) -60px -40px no-repeat;}
+.ec-combox-options .ec-vscroll-next {background:url(img/scroll.jpg) -45px -55px no-repeat;}
+.ec-combox-options .ec-vscroll-next-over {background:url(img/scroll.jpg) -75px -55px no-repeat;}
+.ec-combox-options .ec-vscroll-next-press {background:url(img/scroll.jpg) -60px -55px no-repeat;}
+.ec-combox-options .ec-hscroll-prev {background:url(img/scroll.jpg) -45px -85px no-repeat;}
+.ec-combox-options .ec-hscroll-prev-over {background:url(img/scroll.jpg) -75px -85px no-repeat;}
+.ec-combox-options .ec-hscroll-prev-press {background:url(img/scroll.jpg) -60px -85px no-repeat;}
+.ec-combox-options .ec-hscroll-next {background:url(img/scroll.jpg) -45px -70px no-repeat;}
+.ec-combox-options .ec-hscroll-next-over {background:url(img/scroll.jpg) -75px -70px no-repeat;}
+.ec-combox-options .ec-hscroll-next-press {background:url(img/scroll.jpg) -60px -70px no-repeat;}
+.ec-combox-options .vsblockdtr-bottom {background:transparent url(img/scroll.jpg) no-repeat scroll -45px -18px;}
+.ec-combox-options .vsblockdtr {padding:2px 0;}

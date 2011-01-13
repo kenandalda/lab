@@ -1,0 +1,85 @@
+/*  整体控制 */
+.ec-calendar {width:216px;text-align:center;border-bottom:1px #D4DDE6 solid;}
+
+
+/* 单日历 */
+.ec-single-calendar{width:210px}
+.date-content-sel{width:210px;background:#ddd; padding:1px;}
+
+/* 双日历 */
+.calendar-double-content{background:#FFF;padding:5px;border:1px #ccc solid;width:445px;height:300px;padding-left:10px;*height:290px;z-index:32769}
+.time-begin,.time-end{width:220px;display:inline-block;*display:inline;*zoom:1;}
+.time-end{*margin-left:5px}
+.time-reset{cursor:pointer;width:14px;height:14px;background:url(img/calendar-bgs.foo.gif) no-repeat -400px -3px;margin:0 0 0px 5px;*margin-bottom:10px}
+.calendar-error{color:red;display:none;}
+.ec-range-calendar-begin-error .begin{display:inline;}
+.ec-range-calendar-end-error .end{display:inline;}
+.ec-calendar-edit-range {height:22px;padding-left:5px}  /**/
+.ec-calendar-edit-range input{width:202px; background:none; cursor:pointer; font-size:12px;}  /**/
+.time-single {margin:10px 0 0 0;}
+.ec-range-calendar .ec-edit input {border:0 none}
+
+
+.ec-range-calendar .ec-edit{border:1px solid #CCC; width:100px}
+.ec-range-calendar .text-label{ margin:0px 5px}
+.ec-single-calendar .text-label{ margin:10px 5px 10px 5px}
+.ec-range-calendar button{margin:10px 10px 0 0}
+
+
+/* 星期子网格 */
+.ec-calendar-name{border:#CFCDCE solid;border-width:0 1px;height:26px}
+.ec-calendar-name-over{cursor:pointer;}
+.ec-calendar-name-item{padding:5px 0;border-left:1px #F6F9FE solid;border-top:1px #F6F9FE solid;background:#F6F9FE;color:#9A9B9D}
+
+/*  日期子网格  */
+.ec-calendar-date{height:150px;border:0px;border-right:1px #D4DDE6 solid;}
+.ec-calendar-date-item {color:#3D5E7D; border-left:1px #ccc solid;border-top:1px #ccc solid; background:#fff; line-height:24px;}
+.ec-calendar-date-item-over{background:#FDE7CF;cursor:pointer;}
+.ec-calendar-date-item-focus{background:#0000ee;color:#fff}
+.ec-calendar-date-item-disabled {color:#CFCDCE}
+.ec-calendar-date-item-selected {background:#F3DF98;color:#997F44}
+
+/* 日历输入框 */
+.ec-calendaredit {width:190px;border: 1px solid #666;}
+.ec-calendaredit-single, .ec-calendaredit-range{margin-bottom:-5px;*margin-bottom:0;border:0 none;width:80px;height:21px;padding:5px 35px 0 2px;background:url("img/calendar-bgs.foo.gif") no-repeat}
+.ec-calendaredit-range {width:190px;background-position:-120px 0}
+.ec-calendaredit-single input, .ec-calendaredit-range input{background:transparent;margin-top:-2px;}
+
+/*  年月下拉 */
+.ec-select {margin-bottom:-5px;}
+.ec-text, .ec-select {width:40px;height:17px;border:1px solid #CCC;background:#FFF;}
+.ec-select-options {border:1px solid #CCC;border:1px solid #CCC;}
+.ec-select-options-layout {background:#FFF}
+.ec-select-button {background:url(img/select.jpg) 0px 0px no-repeat}
+.ec-select-over .ec-select-button {background:url(img/select.jpg) -17px 0px no-repeat}
+.ec-select-press .ec-select-button {background:url(img/select.jpg) -34px 0px no-repeat}
+.ec-select-item {height:15px;cursor:default;line-height:15px;line-height:16px;}
+.ec-select-text {cursor:default;height:15px;line-height:15px;padding-left:2px;_padding-top:1px;line-height:16px;}
+.ec-select-item-over {background:#7D9FFF;color:#FFF;}
+.year-select{width:50px;}
+.month-select{width:35px;}
+
+
+/* 前后月导航 */
+.prev, .next{cursor:hand;cursor:pointer;width:10px;height:18px;background:url("img/calendar-bgs.foo.gif") no-repeat;}
+.prev{background-position:-366px 0;margin-right:7px;_margin-right:5px;}
+.next{background-position:-376px 0;}
+.prev-disabled{background-position:-332px 0;}
+.next-disabled{background-position:-342px 0;}
+
+/* 年选择器 */
+.year-indicator {margin:0 auto;width:100%;background-color:#E4EEF7}
+.year-indicator .btn-cell {width:60px; height:20px; vertical-align:middle;}
+.year-indicator .text-cell {text-align:center}
+.year-indicator .prev {float:right}
+.year-indicator .next {float:left}
+.ec-air {font-size:0;background-color:#FFF;height:3px}
+
+/* 月选择器 */
+.month-indicator {border-collapse:collapse;padding-top:5px;border-bottom:2px solid #80ACD3;background-color:#FFF;margin:0 auto;width:100%}
+.month-indicator td {padding:0}
+.month-indicator .btn-cell {width:20px}
+.month-indicator .month-nav {margin:0 auto}
+.ec-month-tab-item {color:#979390;height:20px;float:left;width:20%;text-align:center;cursor:pointer}
+.ec-month-tab-item-cur {background-color:#80ACD3;color:#FFF}
+.ec-month-tab-item-over {background-color:yellow}

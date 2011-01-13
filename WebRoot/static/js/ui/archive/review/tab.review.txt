@@ -1,0 +1,49 @@
+# 1.没有头部注释，看代码无法直观的知道初始结构
+
+# 2.取第一个子元素使用first，而不是children()[0]  (at line 51)
+
+# 3.创建样式时使用params.type与params.base，不要直接使用ec-tab-*** (at line 43/52/93/100...)
+
+# 4.先children(o)再取parentNode(取这个值最好调用dom.getParent方法)赋值给o是没有意义的操作 (at line 51/52)
+
+# 5.当前选中的项状态为-selected，但参数是params.current，不一致，考虑其它控件的命名，统一成selected (at line 54/237/242)
+
+6.增加的class名称不符合一般的命名规则 (at line 59) ec-inline-block
+
+# 7.解释为什么要添加DOM结构标签 (at line 48/60/80)
+
+# 8.内部的部件类需要向外暴露访问位置，ui.Tab.Titles = UI_TAB_TITLES (at line 73)
+
+# 9.整体新增(改变)的DOM结构尽量一次创建完成，不要多次创建。 (at line 43/74/93/100)
+
+# 10.不要仅仅声明大量局部变量而不做赋值。 (at line 75-78)
+
+# 11._eBody/_eBase是基类使用的变量，请初始化后使用$setBody赋值(不允许修改eBase，一定需要改变请使用UI_CONTROL.call(this, o, params))。(at line 82/87)
+
+# 12.需要给内部组件定义方法时，请声明新的类型，不要直接改变。(at line 93/100/111-113)
+
+# 13.默认隐藏时不要调用hide方法，使用$hide或者直接在样式中写明display:none。(at line 115/116)
+
+# 14.不推荐在构造函数成重定义方法，通用方法请在原型链中定义。(at line 118)
+
+15.请说明使用_eContent变量的必要性，它的内容可以通过向父节点遍历的方式得到。(at line 51/127/128)
+
+# 16.不要在$init方法中调用另一个控件的init方法，请调用$init方法。(at line 138)
+
+# 17.需要声明空函数请使用util.blank。(at line 141)
+
+# 18.需要避免跳过父类的函数而调用祖先的相关方法。(at line 144)
+
+# 19.样式值必须在$cache方法中缓存而不是在$init中调用，否则部分浏览器将引发强制刷新，另外，使用margin在ie6/7下有双倍间距问题。(at line 160)
+
+# 20.是否考虑了_uPrev/_uNext显示/不显示时的占位问题，如果有相关代码请指出。
+
+# 21.为何屏弊$setSize方法，请说明。(at line 190/191)
+
+# 22.$resize没有调用父类的同名方法，且组件也应该调用$resize方法。(at line 194)
+
+# 23.select/selectstart/selectend为内核保留的方法，不允许覆盖。(at line 232/249)
+
+24.避免使用属性，而尽量使用ecui="xxx"的方式来声明相关变量。(at line 262)
+
+# 25.不要直接UI_ITEMS[this.getUID()]访问items，应该使用接口提供的getItems()方法。(at line 330)

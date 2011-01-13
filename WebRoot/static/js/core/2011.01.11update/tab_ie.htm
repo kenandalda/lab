@@ -1,0 +1,177 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3c.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!-- saved from url=(0023)http://ken:7700/lab/tab -->
+<HTML><HEAD>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<style>
+.ec-tab-title {
+	HEIGHT: 25px
+}
+.ec-tab-title-main {
+	LEFT: 0px; WORD-BREAK: keep-all; WHITE-SPACE: nowrap; POSITION: relative; TOP: 1px; WORD-WRAP: normal
+}
+.ec-tab-title-item {
+	PADDING-LEFT: 3px; BACKGROUND: url(img/tab-bg.gif) no-repeat left 0px; MARGIN: 0px 2px; CURSOR: pointer; BORDER-BOTTOM: #cce9b9 1px solid
+}
+.ec-tab-title-item SPAN {
+	PADDING-RIGHT: 10px; PADDING-LEFT: 10px; FONT-SIZE: 14px; BACKGROUND: url(img/tab-bg.gif) no-repeat right 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; moz-user-select: none
+}
+.ec-tab-title-item-selected {
+	BACKGROUND-POSITION: left -38px; COLOR: #fff; BORDER-BOTTOM: #f3fbec 1px solid
+}
+.ec-tab-title-item-selected SPAN {
+	BACKGROUND-POSITION: right -38px; FONT-WEIGHT: 700; COLOR: #326601
+}
+.ec-tab-title-prev {
+	Z-INDEX: 1; BACKGROUND: url(img/arow-bgs.gif) purple no-repeat; WIDTH: 20px; CURSOR: pointer; BOTTOM: 0px; HEIGHT: 29px
+}
+.ec-tab-title-next {
+	Z-INDEX: 1; BACKGROUND: url(img/arow-bgs.gif) purple no-repeat; WIDTH: 20px; CURSOR: pointer; BOTTOM: 0px; HEIGHT: 29px
+}
+.ec-tab-title-prev {
+	BOTTOM: 1px
+}
+.ec-tab-title-next {
+	BACKGROUND-POSITION: 0px -30px; BOTTOM: 1px
+}
+.ec-tab-title-prev-disabled {
+	BACKGROUND-IMAGE: none; BACKGROUND-COLOR: #222
+}
+.ec-tab-title-next-disabled {
+	BACKGROUND-IMAGE: none; BACKGROUND-COLOR: #222
+}
+.tabitemdtr {
+	PADDING-RIGHT: 5px; PADDING-LEFT: 5px; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; POSITION: relative; HEIGHT: 25px
+}
+.tabitemdtr-left {
+	BACKGROUND-COLOR: green
+}
+.tabitemdtr-right {
+	BACKGROUND-COLOR: red
+}
+.tabitemdtr-over {
+	BACKGROUND-COLOR: #eee
+}
+.tabitemdtr-selected {
+	COLOR: #fff; BACKGROUND-COLOR: #00f
+}
+.ec-inline-block {
+	DISPLAY: inline; ZOOM: 1
+}
+.tabitemdtr LABEL {
+	DISPLAY: inline; ZOOM: 1
+}
+</style>
+<SCRIPT src="tangram-1.3.2.source.js" type=text/javascript></SCRIPT>
+<SCRIPT src="release/ecui-1.2.0-all.js" type=text/javascript></SCRIPT>
+<SCRIPT src="scripts/tab.js" type=text/javascript></SCRIPT>
+<STYLE type=text/css>.tb-title TD {
+	FONT-WEIGHT: bold
+}
+.nav {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; PADDING-TOP: 0px
+}
+.nav A {
+	PADDING-RIGHT: 13px; DISPLAY: block; PADDING-LEFT: 13px; FLOAT: left; PADDING-BOTTOM: 0px; COLOR: #fff; LINE-HEIGHT: 30px; PADDING-TOP: 0px; TEXT-DECORATION: none
+}
+.nav A:hover {
+	BACKGROUND: #f6ffb8; COLOR: #346665
+}
+.nav A.cur {
+	BACKGROUND: #f6ffb8; COLOR: #346665
+}
+.ec-listbox {
+	BORDER-RIGHT: #828790 1px solid; BORDER-TOP: #828790 1px solid; BORDER-LEFT: #828790 1px solid; WIDTH: 100px; BORDER-BOTTOM: #828790 1px solid; HEIGHT: 160px
+}
+.ec-listbox-item {
+	PADDING-LEFT: 2px; BACKGROUND: #fff; CURSOR: default; LINE-HEIGHT: 20px
+}
+.ec-listbox-item-selected {
+	BACKGROUND: #3399ff; COLOR: #fff
+}
+.select-box {
+	BORDER-RIGHT: #333 1px solid; BORDER-TOP: #333 1px solid; BORDER-LEFT: #333 1px solid; BORDER-BOTTOM: #333 1px solid
+}
+#foo .ec-tab DIV.area {
+	DISPLAY: none
+}
+#foo .ec-tab DIV.area-v {
+	DISPLAY: none
+}
+#foo .ec-tab DIV.area-w {
+	DISPLAY: none
+}
+#tablectnr {
+	BORDER-RIGHT: #aaa 2px solid; BORDER-TOP: #aaa 2px solid; BACKGROUND: #eee; FLOAT: left; BORDER-LEFT: #aaa 2px solid; WIDTH: 800px; BORDER-BOTTOM: #aaa 2px solid; HEIGHT: 100%
+}
+#holiday .holiday {
+	FLOAT: left
+}
+.ec-color-selector-sub {
+	WIDTH: 30px; HEIGHT: 30px
+}
+.ec-color-selector-tip {
+	BORDER-RIGHT: red 2px solid; BORDER-TOP: red 2px solid; BORDER-LEFT: red 2px solid; WIDTH: 30px; BORDER-BOTTOM: red 2px solid; HEIGHT: 60px
+}
+.ec-color-selector-sub-checked {
+	BORDER-RIGHT: #eee 2px solid; BORDER-TOP: #eee 2px solid; BORDER-LEFT: #eee 2px solid; BORDER-BOTTOM: #eee 2px solid
+}
+.ec-color-selector-all-checked {
+	BACKGROUND-COLOR: #000
+}
+</STYLE>
+<!--<link rel="stylesheet" href="/static/js/ui/ka-table/ka-table.css" type="text/css">-->
+<STYLE type=text/css media=screen>.test-table {
+	BORDER-RIGHT: #ddd 1px solid; BORDER-TOP: #ddd 1px solid; BORDER-LEFT: #ddd 1px solid; BORDER-BOTTOM: #ddd 1px solid
+}
+</STYLE>
+
+<SCRIPT type=text/javascript charset=utf-8>
+		d = new Date();
+        timeLog = true;
+    </SCRIPT>
+
+<META content="MSHTML 6.00.2900.6036" name=GENERATOR></HEAD>
+<BODY data-pageNS="Lab">
+<DIV class=wrapper>
+<DIV ecui="type:tab;id:tab;selected:1">
+<DIV><LABEL>tab 1</LABEL> content 1 </DIV><DIV><LABEL>tab 2</LABEL> content 2 </DIV><LABEL>tab(title-only) 3</LABEL><DIV ecui="selected:true"><LABEL>tab 4</LABEL> content 4 </DIV><DIV style="DISPLAY: none"><LABEL>tab 5</LABEL> content 5 </DIV><LABEL>tab(title-only) 6</LABEL><DIV><LABEL>tab 7</LABEL> content 7 </DIV><DIV><LABEL>tab 8</LABEL> content 8 </DIV><LABEL>tab(title-only) 9</LABEL><DIV><LABEL>tab 10</LABEL> content 10 </DIV><DIV><LABEL>tab 11</LABEL> content 11 </DIV><LABEL>tab(title-only) 12</LABEL><DIV><LABEL>tab 13</LABEL> content 13 </DIV><DIV><LABEL>tab 14</LABEL> content 14 </DIV>
+</DIV>
+<DIV ecui="type:tab;id:tab1;selected:1">
+<DIV><LABEL>tab 1</LABEL> content 1 </DIV><DIV><LABEL>tab 2</LABEL> content 2 </DIV><LABEL>tab(title-only) 3</LABEL><DIV ecui="selected:true"><LABEL>tab 4</LABEL> content 4 </DIV><DIV style="DISPLAY: none"><LABEL>tab 5</LABEL> content 5 </DIV><LABEL>tab(title-only) 6</LABEL><DIV><LABEL>tab 7</LABEL> content 7 </DIV><DIV><LABEL>tab 8</LABEL> content 8 </DIV><LABEL>tab(title-only) 9</LABEL><DIV><LABEL>tab 10</LABEL> content 10 </DIV><DIV><LABEL>tab 11</LABEL> content 11 </DIV><LABEL>tab(title-only) 12</LABEL><DIV><LABEL>tab 13</LABEL> content 13 </DIV><DIV><LABEL>tab 14</LABEL> content 14 </DIV>
+</DIV>
+<SCRIPT type=text/javascript charset=utf-8>
+    var UI_TAB_ITEM_CLASS = ecui.ui.Tab.Item.prototype;
+
+    /*
+    UI_TAB_ITEM_CLASS.onclick = function (event) {
+        console.log(this.getBody().innerHTML);
+    };
+    */
+
+    UI_TAB_ITEM_CLASS.oncreate = function (params) {
+        if (!params.decorate) {
+            new ecui.ext.LRDecorator(this, 'tabitemdtr');
+            ecui.dom.setStyle(this.getOuter(), "display", "inline-block");
+            this.setClass("custom");
+        } 
+    };
+
+    ecui.ext.Tween(ecui.ui.Tab.Button.prototype, {
+        monitor: 'getParent().getBody().style.left',
+        pressStep: 10
+    });
+
+    ecui.get("tab").onitemclick = function (index) {
+//        console.log(this.getBody().innerHTML, index);
+    };
+    /*
+    for (var i = 0, items = ecui.get("tab").getItems(), o; o = items[i++]; ) {
+        o.onclick = function (event) {
+            console.log(this.getBody().innerHTML);
+        };
+    }
+    */
+
+</SCRIPT>
+</DIV>
+</BODY></HTML>

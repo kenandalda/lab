@@ -1,0 +1,10 @@
+.ec-multi-select {cursor:pointer; height:17px;line-height:17px;padding:0;border:1px solid #E2E2E2;z-index:2}
+.ec-multi-select-button {right:0;top:0px;width:17px;height:17px;background:transparent url("img/select.jpg") no-repeat 0 0}
+.ec-multi-select-over .ec-multi-select-button {background-position:-17px 0}
+.ec-multi-select-focus .ec-multi-select-button {background-position:-34px 0}
+.ec-multi-select input {cursor:pointer;background:transparent; border:0 none; margin:0}
+.ec-multiselect-options {border:1px solid #E2E2E2}
+.ec-multiselect-options-item {cursor:pointer;height:20px;padding-left:20px;background:#FFF url("img/cr_v.gif") no-repeat 2px 4px}
+.ec-multiselect-options-item-over {background-color:#C2E8FF}
+.ec-multiselect-options-item-selected {color:#FFF;background-color:#6FADD1;background-position:2px -86px}
+.special-item {font-weight:bold;color:blue}

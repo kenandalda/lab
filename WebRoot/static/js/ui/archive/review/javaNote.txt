@@ -1,0 +1,20 @@
+原理: src -> 字节码 -> JVM (跨平台)
+三个版本
+        Java SE 桌面
+                Java Foundation Classes(Swing):  图形界面
+                JDBC
+                Java Content Repository API: ?
+                Generics: 
+                Concurrency Utilities: 并发工具
+                Java API for XML Processing (JAXP)
+                Java XPath API 
+        Java EE 服务器
+                JavaServer Faces (JSF) 
+                EJB: 中间件, JPA
+                Portlet Specification
+                Java Message Service (JMS)
+                JSP
+                Java Servlet 
+        Java ME
+                Mobile Information Device Profile (MIDP).
+                * Android: 虚拟机为Dalvik

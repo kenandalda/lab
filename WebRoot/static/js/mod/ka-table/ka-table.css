@@ -1,0 +1,19 @@
+.ka-table-wrapper{border:1px solid #DDD}
+.ka-table{overflow:auto;height:300px;width:100%;position:relative}
+.ka-table table, .ka-table-wrapper table{border-collapse:collapse;}
+.ka-table table.ka-table-layout{width:2000px;padding:0}
+.ka-table th, .ka-table td, .ka-table-wrapper th{padding:0;border:1px solid #DDD;border-width:1px 1px 1px 0;background-color:#FFF}
+.ka-table th, .ka-table-wrapper th{text-align:center;background-color:#EEE}
+.ka-table tr.highlight td, .ka-table td.highlight{background-color:#E6E6FA}
+
+/*.ka-table{border:1px solid #DDD;height:300px;width:756px;overflow:auto}*/
+
+/*IE
+.ka-table table{float:left;width:740px;}
+.ka-table thead tr{position:relative}
+*/
+/*non-IE
+html>body .ka-table{overflow:hidden;width:756px}
+html>body .ka-table thead tr{display:block;width:100%}
+html>body .ka-table tbody{display:block;overflow:auto;height:300px;width:100%}
+*/
