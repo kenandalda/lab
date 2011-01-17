@@ -1,7 +1,3 @@
-/**
- * version 0.3
- */
-
 var ecomui = ecomui || {},
     asynMgr = asynMgr || {};
 
