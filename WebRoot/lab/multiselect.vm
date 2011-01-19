@@ -1,11 +1,19 @@
 
 <form action="" method="post" accept-charset="utf-8">
-    <div name="fooselect" ecui="type:multi-select;id:multi;name:multiselect" style="width:100px">
-        #foreach($i in [1..20])
-        <!--<div ecui="#if($i % 3 == 0)selected:selected;#{end}value:val_$i">选项 $i</div>-->
-        <div ecui="name:multi;value:v-$i;#if($i%3==0)checked:true#end">选项$i</div>
-        #end
-    </div>
+   <select ecui="type:multi-select;option-size:3" name="test" style="width:200px">
+        <option value="1">文本1</option>
+        <option value="2" selected="selected">文本2</option>
+        <option value="3">文本3</option>
+        <option value="4">文本4</option>
+    </select> 
+
+    <label>单选select</label>
+    <select ecui="type:select;id:select" name="test" style="width:200px">
+        <option value="1">文本1</option>
+        <option value="2">文本2</option>
+        <option value="3" selected="selected">文本3</option>
+        <option value="4">文本4</option>
+    </select> 
 
     #set($reasonList = [])
     #foreach($i in [1..15])

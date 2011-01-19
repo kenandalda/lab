@@ -4,32 +4,40 @@
 .ec-multi-select-focus .ec-multi-select-button {background-position:-34px 0}
 .ec-multi-select input {cursor:pointer;background:#FFF; border:0 none; margin:0; color:#000}
 .ec-multi-select-disabled input {background:#EEE;}
-.ec-multiselect-options {border:1px solid #7F7F7F}
-.ec-multiselect-options-item {cursor:pointer;height:20px;padding-left:20px;background:#FFF url("img/cr_v.gif") no-repeat 2px 4px}
-.ec-multiselect-options-item-over {background-color:#C2E8FF}
-.ec-multiselect-options-item-selected {color:#FFF;background-color:#6FADD1;background-position:2px -86px}
+.ec-multi-select-options {border:1px solid #7F7F7F}
+.ec-multi-select-options-layout {background-color:#FFF}
+.ec-multi-select-item {cursor:pointer;height:20px;background-color:#FFF}
+.ec-multi-select-item-over {background-color:#C2E8FF}
+.ec-multi-select-item-selected {color:#FFF;background-color:#6FADD1;background-position:2px -86px}
 .special-item {font-weight:bold;color:blue}
 
 /* 滚动条 */
-.ec-multi-select .ec-vscroll {background:#F0F0F0;width:15px;padding:15px 0px 15px 0px;font-size:1px}
-.ec-multi-select .ec-hscroll {background:#F0F0F0;height:15px;padding:0px 15px 0px 15px;font-size:1px}
-.ec-multi-select .ec-hscroll-block {background:url(img/hscroll.jpg) -2px -30px repeat-x}
-.ec-multi-select .ec-vscroll-block {background:url(img/scroll.jpg) 0px 0px repeat-y}
-.ec-multi-select .ec-hscroll-block-over {background:url(img/hscroll.jpg) -0px -45px repeat-x}
-.ec-multi-select .ec-hscroll-block-press {background:url(img/hscroll.jpg) -0px -60px repeat-x}
-.ec-multi-select .ec-vscroll-block-over {background:url(img/scroll.jpg) -15px 0px repeat-y}
-.ec-multi-select .ec-vscroll-block-press {background:url(img/scroll.jpg) -30px 0px repeat-y}
-.ec-multi-select .ec-vscroll-prev {background:url(img/scroll.jpg) -45px -40px no-repeat;}
-.ec-multi-select .ec-vscroll-prev-over {background:url(img/scroll.jpg) -75px -40px no-repeat;}
-.ec-multi-select .ec-vscroll-prev-press {background:url(img/scroll.jpg) -60px -40px no-repeat;}
-.ec-multi-select .ec-vscroll-next {background:url(img/scroll.jpg) -45px -55px no-repeat;}
-.ec-multi-select .ec-vscroll-next-over {background:url(img/scroll.jpg) -75px -55px no-repeat;}
-.ec-multi-select .ec-vscroll-next-press {background:url(img/scroll.jpg) -60px -55px no-repeat;}
-.ec-multi-select .ec-hscroll-prev {background:url(img/scroll.jpg) -45px -85px no-repeat;}
-.ec-multi-select .ec-hscroll-prev-over {background:url(img/scroll.jpg) -75px -85px no-repeat;}
-.ec-multi-select .ec-hscroll-prev-press {background:url(img/scroll.jpg) -60px -85px no-repeat;}
-.ec-multi-select .ec-hscroll-next {background:url(img/scroll.jpg) -45px -70px no-repeat;}
-.ec-multi-select .ec-hscroll-next-over {background:url(img/scroll.jpg) -75px -70px no-repeat;}
-.ec-multi-select .ec-hscroll-next-press {background:url(img/scroll.jpg) -60px -70px no-repeat;}
-.ec-multi-select .vsblockdtr-bottom {background:transparent url(img/scroll.jpg) no-repeat scroll -45px -18px;}
-.ec-multi-select .vsblockdtr {padding:2px 0;}
+.ec-multi-select-options .ec-vscroll {background:#F0F0F0;width:15px;padding:15px 0px 15px 0px;font-size:1px}
+.ec-multi-select-options .ec-hscroll {background:#F0F0F0;height:15px;padding:0px 15px 0px 15px;font-size:1px}
+.ec-multi-select-options .ec-hscroll-block {background:url(img/hscroll.jpg) -2px -30px repeat-x}
+.ec-multi-select-options .ec-vscroll-block {background:url(img/scroll.jpg) 0px 0px repeat-y}
+.ec-multi-select-options .ec-hscroll-block-over {background:url(img/hscroll.jpg) -0px -45px repeat-x}
+.ec-multi-select-options .ec-hscroll-block-press {background:url(img/hscroll.jpg) -0px -60px repeat-x}
+.ec-multi-select-options .ec-vscroll-block-over {background:url(img/scroll.jpg) -15px 0px repeat-y}
+.ec-multi-select-options .ec-vscroll-block-press {background:url(img/scroll.jpg) -30px 0px repeat-y}
+.ec-multi-select-options .ec-vscroll-prev {background:url(img/scroll.jpg) -45px -40px no-repeat;}
+.ec-multi-select-options .ec-vscroll-prev-over {background:url(img/scroll.jpg) -75px -40px no-repeat;}
+.ec-multi-select-options .ec-vscroll-prev-press {background:url(img/scroll.jpg) -60px -40px no-repeat;}
+.ec-multi-select-options .ec-vscroll-next {background:url(img/scroll.jpg) -45px -55px no-repeat;}
+.ec-multi-select-options .ec-vscroll-next-over {background:url(img/scroll.jpg) -75px -55px no-repeat;}
+.ec-multi-select-options .ec-vscroll-next-press {background:url(img/scroll.jpg) -60px -55px no-repeat;}
+.ec-multi-select-options .ec-hscroll-prev {background:url(img/scroll.jpg) -45px -85px no-repeat;}
+.ec-multi-select-options .ec-hscroll-prev-over {background:url(img/scroll.jpg) -75px -85px no-repeat;}
+.ec-multi-select-options .ec-hscroll-prev-press {background:url(img/scroll.jpg) -60px -85px no-repeat;}
+.ec-multi-select-options .ec-hscroll-next {background:url(img/scroll.jpg) -45px -70px no-repeat;}
+.ec-multi-select-options .ec-hscroll-next-over {background:url(img/scroll.jpg) -75px -70px no-repeat;}
+.ec-multi-select-options .ec-hscroll-next-press {background:url(img/scroll.jpg) -60px -70px no-repeat;}
+.ec-multi-select-options .vsblockdtr-bottom {background:transparent url(img/scroll.jpg) no-repeat scroll -45px -18px;}
+.ec-multi-select-options .vsblockdtr {padding:2px 0;}
+
+/* 复选框 */
+.ec-multi-select-options-main .ec-multi-select-item-checkbox {background:url("img/cr.gif") 0 0 no-repeat;width:17px;height:15px}
+.ec-multi-select-options-main .ec-multi-select-item-checkbox-checked {background:url("img/cr.gif") -34px 0 no-repeat}
+.ec-multi-select-options-main .ec-multi-select-item-checkbox-over {background:url("img/cr.gif") -17px 0 no-repeat}
+.ec-multi-select-options-main .ec-multi-select-item-checkbox-checked-over {background:url("img/cr.gif") -51px 0 no-repeat}
+.ec-multi-select-options-main .ec-multi-select-item-checkbox-part {background:url("img/cr.gif") -102px 0 no-repeat}

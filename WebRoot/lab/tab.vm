@@ -1,5 +1,8 @@
+<input type="text" name="some_name" value="" id="url">
+<input type="hidden" name="some_name" value="">
+<input type="button" name="some_name" value="添加" onclick="addTab(baidu.g('url').value)">
 <div ecui="type:ecom-tab;id:tab;selected:1">
-    #foreach($i in [1..25])
+    #foreach($i in [1..5])
     #if ($i % 3 != 0)
     <div #if($i == 5)style="display:none"#{end}>
         <label>tab $i</label>
@@ -56,9 +59,19 @@
         t.remove(t.getSelected());
     }
 
-    ecui.ext.Tween(ecui.ui.Tab.Button.prototype, {
-        pressStep: 10,
-        monitor: 'getParent().getBody().style.left'
-    });
+    function addTab (url) {
+        var t = ecui.get('tab');
+        t.addTab(
+            {params:{closable:true},title:url}, 
+            function (newTab) {
+                var contentEl = newTab.getContent();
+                var ifr = document.createElement('iframe');
+                ifr.frameBorder = 'no';
+                ifr.src = 'http://www.baidu.com/s?wd=' + url;
+                baidu.dom.setStyles(ifr, {width:'960px',height:'600px'});
+                contentEl.appendChild(ifr);
+            }
+        );
+    }
     
 </script>

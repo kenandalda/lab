@@ -13,5 +13,7 @@
 .ecom-tab-item-dtr label, .ecom-tab-item-dtr-left, .ecom-tab-item-dtr-right {border-bottom:1px solid #CCE9B9}
 .ecom-tab-item-dtr-selected label, .ecom-tab-item-dtr-selected .ecom-tab-item-dtr-left{border-bottom:1px solid #F3FBEC}
 .ec-inline-block, .ecom-tab-item-dtr label{display:inline-block;*display:inline;zoom:1;}
+.ec-ecom-tab-item-close {font-weight:bold;margin-left:7px;}
+.ec-ecom-tab-item-close-over {color:red}
 
 

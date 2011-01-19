@@ -5,7 +5,6 @@
     			<table><tr><td>
             #*
             ##日期  
-            #singleCal ("selectDay" "" {"range":"now-5y"})
     		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo"} )
     		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo", "range":"now-5y"} )
     		#rangeCal("" "" {"bName":"dateFrom","eName":"dateTo", "range":"now-5y"} )
@@ -50,6 +49,7 @@
     			</td>
     			</tr>
     			</table>
+            #singleCal ("selectDay" "" {"range":"now-5y"})
     		</form>
     	</div>
     	<div class="area-v"></div><div class="area-w"></div>

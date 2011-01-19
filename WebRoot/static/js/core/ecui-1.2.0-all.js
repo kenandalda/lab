@@ -6727,6 +6727,7 @@ _eContent        - 内容 DOM 元素
     UI_TAB_CLASS.$init = function () {
         this._uPrev.$init();
         this._uNext.$init();
+
         UI_ITEMS.$init.call(this);
         for (var i = 0, list = this.getItems(), o; o = list[i++];) {
             o.$setSize(o.getWidth(), o.getHeight());
