@@ -79,9 +79,9 @@ Tab - 定义分页选项卡的操作。
             // 默认选项
             var settings = {
                 index: null,
-                title: '无标题', // 标题
-                params: {}, // 控件初始化参数
-                background: false // 后台打开
+                title: '无标题',        // 标题
+                params: {},             // 控件初始化参数
+                background: false       // 后台打开
             };
             settings = copy(settings, options);
 
@@ -104,6 +104,7 @@ Tab - 定义分页选项卡的操作。
             UI_CONTROL_CLASS.$click.call(this, event);
             var tabItem = this.getParent();
             tabItem.getParent().remove(tabItem);
+            tabItem.getParent().resize();
         };
 
         // 修复高度问题
