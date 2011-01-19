@@ -1,0 +1,12 @@
+.ec-checkbox {background:url("img/cr.gif") 0 0 no-repeat;width:17px;height:15px}
+.ec-checkbox-checked {background:url("img/cr.gif") -34px 0 no-repeat}
+.ec-checkbox-over {background:url("img/cr.gif") -17px 0 no-repeat}
+.ec-checkbox-checked-over {background:url("img/cr.gif") -51px 0 no-repeat}
+.ec-checkbox-part {background:url("img/cr.gif") -102px 0 no-repeat}
+
+.ec-check-tree, .ec-check-tree-nonleaf {cursor:default;padding-left:20px;zoom:1}
+.ec-check-tree-fold {background:url(img/tree_bak.gif) 0px -19px no-repeat}
+.ec-check-tree-nonleaf{background:url(img/tree_bak.gif) 0px 0px no-repeat;}
+.ec-check-tree-items {margin-left:10px}
+.ec-check-tree-checkbox-checked {background:url(img/cr.gif) -34px 0px no-repeat}
+.ec-check-tree-checkbox-checked-over {background:url(img/cr.gif) -51px 0px no-repeat}

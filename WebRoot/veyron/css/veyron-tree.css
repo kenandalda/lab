@@ -1,0 +1,25 @@
+/* 单选树 */
+.ec-radio-tree{padding-left:25px;cursor:default}
+.veyron-radio-tree-fold {background:url(img/tree-icons.gif) 0 -30px no-repeat}
+.veyron-radio-tree-nonleaf {background:url(img/tree-icons.gif) 0 0 no-repeat}
+.veyron-radio-tree-selected, .veyron-radio-tree-nonleaf-selected, .veyron-radio-tree-fold-selected{background-color:#E4E4E4}
+.veyron-radio-tree-empty-select {background:url(img/tree-icons.gif) 0px -84px no-repeat}
+.veyron-radio-tree-fold-select {background:url(img/tree-icons.gif) 0px -50px no-repeat}
+.veyron-radio-tree-items {padding-left:25px}
+.ec-radio-tree span {display:inline-block;*display:inline;zoom:1;padding-left:20px}
+.tree-icon-a {background:url(img/tree-icons.gif) 0px -120px no-repeat}
+.tree-icon-a {background:url(img/tree-icons.gif) 0px -150px no-repeat}
+
+/* 多选树 */
+.ec-checkbox {background:url("img/cr.gif") 0 0 no-repeat;width:17px;height:15px}
+.ec-checkbox-checked {background:url("img/cr.gif") -34px 0 no-repeat}
+.ec-checkbox-over {background:url("img/cr.gif") -17px 0 no-repeat}
+.ec-checkbox-checked-over {background:url("img/cr.gif") -51px 0 no-repeat}
+.ec-checkbox-part {background:url("img/cr.gif") -102px 0 no-repeat}
+
+.ec-check-tree, .ec-check-tree-nonleaf {cursor:default;padding-left:20px;zoom:1}
+.ec-check-tree-fold {background:url(img/tree_bak.gif) 0px -19px no-repeat}
+.ec-check-tree-nonleaf{background:url(img/tree_bak.gif) 0px 0px no-repeat;}
+.ec-check-tree-items {margin-left:10px}
+.ec-check-tree-checkbox-checked {background:url(img/cr.gif) -34px 0px no-repeat}
+.ec-check-tree-checkbox-checked-over {background:url(img/cr.gif) -51px 0px no-repeat}

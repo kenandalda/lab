@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <script src="js/ecui-1.2.0-all.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/veyron.tree.js" type="text/javascript" charset="utf-8"></script>
+    <!--<script src="js/tangram-1.3.1.source.js" type="text/javascript" charset="utf-8"></script>-->
+    <!--<script src="js/ecui-1.1.0-all.js" type="text/javascript" charset="utf-8"></script>-->
+    <!--<script src="js/ecomui.check-tree.js" type="text/javascript" charset="utf-8"></script>-->
+    <!--<script src="js/ecomui.radio-tree.js" type="text/javascript" charset="utf-8"></script>-->
+    <link rel="stylesheet" href="css/global.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="css/veyron-tree.css" type="text/css" media="screen" charset="utf-8">
+    <title>Tree</title>
+</head>
+<body>
+
+    <div ecui="type:check-tree;id:parent;name:part;">
+        <label>节点的文本</label>
+        <div>子控件文本</div>
+        <div>子控件文本(复选框默认与父控件复选框联动)</div>
+    </div>
+
+    <div style="width:200px">
+    <div ecui="type:radio-tree;id:parent;name:part;" class="veyron-radio-tree"> 
+        <label><span class="tree-icon-a">节点的文本</span></label>
+        <div>
+            <label><span class="tree-icon-a">节点的文本</span></label>
+            <div><span class="tree-icon-b">子控件文本</span></div>
+            <div><span class="tree-icon-b">子控件文本</span></div>
+            <div><span class="tree-icon-b">子控件文本</span></div>
+        </div>
+        <div><span class="tree-icon-b">子控件文本</span></div>
+    </div>
+    </div>
+
+</body>
