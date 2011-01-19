@@ -2,8 +2,8 @@
 .floaterd-top {background: #3B5C55}
 .floaterd-bottom {display:none}
 .floater {position:absolute !important;}
-.floater-title {z-index:1;border:1px solid;cursor:move;position:absolute;border-width:3px 1px 0;border-color:#3B5C55 #5C877E;left:0;top:0;height:23px;padding:4px 10px 0 18px;background:#819C95;font-size:12px;color:#FFF;font-weight:bold;}
-.floater-close {z-index:2;position:absolute;right:5px;top:9px;font-size:1px;border:0px;float:right;display:block;width:13px;height:13px;background:url(img/close.gif) 0 0;cursor:pointer;}
-.floater-content {padding:37px 18px 9px;border:1px solid #5C877E;border-width:0 1px 1px;background:#F3FBEC}
+.floater-title {z-index:1;border-right:1px solid #CBE9B7;border-left:1px solid #CBE9B7;border-top:1px solid #CBE9B7;cursor:move;position:absolute;left:0;top:0;height:23px;padding:4px 10px 0 18px;background:url(img/global_bg.png) 0 -150px repeat-x;font-size:12px;color:#E2FEC4;font-weight:bold;}
+.floater-close {z-index:2;position:absolute;right:5px;top:5px;font-size:1px;border:0px;float:right;display:block;width:19px;height:19px;background:url(img/btn.gif) -83px -49px;cursor:pointer;}
+.floater-content {padding:37px 18px 9px;border-right:1px solid #CBE9B7;border-left:1px solid #CBE9B7;border-bottom:1px solid #CBE9B7;background:#F3FBEC}
 .floater-inner {overflow-y:auto;overflow-x:hidden}
-.floater-corner {background: #FFF}
+.floater-corner {background: #fff}

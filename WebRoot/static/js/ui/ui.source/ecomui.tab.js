@@ -40,9 +40,12 @@ Tab - 定义分页选项卡的操作。
             UI_TAB.call(this, el, params);
         },
 
-        ECOM_TAB_CLASS = inherits(ECOM_TAB, UI_TAB);
+        ECOM_TAB_CLASS = inherits(ECOM_TAB, UI_TAB),
 
-        ECOM_TAB.Item = UI_TAB.Item;
+        ECOM_TAB_ITEM = ECOM_TAB.Item = function (el, params) {
+        	UI_TAB.Item.call(this, el, params);
+        },
+        ECOM_TAB_ITEM_CLASS = inherits(ECOM_TAB_ITEM, UI_TAB.Item); 
 
         // 加入装饰器
         ECOM_TAB.Item.prototype.oncreate = function (params) {

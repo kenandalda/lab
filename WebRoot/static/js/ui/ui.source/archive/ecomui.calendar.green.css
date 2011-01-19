@@ -18,7 +18,6 @@
 .calendar-error{color:red;}
 .ec-range-calendar-begin-error .begin{display:inline;}
 .ec-range-calendar-end-error .end{display:inline;}
-.ec-ecom-calendar-range button {height:20px;}
 
 
 .ec-ecom-calendar-range .ec-edit{border:0 none}
@@ -34,6 +33,7 @@
 .ec-calendar-date-item-over{background:#E2F6E0;}
 .ec-calendar-date-item-disabled {color:#CCC;}
 .ec-calendar-date-item-selected {background:#7DBA7A;color:#FFF}
+
 
 /* 日历输入框 */
 .ec-ecom-calendar-edit {margin:0;height:20px;position:relative}

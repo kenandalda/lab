@@ -1,3 +1,7 @@
+/**
+ * version 0.3
+ */
+
 var ecomui = ecomui || {},
     asynMgr = asynMgr || {};
 
@@ -24,15 +28,14 @@ try {
         domQuery = lib.dom.query,
         children = dom.children,
         insertHTML = dom.insertHTML,
-        ieVersion = lib.browser.ie,
-        ffVersion = lib.browser.firefox,
+        ieVersion = core.browser.ie,
+        ffVersion = core.browser.firefox,
         $fastCreate = core.$fastCreate,
         createControl = core.create,
         util = core.util,
         inherits = util.inherits,
         copy = util.copy,
         toNumber = util.toNumber,
-        cancel = util.cancel,
         get = core.get,
         query = core.query,
         on = lib.event.on,
@@ -49,7 +52,6 @@ try {
         request = libAjax.request,
         jsonToStr = lib.json.stringify,
         queryToJson = lib.url.queryToJson,
-        getByteLength = lib.string.getByteLength,
 
         createDom = dom.create,
         getViewWidth = lib.page.getViewWidth,
@@ -127,10 +129,27 @@ try {
             o.innerHTML = "<span class='ec-ecom-table-loading'></span>";
 
 
-            this.initRender(el, params);
-/*
+            if ((tmp = children(el)).length >= 1) {
+                tbEl = domQuery(".ec-ecom-table-el", el)[0];
+                pgEl = domQuery(".ec-ecom-pager-el", el)[0];
+                // 同步渲染
+                this._uTable = $fastCreate(ECOM_TABLE_BODY, tbEl, this, getParameters(tbEl));
+                pgEl && (this._uPager = $fastCreate(ECOM_PAGER, pgEl, this, getParameters(pgEl)));
+
+                el.insertBefore(o, children(el)[0]);
+            }
+            else {
+                el.appendChild(o);
+                // 如果当前页面有保存的状态, 则恢复状态
+                if (jsonToStr(o = ASYNCSTATEMGR.getCurState("lst_" + this._nTbId)) != "{}") {
+                    this.recover(o); 
+                }
+                else {
+                    // 如果当前页面没有保存的状态, 则请求默认地址进行初始化
+                    this.post(params.defaultUrl);
+                }
+            }
             
- */           
         },
 
         ECOM_TABLE_CLASS = inherits(ECOM_TABLE, UI_CONTROL),
@@ -226,9 +245,6 @@ try {
                     ECOM_TABLE_FLOATTHEAD(self);
                 });    
             }
-
-            // 双击事件处理, 默认取挂到prototype上的
-            this.getOuter().ondblclick = this.ondblclick;
     },
 
     ECOM_TABLE_BODY_CLASS = inherits(ECOM_TABLE_BODY, UI_LOCKED_TABLE),
@@ -332,7 +348,7 @@ try {
             // 此处加上延时, 让css expression计算完在进行表格大小计算
             // 由于加入延时, 同时此处resize的方式比较特别, 浏览器不会记录之前滚动条的位置, 故需要手动记录
             // 加延时后, ie 8标准模式下有不断resize的问题, 需要特殊处理
-            if (ieVersion < 8) {
+            if (ieVersion < 7) {
                 setTimeout(fn, 10);
             }
             else {
@@ -340,31 +356,6 @@ try {
             }
     };
 
-    /**
-     * 初始化渲染
-     * 在构造函数的内部调用
-     */
-    ECOM_TABLE_CLASS.initRender = function (el, params) {
-        this.oninitrender && (this.oninitrender(el, params) === false)
-            || this.$initRender(el, params);
-    };
-
-    /**
-     * 默认初始化渲染
-     */
-    ECOM_TABLE_CLASS.$initRender = function (el, params) {
-        var tbEl = domQuery(".ec-ecom-table-el", el)[0],
-            pgEl = domQuery(".ec-ecom-pager-el", el)[0],
-            o = this._eMask;
-
-        try {
-            this._uTable = $fastCreate(ECOM_TABLE_BODY, tbEl, this, getParameters(tbEl));
-            pgEl && (this._uPager = $fastCreate(ECOM_PAGER, pgEl, this, getParameters(pgEl)));
-
-            el.insertBefore(o, children(el)[0]);
-        }
-        catch (e) {}
-    };
 
     ECOM_TABLE_CLASS.onresize = function() {
         // alert("onresize: " + this.getWidth());
@@ -406,145 +397,92 @@ try {
             customBtn && ECOM_TABLE_CUSTOMBTNINIT(customBtn, this);
         }
     };
-    
+
+
     /**
-     * 默认鼠标移动事件, 在表头单元格交界处改变指针样式
+     * 异步提交, 成功后写状态
      */
-    ECOM_TABLE_BODY_CLASS.$mousemove = function (event) {
-        var outer = this.getOuter(),
-            pos = getPosition(outer),
-            offsetX = event.pageX - pos.left + this.getScrollLeft();
-       
-        this._nOldX = offsetX;
-        if (event.pageY - pos.top < this._uHead.getHeight()) {
-            for (var i = 0, cols = this.getCols(), o; o = cols[i]; i++) {
-                offsetX -= o.getWidth();
-                if (Math.abs(offsetX) < 3) {
-                    outer.style.cursor = "col-resize";
-                    this._nDragCol = i;
-                    return;
-                }
-                else if (offsetX < 0)  {
-                    break;
-                }
-            }
-        }
-        outer.style.cursor = '';
+    ECOM_TABLE_CLASS.post = function (url, options) {
+        var asyncMgr = this._oAsyncMgr 
+            = new ASYNCMGR();
+
+        this.setLocked(true);
+
+        asyncMgr.beforePost = ECOM_TABLE_BEFOREPOST;
+        asyncMgr.onerror = this.onReqError;
+
+        asyncMgr.post(this, url, options)
+            .$success = function (control, xhr, res, reqInfo) {
+                this.constructor.prototype.$success.call(this, control, xhr, res, reqInfo);
+
+                var data = reqInfo.data;
+                ASYNCSTATEMGR.updateStateData(data)
+                control.onReqSuccess && control.onReqSuccess.call(this, control, xhr, res);
+            };
+
+        return asyncMgr;
     };
 
     /**
-     * 默认鼠标点击, 按鼠标样式判断是否进入拖动状态
-     */
-    ECOM_TABLE_BODY_CLASS.$mousedown = function(event) {
-        var outer = this.getOuter();
-        if (outer.style.cursor) {
-            this.onmousemove = ECOM_TABLE_BODY_DRAGMOVE;
-            this.onmouseup = ECOM_TABLE_BODY_DRAGUP;
-            // 拖拽时取消选择
-            outer.onselectstart = cancel; // ie
-            outer.style.MozUserSelect = "none"; // ff
-            outer.onmousedown = cancel; // other
-        }
-    };
-    
-    /**
-     * 拖动状态下的鼠标移动
-     */
-    function ECOM_TABLE_BODY_DRAGMOVE (event) {
-        var outer = this.getOuter(),
-            pos = getPosition(outer),
-            offsetX = event.pageX - pos.left + this.getScrollLeft(),
-            col = this.getCols()[this._nDragCol],
-            minWidth = col._nMinWidth || Math.max(50, getText(col.getOuter()).length * 15 + col.getInvalidWidth()),
-            deltaWidth = Math.max(minWidth - col._nWidth, offsetX - this._nOldX);
-
-        col._nMinWidth = minWidth;
-        
-        col.setSize(col._nWidth + deltaWidth);
-        this._nOldX += deltaWidth;
-        
-        this.paint();
-        return false;
-    }
-    
-    /**
-     * 拖动状态下的鼠标松开
-     */
-    function ECOM_TABLE_BODY_DRAGUP (event) {
-        var outer = this.getOuter();
-
-        delete this.onmousemove;
-        delete this.onmouseup;
-        outer.onselectstart = blank;
-        outer.style.MozUserSelect = "";
-        outer.onmousedown = blank;
-    }
-
-    /**
-     * 双击表头自动扩展列宽
-     * TODO 禁用选择
-     */
-    ECOM_TABLE_BODY_CLASS.ondblclick = function (event) {
-        var control = this.getControl();
-        if (this.style.cursor == "col-resize") {
-            var col = control.getCols()[control._nDragCol],
-                maxWidth = ECOM_TABLE_GETMAXCOLWIDTH(control, control._nDragCol);
-
-            col.setSize(maxWidth); 
-            control.paint();
-            return false;
-        }
-    };
-
-    /**
-     * 获取指定列双击时可以扩展的最大宽度
-     * 按照所含字数最多的单元格计算
-     * @params {Control} control
-     * @params {Number} colIndex
-     *
-     * @return {Number} 最大宽度
-     */
-    function ECOM_TABLE_GETMAXCOLWIDTH (control, colIndex) {
-        var col = control.getCols()[colIndex],
-            rows = control.getRows(),
-            ret = 0; // TODO 获得表头对应单元格的最小宽度
-
-        if (col._nMaxWidth) {
-            return col._nMaxWidth;
-        }
-
-        for (var i = 0, o; o = rows[i++];) {
-            o = o.getCols()[colIndex];
-            ret = Math.max(ret, 
-                (getByteLength(getText(first(o.getOuter())))/2) * 13);
-        }
-
-        col._nMaxWidth = ret;
-        return ret;
-    }
-
-    /**
-     * 按文字过滤行
+     * 异步恢复, 成功后不会写hash
      * @public
      */
-    ECOM_TABLE_BODY_CLASS.grepOn = function (text) {
-        var rows = this.getRows();
-        for (var i = 0, o; o = rows[i++];) {
-            each(domQuery("td>div", o.getOuter()), function(n, i) {
-                var cellText = getText(n);        
-                if (cellText.search(text) != -1) {
-                    o._bGrepMatch = true;
-                }
-            });
+    ECOM_TABLE_CLASS.recover = function (data) {
+        var asyncMgr = this._oAsynMgr = new ASYNCMGR(),
+            urlType = queryToJson(ECOM_TABLE_GETTBSTATE(this, data)).urlType || "default",
+            url = this["_s" + toCamelCase("-" + urlType) + "Url"];
 
-            if (o._bGrepMatch === true) {
-                o.hide();
-                o._bGrepHide = true;
-            }
-        }
+        this.setLocked(true);
+
+        asyncMgr.beforePost = ECOM_TABLE_BEFOREPOST;
+        asyncMgr.post(this, url, {data: data})
+            .$success = function(control, xhr, res, reqInfo) {
+                this.constructor.prototype.$success.call(this, control, xhr, res, reqInfo);
+                control.onReqSuccess && control.onReqSuccess.call(this, control, xhr, res);
+        };
+
+        return asyncMgr;
     };
 
+    /**
+     * 获取状态数据中的表格数据
+     */
+    function ECOM_TABLE_GETTBSTATE(control, data) {
+        return data["lst_" + control._nTbId] || "";
+    }
 
+    /**
+     * 改写状态数据中的表格数据
+     */
+    function ECOM_TABLE_SETTBSTATE(control, data, str) {
+        data["lst_" + control._nTbId] = str;
+        return data;
+    }
+
+    /**
+     * 提交请求前将数据转成可以提交的格式
+     */
+    function ECOM_TABLE_BEFOREPOST(control, url, options) {
+        var data = ASYNCSTATEMGR.convertToUrl(options.data);
+        return {
+            url: url, 
+            data: data
+        };
+    }
+
+    /**
+     * 异步查询, 封装ECOM_TABLE_CLASS.post
+     * @public
+     */
+    ECOM_TABLE_CLASS.asynQuery = function (data) {
+        var o = ECOM_TABLE_GETTBSTATE(this, data),
+            data;
+
+        o += "&urlType=query";
+        data = ECOM_TABLE_SETTBSTATE(this, data, o);
+
+        this.post(this._sQueryUrl, {data: data});
+    };
 
     ECOM_PAGER_CLASS.$init = function () {
         UI_PAGER.$init && UI_PAGER.$init.call(this);
@@ -824,6 +762,32 @@ try {
         UI_CONTROL_CLASS.$click.call(this, event);
     }
 
+    /**
+     * 默认排序
+     * this为单元格控件
+     */    
+    ECOM_TABLE_BODY_CLASS.$sort = function (orderBy) {
+        var parent = this.getParent().getParent(),
+            orderByParam = parent._sOrderByParam,
+            descParam = parent._sDescParam,
+            sortUrl = parent._sSortUrl,
+            desc,
+            data = ASYNCSTATEMGR.getCurState("lst_" + parent._nTbId),
+            sortProps = [
+                [orderByParam, orderBy].join("="),
+                [descParam, desc = parent.getNextDesc(orderBy)].join("=")
+            ].join("&");
+
+        sortProps += "&urlType=sort";
+
+        data = ECOM_TABLE_SETTBSTATE(parent, data, sortProps);
+        parent.post(sortUrl, {data: data});
+    };
+
+    ECOM_TABLE_CLASS.getNextDesc = function (orderBy) {
+        // 默认升序(desc为false)
+        return this._sOrderByVal == orderBy ? !this._bDesc : false;
+    };
 
     /**
      * 排序
@@ -835,7 +799,63 @@ try {
             || o.$sort.call(this, orderBy);
     };
 
-    ECOM_TABLE_BODY_CLASS.$sort = function (orderBy) {};
+    /**
+     * 根据异步返回HTML重新渲染表格
+     */
+    ECOM_TABLE_CLASS.renderBody = function (html) {
+        var outer = this.getOuter(),
+            self = this,
+            tbEl,
+            pgEl;
+
+        if (this._uTable) {
+            this._uTable.setEnabled(false); // 禁用控件, 防止闭包里的overedControl记住控件
+            disposeControl(this._uTable);
+            removeDom(domQuery(".ec-ecom-table-el", outer)[0]);
+        }
+
+        if (this._uPager) {
+            this._uPager.setEnabled(false); // 禁用控件, 防止闭包里的overedControl记住控件
+            disposeControl(this._uPager);
+            // 可能没有分页
+            try {
+                removeDom(domQuery(".ec-ecom-pager-el", outer)[0]);
+            } catch (e) {}
+        }
+
+        // 删除其他无用的DOM
+        each(children(outer), function(n, i) {
+           if (n != self._eMask) {
+                removeDom(n);
+           }    
+        });
+
+
+        insertHTML(this._eMask, "afterEnd", html);
+
+        tbEl = domQuery(".ec-ecom-table-el", outer)[0];
+        pgEl = domQuery(".ec-ecom-pager-el", outer)[0];
+
+        if (tbEl) {
+            this._uTable = $fastCreate(ECOM_TABLE_BODY, tbEl,
+                this, getParameters(tbEl)
+            );
+
+            this._uTable.cache();
+            this._uTable.init();
+        }
+
+        if (pgEl) {
+            this._uPager = $fastCreate(ECOM_PAGER, pgEl,
+                this, getParameters(pgEl)
+            );
+            this._uPager.cache();
+            this._uPager.init();
+        }
+
+        // 清除上一次异步设置的高度
+        this.resize();
+    };
 
     /**
      * 找出table中被选中行
@@ -969,9 +989,39 @@ try {
      })();
 
     /**
-     * 分页处理
+     * 分页请求
      */
-    ECOM_PAGER_CLASS.onpageset = function (pageNum) {};
+    ECOM_PAGER_CLASS.onpageset = function (pageNum) {
+
+        var parent = this.getParent(),
+            pageParam = parent._sPageParam,
+            pageUrl = "" + parent._sPageUrl,
+            pageProps = [pageParam, pageNum].join("="),
+            data = ASYNCSTATEMGR.getCurState("lst_" + parent._nTbId);
+
+        // 同步分页
+        if (parent._uTable._bSyncOp) {
+            parent.setLocked(true);
+            location.href = document.forms['query'].action + "?" 
+                + pageParam + "=" + pageNum;            
+            return;
+        }
+
+        if (parent._sOrderByVal) {
+            pageProps += "&" + [
+                [parent._sOrderByParam, parent._sOrderByVal].join("="),
+                [parent._sDescParam, parent._bDesc].join("=")
+            ].join("&");
+        }
+
+        pageProps += "&urlType=page";
+
+        // 改写异步状态中的表格状态
+        data = ECOM_TABLE_SETTBSTATE(parent, data, pageProps);
+
+        parent.post(pageUrl, {data: data});
+        return false;
+    };
 
     /**
      * 锁定表格
@@ -1142,6 +1192,108 @@ try {
         // TODO 有死循环
         return jsonToStr(this.getBodyDataStr());
     };
+
+    /**
+     * ajax工具
+     */
+    var ASYNCMGR = ECOM_TABLE.AsyncMgr = function () {},
+        ASYNCMGR_CLASS = ASYNCMGR.prototype,
+        callbackNames = ["success", "error"];
+
+    /**
+     * 提交数据
+     */
+    ASYNCMGR_CLASS.post = function (ecId, url, options) {
+        var control = typeof ecId == "string" ? core.get(ecId) : ecId,
+            options = options || {},
+            newUrl,
+            newData,
+            o = {},
+            self = this;
+
+        if (this.beforePost) {
+            o = this.beforePost(control, url, options);
+        }
+
+        newUrl = o.url || url;
+        newData = o.data || options.data || "";
+
+        request(newUrl, {
+            method: "POST",
+            async: true,
+            data: newData + "&feReqTime=" + new Date().getTime(),
+            onsuccess: (function () {
+                return function (xhr, res) {
+                    self.success.call(self, control, xhr, res, 
+                        {url:url, data:options.data || {}});
+                }    
+            })(),
+            onfailure: (function () {
+                return function (xhr, res) {
+                    self.error.call(self, control, xhr, res);
+                }
+            })()
+        });
+
+        return this;
+    };
+
+    /**
+     * 默认请求成功回调
+     * @protected
+     */
+    ASYNCMGR_CLASS.$success = function (control, xhr, res, reqInfo) {
+        var o;
+        try {
+            var data = trim(res).replace(/\$tbId/g, control._nTbId);
+        }
+        // TODO 识别错误页面html并报错
+        catch(e) {
+            alert(["JSON数据解析错误", e.name, e.message].join("\n"));
+            control.setLocked(false);
+            return;
+        }
+
+        data != "" && control.renderBody(data);
+        control.setLocked(false);
+
+        // 如果有排序, 则给table保存排序参数
+        o = queryToJson(
+            ECOM_TABLE_GETTBSTATE(control, reqInfo.data)
+        );
+
+        if (o[control._sOrderByParam]) {
+            control._sOrderByVal = o[control._sOrderByParam];
+            control._bDesc = eval(o[control._sDescParam]);
+        }
+    };
+
+    /**
+     * 默认请求错误回调
+     * @protected
+     */
+    ASYNCMGR_CLASS.$error = function (control, xhr, res) {
+        // 打印错误信息 
+        alert([
+            "请求错误, 请稍后重试",
+            "状态码: " + xhr.status,
+            "信息: " + xhr.statusText
+        ].join("\n"));
+
+        control.setLocked(false);
+    };
+
+    (function () {
+        
+        for (var i = 0, o; o = callbackNames[i++];) {
+            ASYNCMGR_CLASS[o] = new Function(
+                 'control', 'xhr', 'res', 'reqInfo',
+                 'var o=this;o.on' + o + '&&o.on' + o 
+                    + '.call(o, control, xhr, res, reqInfo)===false||o.$' + o + '.call(o, control, xhr, res, reqInfo)'
+            );       
+        }
+
+     })();
 
     /**
      * 获取表格控件
