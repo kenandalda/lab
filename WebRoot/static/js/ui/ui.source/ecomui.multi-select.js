@@ -2,10 +2,11 @@
 (function() {
 	var core = ecui,
         ui = core.ui,
+        lib = baidu,
         util = core.util,
         dom = core.dom,
 
-        ieVersion = core.browser.ie,
+        ieVersion = lib.browser.ie,
         setFocused = core.setFocused,
         blank = util.blank,
         $fastCreate = core.$fastCreate,

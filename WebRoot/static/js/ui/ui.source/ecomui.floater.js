@@ -14,7 +14,7 @@ var ecomui = ecomui || {};
         contains = lib.dom.contains,
         toArray = lib.lang.toArray,
         each = lib.array.each,
-        ieVersion = core.browser.ie,
+        ieVersion = lib.browser.ie,
         domQuery = lib.dom.query,
 
         UI_FORM = ui.Form,

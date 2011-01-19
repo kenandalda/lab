@@ -21,7 +21,7 @@ var ecomui = ecomui || {};
         util = core.util,
         pkg = ecomui,
 
-        ieVersion = core.browser.ie,
+        ieVersion = lib.browser.ie,
         $fastCreate = core.$fastCreate,
         createDom = dom.create,
         blank = util.blank || function(){},
