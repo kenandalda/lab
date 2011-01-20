@@ -17,6 +17,7 @@
             <filter class="load" name="fDebug" value="true" />
 			<import-dom name="lab.xml" />
 			<import-dom name="sandbox.xml" />
+			<import-dom name="veyron-tree.xml" />
 		</host>
 	</process>
 </ordinary-config>

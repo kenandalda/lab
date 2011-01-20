@@ -977,6 +977,7 @@ Control - ECUI 的核心组成部分，定义了基本的控件行为。
 
 属性
 _bCapture                - 控件是否响应浏览器事件状态
+_bSelect                 - 控件是否允许选中内容
 _bFocusable              - 控件是否允许获取焦点状态
 _bEnabled                - 控件的状态，为false时控件不处理任何事件
 _bCache                  - 是否处于缓存状态
@@ -1011,6 +1012,7 @@ $cache$position          - 控件布局方式缓存
      * type    控件的类型样式
      * base    控件的基本样式
      * capture 是否需要捕获鼠标事件，默认捕获
+     * select  是否允许选中内容，默认允许
      * focus   是否允许获取焦点，默认允许
      * enabled 是否可用，默认可用
      * @protected
@@ -1022,6 +1024,7 @@ $cache$position          - 控件布局方式缓存
     var UI_CONTROL =
         ui.Control = function (el, params) {
             this._bCapture = params.capture !== false;
+            this._bSelect = params.select !== false;
             this._bFocusable = params.focus !== false;
             this._bEnabled = params.enabled !== false;
             this._sBaseClass = this._sClass = params.base;
@@ -1156,7 +1159,9 @@ _uClose     - 关闭按钮
 
             // 生成标题控件与内容区域控件对应的Element对象
             //__gzip_original__baseClass
+            //__gzip_original__partParams
             var baseClass = params.base,
+                partParams = {select: false},
                 o = createDom(baseClass + '-main', 'position:relative;overflow:auto'),
                 titleEl = first(el);
 
@@ -1174,7 +1179,6 @@ _uClose     - 关闭按钮
                     baseClass + '-close" style="position:absolute"></div>';
                 titleEl = el.firstChild;
             }
-            titleEl.onselectstart = cancel;
 
             el.style.overflow = 'hidden';
             el.appendChild(o);
@@ -1183,10 +1187,10 @@ _uClose     - 关闭按钮
             this._bAuto = params.titleAuto !== false;
 
             // 初始化标题区域
-            this._uTitle = $fastCreate(UI_FORM_TITLE, titleEl, this);
+            this._uTitle = $fastCreate(UI_FORM_TITLE, titleEl, this, partParams);
 
             // 初始化关闭按钮
-            this._uClose = $fastCreate(UI_FORM_CLOSE, titleEl.nextSibling, this);
+            this._uClose = $fastCreate(UI_FORM_CLOSE, titleEl.nextSibling, this, partParams);
 
             // 计算当前窗体显示的层级
             this.getOuter().style.zIndex = UI_FORM_ALL.push(this) + 4095;
@@ -1366,7 +1370,6 @@ Item/Items - 定义选项操作相关的基本操作。
         ui.Item = function (el, params) {
             UI_CONTROL.call(this, el, params);
 
-            el.onselectstart = cancel;
             el.style.overflow = 'hidden';
         },
         UI_ITEM_CLASS = inherits(UI_ITEM, UI_CONTROL),
@@ -1426,7 +1429,7 @@ _cPopup      - 是否包含下级弹出菜单
             //__gzip_original__baseClass
             //__gzip_original__buttonParams
             var baseClass = params.base,
-                buttonParams = {focus: false};
+                buttonParams = {select: false, focus: false};
 
             removeDom(el);
             el.style.cssText += ';position:absolute;overflow:hidden';
@@ -1437,9 +1440,8 @@ _cPopup      - 是否包含下级弹出菜单
 
                 el.innerHTML =
                     '<div class="ec-control ' + baseClass +
-                        ('-prev" onselectstart="return false" style="position:absolute;top:0px;left:0px"></div>' +
-                        '<div class="ec-control ') + baseClass +
-                        '-next" onselectstart="return false" style="position:absolute"></div>';
+                        '-prev" style="position:absolute;top:0px;left:0px"></div><div class="ec-control ' +
+                        baseClass + '-next" style="position:absolute"></div>';
 
                 this.$setBody(el.insertBefore(o, el = el.firstChild));
 
@@ -1545,18 +1547,20 @@ _eContent        - 内容 DOM 元素
 
             //__gzip_original__baseClass
             //__gzip_original__typeClass
+            //__gzip_original__buttonParams
             var typeClass = params.type,
                 baseClass = params.base,
+                buttonParams = {select: false},
                 o = createDom(typeClass + '-title ' + baseClass + '-title', 'position:relative;overflow:hidden');
 
             this._oSelected = params.selected || 0;
 
             // 生成选项卡头的的DOM结构
             o.innerHTML = '<div class="' + typeClass + '-title-prev ' + baseClass +
-                ('-title-prev" onselectstart="return false" style="position:absolute;left:0px;display:none"></div>' +
+                ('-title-prev" style="position:absolute;left:0px;display:none"></div>' +
                     '<div class="') +
                 typeClass + '-title-next ' + baseClass +
-                ('-title-next" onselectstart="return false" style="position:absolute;display:none"></div>' +
+                ('-title-next" style="position:absolute;display:none"></div>' +
                     '<div class="') +
                 baseClass + '-title-main" style="position:absolute;white-space:nowrap"></div>';
 
@@ -1567,8 +1571,8 @@ _eContent        - 内容 DOM 元素
             this.$initItems();
 
             // 滚动按钮
-            this._uNext = $fastCreate(UI_TAB_BUTTON, params = params.previousSibling, this);
-            this._uPrev = $fastCreate(UI_TAB_BUTTON, params.previousSibling, this);
+            this._uNext = $fastCreate(UI_TAB_BUTTON, params = params.previousSibling, this, buttonParams);
+            this._uPrev = $fastCreate(UI_TAB_BUTTON, params.previousSibling, this, buttonParams);
         },
         UI_TAB_CLASS = inherits(UI_TAB, UI_CONTROL),
 
@@ -1743,6 +1747,8 @@ _oFormat    - 允许提交的格式正则表达式
             this._nMinValue = params.minValue;
             this._nMaxValue = params.maxValue;
             this._oFormat = params.format ? new REGEXP('^' + params.format + '$') : null;
+
+            this._aSegment = ['', '', ''];
         },
         UI_FORMAT_EDIT_CLASS = inherits(UI_FORMAT_EDIT, UI_EDIT);
 
@@ -2070,10 +2076,10 @@ _aButton          - 按钮数组
             UI_CONTROL.call(this, el, params);
 
             //__gzip_original__baseClass
-            //__gzip_original__capture
+            //__gzip_original__areaParams
             var i = 0,
                 baseClass = params.base,
-                capture = {capture: false},
+                areaParams = {capture: false},
                 list = [
                     '<div class="' + baseClass + '-left" style="float:left"><div class="ec-control ' +
                         baseClass + '-image" style="position:relative;overflow:hidden"><div class="ec-control ' +
@@ -2118,12 +2124,12 @@ _aButton          - 按钮数组
             // 初始化色彩选择区
             el = el.firstChild;
             params = this._uMain = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, capture);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, areaParams);
 
             // 初始化亮度条选择区
             el = el.nextSibling;
             params = this._uLightbar = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, capture);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, areaParams);
 
             // 初始化基本颜色区
             list = children(el.nextSibling);
@@ -2247,17 +2253,12 @@ _oRange         - 滑动块的合法滑动区间
         ui.Scroll = function (el, params) {
             //__gzip_original__baseClass
             //__gzip_original__typeClass
-            //__gzip_original__focus
+            //__gzip_original__partParams
             var baseClass = params.base,
                 typeClass = params.type,
-                focus = {focus: false};
+                partParams = {select: false, focus: false};
 
-            params.focus = false;
-
-            UI_CONTROL.call(this, el, params);
-
-            // 屏蔽IE下的选中操作
-            el.onselectstart = cancel;
+            UI_CONTROL.call(this, el, copy(params, partParams));
 
             el.innerHTML =
                 '<div class="' + typeClass + '-prev ' +
@@ -2275,17 +2276,31 @@ _oRange         - 滑动块的合法滑动区间
             this._nStep = 1;
 
             // 创建向前/向后滚动按钮与滑动块
-            this._uPrev = $fastCreate(UI_SCROLL_BUTTON, el[0], this, focus);
-            this._uNext = $fastCreate(UI_SCROLL_BUTTON, el[1], this, focus);
-            this._uBlock = $fastCreate(UI_SCROLL_BLOCK, el[2], this, focus);
+            this._uPrev = $fastCreate(UI_SCROLL_BUTTON, el[0], this, partParams);
+            this._uNext = $fastCreate(UI_SCROLL_BUTTON, el[1], this, partParams);
+            this._uBlock = $fastCreate(UI_SCROLL_BLOCK, el[2], this, partParams);
         },
         UI_SCROLL_CLASS = inherits(UI_SCROLL, UI_CONTROL),
 
+        /**
+         * 初始化滚动条控件的滑动块部件。
+         * @protected
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SCROLL_BLOCK = UI_SCROLL.Block = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
         UI_SCROLL_BLOCK_CLASS = inherits(UI_SCROLL_BLOCK, UI_CONTROL),
 
+        /**
+         * 初始化滚动条控件的按钮部件。
+         * @protected
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SCROLL_BUTTON = UI_SCROLL.Button = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
@@ -3348,10 +3363,10 @@ _oInner  - 内层装饰器或者控件对象
                     //__transform__control_o
                     var control = event.getTarget();
                     pressedControl = null;
+
                     if (control) {
                         if (!isScrollClick(event)) {
-                            bubble(pressedControl = control, 'mousedown', event);
-                            pressedControl.pressstart(event);
+                            mousedown(control, event);
                         }
                         else if (ieVersion < 8) {
                             return;
@@ -3367,9 +3382,9 @@ _oInner  - 内层装饰器或者控件对象
                         }
                     }
                     else {
-                        if (findControl(event.target)) {
-                            // 如果点击到了disabled的控件上，取消默认事件
-                            event.preventDefault();
+                        if (control = findControl(event.target)) {
+                            // 如果点击到了disabled的控件上，可能需要取消默认事件
+                            mousedown(control, event, true);
                         }
                         else {
                             setFocused();
@@ -3490,15 +3505,13 @@ _oInner  - 内层装饰器或者控件对象
                     if (!isScrollClick(event)) {
                         if (control && !control.isFocusable()) {
                             // 需要捕获但不激活的控件是高优先级处理的控件
-                            bubble(pressedControl = control, 'mousedown', event);
-                            pressedControl.pressstart(event);
+                            mousedown(control, event);
                         }
                         else if (target.onintercept && target.onintercept(event) === false ||
                                     target.$intercept(event) === false) {
                             if (env == currEnv) {
                                 if (control) {
-                                    bubble(pressedControl = control, 'mousedown', event);
-                                    pressedControl.pressstart(event);
+                                    mousedown(control, event);
                                 }
                             }
                             else {
@@ -4505,7 +4518,7 @@ _oInner  - 内层装饰器或者控件对象
         };
 
         /**
-         * 双击事件处理。
+         * 双击事件与选中内容开始事件处理。
          * @private
          *
          * @param {Event} event 事件对象
@@ -4514,6 +4527,11 @@ _oInner  - 内层装饰器或者控件对象
             currEnv.dblclick = function (event) {
                 currEnv.mousedown(event);
                 currEnv.mouseup(event);
+            };
+
+            currEnv.selectstart = function (event) {
+                event = standardEvent(event);
+                mousedown(findControl(event.target), event, true);
             };
         }
 
@@ -4535,6 +4553,26 @@ _oInner  - 内层装饰器或者控件对象
                 event.preventDefault();
             }
         };
+
+        /**
+         * 处理鼠标点击。
+         * @private
+         *
+         * @param {ecui.ui.Control} control 需要操作的控件
+         * @param {Event} event 事件对象
+         * @param {boolean} flag 调用方式标志位
+         */
+        function mousedown(control, event, flag) {
+            if (!flag) {
+                bubble(pressedControl = control, 'mousedown', event);
+                pressedControl.pressstart(event);
+            }
+            for (; control; control = control.getParent()) {
+                if (control.isSelectStart()) {
+                    event.preventDefault();
+                }
+            }
+        }
 
         /**
          * 冒泡处理控件事件。
@@ -4724,6 +4762,7 @@ Control - ECUI 的核心组成部分，定义了基本的控件行为。
 
 属性
 _bCapture                - 控件是否响应浏览器事件状态
+_bSelect                 - 控件是否允许选中内容
 _bFocusable              - 控件是否允许获取焦点状态
 _bEnabled                - 控件的状态，为false时控件不处理任何事件
 _bCache                  - 是否处于缓存状态
@@ -4849,7 +4888,7 @@ $cache$position          - 控件布局方式缓存
      * @protected
      */
     UI_CONTROL_CLASS.$init = function () {
-        this.setEnabled(this._bEnabled);
+        this.alterClass('disabled', this._bEnabled);
         this.$setSize(this.getWidth(), this.getHeight());
 
         if (this.$ready) {
@@ -5322,6 +5361,16 @@ $cache$position          - 控件布局方式缓存
      */
     UI_CONTROL_CLASS.isFocusable = function () {
         return this._bFocusable;
+    };
+
+    /**
+     * 判断控件是否允许选中内容。
+     * @public
+     *
+     * @return {boolean} 控件是否允许选中内容
+     */
+    UI_CONTROL_CLASS.isSelectStart = function () {
+        return this._bSelect;
     };
 
     /**
@@ -6152,20 +6201,6 @@ Item/Items - 定义选项操作相关的基本操作。
     };
 
     /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_ITEM_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
      * 鼠标移入控件区域事件的默认处理。
      * 鼠标移入控件区域时默认调用 $mouseover 方法。如果控件处于可操作状态(参见 isEnabled)，mouseover 方法触发 onmouseover 事件，如果事件返回值不为 false，则调用 $mouseover 方法。
      * @protected
@@ -6304,6 +6339,7 @@ Item/Items - 定义选项操作相关的基本操作。
 
             params = params || getParameters(item);
             params.parent = this;
+            params.select = false;
             list.push(item = $fastCreate(findConstructor(this, 'Item') || UI_ITEM, item, this, params));
             this.$alterItems();
         }
@@ -6459,20 +6495,6 @@ _cPopup      - 是否包含下级弹出菜单
         parent.$setActived();
         style.top =
             MIN(MAX(prev == this ? ++top : --top, parent._nOptionSize - list.length), 0) * height + prevHeight + 'px';
-    };
-
-    /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_POPUP_BUTTON_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -6851,20 +6873,6 @@ _eContent        - 内容 DOM 元素
         style.left =
             MAX(pos[index], parent.getBodyWidth() - parent.$cache$bodyWidth - parent._uNext.getWidth()) + 'px';
         UI_TAB_FLUSH_BUTTON(parent);
-    };
-
-    /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_TAB_BUTTON_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -9023,17 +9031,6 @@ _oRange         - 滑动块的合法滑动区间
 
 
     /**
-     * 停止自动滚动
-     * @private
-     *
-     * @param {ecui.ui.Scroll} control 滚动条对象
-     */
-    function UI_SCROLL_STOP(control) {
-        var timer = control._oTimer;
-        timer && timer();
-    }
-
-    /**
      * 控扭控件自动滚动。
      * @private
      *
@@ -9041,15 +9038,26 @@ _oRange         - 滑动块的合法滑动区间
      * @param {number} step 单次滚动步长
      */
     function UI_SCROLL_MOVE(button, step) {
+        //__gzip_original__value
         var scroll = button.getParent(),
-            __gzip_direct__value = scroll._nValue,
+            value = scroll._nValue,
             isPrev = scroll._uPrev == button;
-        UI_SCROLL_STOP(scroll);
 
-        if (isPrev && __gzip_direct__value || !isPrev && __gzip_direct__value < scroll._nTotal) {
-            isPrev
-                ? scroll.$allowPrev() && scroll.setValue(__gzip_direct__value - step)
-                : scroll.$allowNext() && scroll.setValue(__gzip_direct__value + step);
+        if (scroll._oTimer) {
+            scroll._oTimer();
+        }
+
+        if (isPrev && value || !isPrev && value < scroll._nTotal) {
+            if (isPrev) {
+                if (scroll.$allowPrev()) {
+                    scroll.setValue(value - step);
+                }
+            }
+            else {
+                if (scroll.$allowNext()) {
+                    scroll.setValue(value + step);
+                }
+            }
             scroll._oTimer = timer(UI_SCROLL_MOVE, 200, null, button, step);
         }
     }
@@ -9107,50 +9115,25 @@ _oRange         - 滑动块的合法滑动区间
     };
 
     /**
-     * 控扭控件按压状态结束事件的默认处理。
+     * 控扭控件按压状态结束事件与控扭控件按压状态中鼠标移出控件区域事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_BUTTON_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
+    UI_SCROLL_BUTTON_CLASS.$pressend = UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseout' ? '$pressout' : '$pressend'].call(this, event);
+        this.getParent()._oTimer();
     };
 
     /**
-     * 控扭控件按压状态中鼠标移出控件区域事件的默认处理。
+     * 控扭控件按压状态中鼠标移入控件区域事件与控扭控件按压状态开始事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
-        UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
-    };
-
-    /**
-     * 控扭控件按压状态中鼠标移入控件区域事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressover = function (event) {
-        UI_CONTROL_CLASS.$pressover.call(this, event);
+    UI_SCROLL_BUTTON_CLASS.$pressover = UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseover' ? '$pressover' : '$pressstart'].call(this, event);
         UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -9200,7 +9183,7 @@ _oRange         - 滑动块的合法滑动区间
      */
     UI_SCROLL_CLASS.$pressend = function (event) {
         UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this);
+        this._oTimer();
     };
 
     /**
@@ -9212,7 +9195,7 @@ _oRange         - 滑动块的合法滑动区间
      */
     UI_SCROLL_CLASS.$pressout = function (event) {
         UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this);
+        this._oTimer();
     };
 
     /**
@@ -9317,7 +9300,11 @@ _oRange         - 滑动块的合法滑动区间
     UI_SCROLL_CLASS.scroll = function () {
         var parent = this.getParent();
         this.change();
-        parent && (parent.onscroll && parent.onscroll() === false || parent.$scroll());
+        if (parent) {
+            if (!(parent.onscroll && parent.onscroll() === false)) {
+                parent.$scroll();
+            }
+        }
     };
 
     /**

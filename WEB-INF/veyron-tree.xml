@@ -1,0 +1,7 @@
+<ordinary-config>
+    <command name="/veyron/tree.html">
+        <list>
+        </list>
+        <velocity />
+	</command>
+</ordinary-config>
