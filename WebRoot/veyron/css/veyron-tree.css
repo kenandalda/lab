@@ -25,6 +25,7 @@
 /*.ec-check-tree-items {margin-left:10px}*/
 .veyron-check-tree-selected, .veyron-check-tree-nonleaf-selected, .veyron-check-tree-fold-selected{background-color:#E4E4E4}
 .ec-check-tree span {display:inline-block;*display:inline;zoom:1;padding-left:20px;margin:3px 0 3px 7px}
+.veyron-check-tree-legend {display:inline-block;*display:inline;zoom:1;height:10px;width:10px;line-height:10px;border:1px solid #FFF;font-size:0;float:right;margin:3px}
 
 /* 图标 */
 .tree-icon-a {background:url(img/tree-icons.gif) 0px -180px no-repeat}
