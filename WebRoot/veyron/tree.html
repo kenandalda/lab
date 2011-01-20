@@ -2,10 +2,10 @@
 "http://www.w3.org/TR/html4/loose.dtd">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <script src="js/ecui-1.2.0-all.js" type="text/javascript" charset="utf-8"></script>
-    <script src="js/veyron.tree.js" type="text/javascript" charset="utf-8"></script>
     <link rel="stylesheet" href="css/global.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="css/veyron-tree.css" type="text/css" media="screen" charset="utf-8">
+    <script src="js/ecui-1.2.0-all.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/veyron.tree.js" type="text/javascript" charset="utf-8"></script>
     <title>Tree</title>
     <style type="text/css" media="screen">
         p {margin:.5em 0;color:#999}
@@ -73,7 +73,7 @@
     ecui.get('t1').onnodeclick = function (event) {
         document.getElementById('info1').innerHTML = '值:' + this.getValue();    
     };
-    // tree2 点击展示颜色块
+    // tree2 [必须]点击展示颜色块
     ecui.get('t2').onnodecheck = function () {
         var root = this.getRoot();
         var lenLimit = root.colorSet.length;
