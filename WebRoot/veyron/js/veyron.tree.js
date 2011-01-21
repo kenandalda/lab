@@ -7,12 +7,21 @@
         getStyle = dom.getStyle,
         createDom = dom.create,
         removeDom = dom.remove,
+        first = dom.first,
+        children = dom.children,
+        trim = core.string.trim,
+        insertBefore = dom.insertBefore,
+        insertHTML = dom.insertHTML,
         setInput = dom.setInput,
         blank = util.blank,
         inherits = util.inherits,
+        copy = util.copy,
         toNumber = util.toNumber,
 
+        $bind = core.$bind,
+        $fastCreate = core.$fastCreate,
         getMouseX = core.getMouseX,
+        getParameters = core.getParameters,
 
         UI_TREE = ui.Tree,
         UI_TREE_CLASS = UI_TREE.prototype,
@@ -31,9 +40,9 @@
      * @param {Event} event 事件对象
      */
     UI_RADIO_TREE_CLASS.$click = function (event) {
+        var root = this.getRoot();
         if (getMouseX(this) > toNumber(getStyle(this.getBase(), 'paddingLeft'))) {
-            var root = this.getRoot(),
-                selected = root._cSelected;
+            var selected = root._cSelected;
 
             if (selected != this) {
                 if (selected) {
@@ -46,11 +55,17 @@
             }
 
             this.setFold = blank;
+            root.onnodeclick && root.onnodeclick.call(this, event);
         }
-        var root = this.getRoot();
-        if (!root.onnodeclick || root.onnodeclick.call(this, event) !== false) {
-            UI_TREE_CLASS.$click.call(this, event);
+        else if (root.loadChildren) {
+            if (this.getOuter().getAttribute('data-async') && !this.getChildTrees().length) {
+                root.loadChildren.call(this);
+                this.setFold = blank;
+            }
         }
+
+        UI_TREE_CLASS.$click.call(this, event);
+
         delete this.setFold;
     };
 
@@ -182,4 +197,78 @@
         }
         return result;
     }; 
+
+    /**
+     * 添加子树
+     */
+    UI_TREE_CLASS.insertChildTree = function (html) {
+        if (!this.getChildTrees().length) {
+            var el = this.getOuter();
+            el.innerHTML = '<label>' + el.innerHTML + '</label>';    
+
+            var o = first(el),
+                childTrees = this._aTree = [];
+            insertBefore(o, el);
+            o.style.display = 'block';
+            this._eBase = this._eBody = o;
+            $bind(o, this);
+            el.innerHTML = html;
+            UI_TREE_SETITEMS(this, el);
+
+            // 初始化子控件
+            for (var i = 0, list = children(el); o = list[i]; ) {
+                (childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, undefined)).$setParent(this);
+            }
+            UI_TREE_FLUSH(this);
+        }
+    }
+
+     /**
+     * 树控件刷新，根据子树控件的数量及显示的状态设置样式，分为 -empty(没有子树控件)、-fold(子树收缩)与普通样式三种。
+     * @private
+     *
+     * @param {ecui.ui.Tree} control 树控件
+     */
+    function UI_TREE_FLUSH(control) {
+        control.setClass(
+            control.getBaseClass() + (control._aTree.length ? control._bFold ? '-fold' : '-nonleaf' : '')
+        );
+    }
+
+    /**
+     * 设置树控件的选项组 Element 对象。
+     * @private
+     *
+     * @param {ecui.ui.Tree} tree 树控件
+     * @param {HTMLElement} items 子树选项组的 Element 对象
+     * @return {HTMLElement} 子树选项组的 Element 对象
+     */
+    function UI_TREE_SETITEMS(tree, items) {
+        tree._eItems = items;
+        items.className = tree.getType() + '-items ' + tree.getBaseClass() + '-items';
+        items.style.cssText = '';
+        return items;
+    }
+
+     /**
+     * 建立子树控件。
+     * @private
+     *
+     * @param {HTMLElement} el 子树的 Element 对象
+     * @param {ecui.ui.Tree} parent 父树控件
+     * @param {Object} params 初始化参数，参见 create 方法
+     * @return {ecui.ui.Tree} 子树控件
+     */
+    function UI_TREE_CREATE_CHILD(el, parent, params) {
+        el.className = parent.getType() + ' ' + (trim(el.className) || parent.getBaseClass());
+        return $fastCreate(parent.constructor, el, null, copy(copy({}, params), getParameters(el)));
+    }
+
+    UI_TREE_CLASS.oncreate = function (params) {
+        if (this.getOuter().getAttribute('data-async')) {
+            this.setClass(
+                this.getBaseClass() + '-asyncnode'       
+            )
+        }
+    };
 })();

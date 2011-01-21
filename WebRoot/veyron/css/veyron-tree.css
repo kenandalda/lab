@@ -2,11 +2,17 @@
 .ec-radio-tree{padding-left:22px;cursor:default}
 .ec-radio-tree-items .ec-radio-tree{padding-left:44px;}
 .ec-radio-tree-items .ec-radio-tree-items .ec-radio-tree{padding-left:66px;}
+.ec-radio-tree-items .ec-radio-tree-items .ec-radio-tree-items .ec-radio-tree{padding-left:88px;}
+.veyron-radio-tree-asyncnode {background:url(img/tree-icons.gif) 0 -30px no-repeat}
 .veyron-radio-tree-fold {background:url(img/tree-icons.gif) 0 -30px no-repeat}
 .veyron-radio-tree-nonleaf {background:url(img/tree-icons.gif) 0 0 no-repeat}
+.ec-radio-tree-items .veyron-radio-tree-asyncnode{background-position:22px -30px}
 .ec-radio-tree-items .veyron-radio-tree-fold{background-position:22px -30px}
 .ec-radio-tree-items .veyron-radio-tree-nonleaf{background-position:22px 0px}
-.veyron-radio-tree-selected, .veyron-radio-tree-nonleaf-selected, .veyron-radio-tree-fold-selected{background-color:#E4E4E4}
+.ec-radio-tree-items .ec-radio-tree-items .veyron-radio-tree-asyncnode{background-position:44px -30px}
+.ec-radio-tree-items .ec-radio-tree-items .veyron-radio-tree-fold{background-position:44px -30px}
+.ec-radio-tree-items .ec-radio-tree-items .veyron-radio-tree-nonleaf{background-position:44px 0px}
+.ec-radio-tree-selected, .veyron-radio-tree-selected, .veyron-radio-tree-nonleaf-selected, .veyron-radio-tree-fold-selected {background-color:#E4E4E4}
 .ec-radio-tree span {display:inline-block;*display:inline;zoom:1;padding-left:20px;margin:3px 0}
 
 /* 多选树 */
@@ -16,12 +22,15 @@
 .ec-check-tree {cursor:default;padding-left:20px;zoom:1}
 .ec-check-tree-items .ec-check-tree{padding-left:44px;}
 .ec-check-tree-items .ec-check-tree-items .ec-check-tree{padding-left:66px;}
+.ec-check-tree-items .ec-check-tree-items .ec-check-tree-items .ec-check-tree{padding-left:88px;}
 .veyron-check-tree-checkbox-checked {background-position:0 -90px}
 .veyron-check-tree-checkbox-checked-disabled {background-position:0 -150px}
 .veyron-check-tree-fold {background:url(img/tree-icons.gif) 0px -30px no-repeat}
 .veyron-check-tree-nonleaf{background:url(img/tree-icons.gif) 0px 0px no-repeat;}
 .ec-check-tree-items .veyron-check-tree-fold{background-position:22px -30px}
 .ec-check-tree-items .veyron-check-tree-nonleaf{background-position:22px 0px}
+.ec-check-tree-items .ec-check-tree-items .veyron-check-tree-fold{background-position:44px -30px}
+.ec-check-tree-items .ec-check-tree-items .veyron-check-tree-nonleaf{background-position:44px 0px}
 /*.ec-check-tree-items {margin-left:10px}*/
 .veyron-check-tree-selected, .veyron-check-tree-nonleaf-selected, .veyron-check-tree-fold-selected{background-color:#E4E4E4}
 .ec-check-tree span {display:inline-block;*display:inline;zoom:1;padding-left:20px;margin:3px 0 3px 7px}
