@@ -4,4 +4,9 @@
         </list>
         <velocity />
 	</command>
+    <command name="/veyron/getChildTree">
+        <list>
+        </list>
+        <velocity path='/veyron/getChildTree.vm'/>
+	</command>
 </ordinary-config>

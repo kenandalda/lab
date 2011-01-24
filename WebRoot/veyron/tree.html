@@ -45,7 +45,7 @@
         <label><span class="tree-icon-a">节点的文本</span></label>
         <div ecui="value:2">
             <label><span class="tree-icon-a">节点的文本</span></label>
-            <div ecui="value:3;" ><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:3;" data-async="true"><span class="tree-icon-b">子控件文本</span></div>
             <div ecui="value:4">
                 <label><span class="tree-icon-b">节点的文本</span></label>
                 <div ecui="value:44"><span class="tree-icon-d">子控件文本</span></div>
@@ -67,7 +67,7 @@
         <label><span class="tree-icon-a">节点的文本</span></label>
         <div ecui="value:2">
             <label><span class="tree-icon-a">节点的文本</span></label>
-            <div ecui="value:3"><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:3" data-async="true"><span class="tree-icon-b">子控件文本</span></div>
             <div ecui="value:4">
                 <label><span class="tree-icon-b">节点的文本</span></label>
                 <div ecui="value:44"><span class="tree-icon-d">子控件文本</span></div>
@@ -91,7 +91,9 @@
     ecui.get('t1').loadChildren = function () {
         var node = this;
         baidu.ajax.post('/veyron/getChildTree', '', function (xhr, res) {
-            node.insertChildTree(res);
+            setTimeout(function () {
+                node.insertChildTree(res);
+            }, 3000)
         });
     };
 
@@ -106,6 +108,16 @@
             alert('最多选择' + lenLimit + '个');
             return false;
         }
+    };
+
+    // tree2 异步载入子节点
+    ecui.get('t2').loadChildren = function () {
+        var node = this;
+        baidu.ajax.post('/veyron/getChildTree', '', function (xhr, res) {
+            setTimeout(function () {
+                node.insertChildTree(res);
+            }, 2000);
+        });
     };
 
     ecui.get('t2').onnodeclick = function (event) {
@@ -126,6 +138,14 @@
         + '<br/>已选值:'
         + this.getRoot().getCheckedValue().join();
     };
+    // tree3 异步载入子节点
+    ecui.get('t3').loadChildren = function () {
+        var node = this;
+        baidu.ajax.post('/veyron/getChildTree', '', function (xhr, res) {
+            node.insertChildTree(res);
+        });
+    };
+
     
 </script>
 </body>

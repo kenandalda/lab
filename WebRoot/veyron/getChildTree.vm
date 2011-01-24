@@ -1,4 +1,4 @@
-#foreach ($i in [1..5])
+#foreach ($i in [1..3])
 <div ecui='value:asyn-$velocityCount'>
     <span class="tree-icon-d">动态加载节点$velocityCount</span>
 </div>

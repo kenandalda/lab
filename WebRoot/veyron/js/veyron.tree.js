@@ -7,6 +7,7 @@
         getStyle = dom.getStyle,
         createDom = dom.create,
         removeDom = dom.remove,
+        moveElements = dom.moveElements,
         first = dom.first,
         children = dom.children,
         trim = core.string.trim,
@@ -59,6 +60,7 @@
         }
         else if (root.loadChildren) {
             if (this.getOuter().getAttribute('data-async') && !this.getChildTrees().length) {
+                this.alterClass('loading');
                 root.loadChildren.call(this);
                 this.setFold = blank;
             }
@@ -90,10 +92,18 @@
      * @param {Event} event 事件对象
      */
     UI_CHECK_TREE_CLASS.$click = function (event) {
+        var root = this.getRoot();
         if (getMouseX(this) > toNumber(getStyle(this.getBase(), 'paddingLeft'))) {
             var isChecked = this.isChecked();
             this.setChecked(!isChecked);
             this.setFold = blank;
+        }
+        else if (root.loadChildren) {
+            if (this.getOuter().getAttribute('data-async') && !this.getChildTrees().length) {
+                this.alterClass('loading');
+                root.loadChildren.call(this);
+                this.setFold = blank;
+            }
         }
         UI_TREE_CLASS.$click.call(this, event);
         delete this.setFold;
@@ -200,16 +210,39 @@
 
     /**
      * 添加子树
+     * @public
+     * @override
+     *
+     * @param {string} html 子树的html
+     */
+    UI_CHECK_TREE_CLASS.insertChildTree = function (html) {
+        UI_TREE_CLASS.insertChildTree.call(this, html);
+        // checkbox 建立关联
+        if (this._oSuperior) {
+            var superior = this.$getSection('Checkbox');
+            for (var i = 0, o, list = this.getChildTrees(), checkbox; o = list[i++];) {
+               checkbox = o.$getSection('Checkbox'); 
+               checkbox.setChecked(superior.isChecked());
+               checkbox.setSuperior(superior);
+            }
+        }
+    };
+
+    /**
+     * 树基类: 添加子树
+     * @public
+     *
+     * @param {string} html 子树的html
      */
     UI_TREE_CLASS.insertChildTree = function (html) {
         if (!this.getChildTrees().length) {
             var el = this.getOuter();
-            el.innerHTML = '<label>' + el.innerHTML + '</label>';    
+            var o = createDom('', 'display:block', 'label');
+            moveElements(el, o, true);
+            el.appendChild(o);
 
-            var o = first(el),
-                childTrees = this._aTree = [];
+            var childTrees = this._aTree = [];
             insertBefore(o, el);
-            o.style.display = 'block';
             this._eBase = this._eBody = o;
             $bind(o, this);
             el.innerHTML = html;
@@ -220,6 +253,7 @@
                 (childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, undefined)).$setParent(this);
             }
             UI_TREE_FLUSH(this);
+            this.alterClass('loading', true);
         }
     }
 
@@ -261,7 +295,10 @@
      */
     function UI_TREE_CREATE_CHILD(el, parent, params) {
         el.className = parent.getType() + ' ' + (trim(el.className) || parent.getBaseClass());
-        return $fastCreate(parent.constructor, el, null, copy(copy({}, params), getParameters(el)));
+        var o = $fastCreate(parent.constructor, el, null, copy(copy({}, params), getParameters(el)));
+        o.cache();
+        o.init();
+        return o;
     }
 
     UI_TREE_CLASS.oncreate = function (params) {
