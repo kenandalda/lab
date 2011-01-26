@@ -23,6 +23,7 @@ var ecomui = ecomui || {};
 
         ieVersion = lib.browser.ie,
         $fastCreate = core.$fastCreate,
+        findControl = core.findControl,
         createDom = dom.create,
         blank = util.blank || function(){},
         inherits = util.inherits,
@@ -39,6 +40,9 @@ var ecomui = ecomui || {};
         setText = dom.setText,
         cloneObject = lib.object.clone,
         getStyle = dom.getStyle,
+        getMouseX = core.getMouseX,
+        getMouseY = core.getMouseY,
+        intercept = core.intercept,
 
         libDate = lib.date,
         formatDate = libDate.format,
@@ -430,11 +434,11 @@ var ecomui = ecomui || {};
      * 处理点击日历选择日期
      * 将ecom日历的子日历的ondateclick挂在了其父控件的prototype上, this指向子日历控件
      */
-    function ECOM_CALENDAR_DATECLICK(date) {
+    function ECOM_CALENDAR_DATECLICK(event, date) {
         var wrapper = this.getParent();
-        wrapper.ondateclick.call(wrapper, date);
+        wrapper.ondateclick.call(wrapper, event, date);
     }
-    ECOM_CALENDAR_CLASS.ondateclick = function(date) {
+    ECOM_CALENDAR_CLASS.ondateclick = function(event, date) {
         this.selectDate(date); 
         this.change();
     };
@@ -563,7 +567,7 @@ var ecomui = ecomui || {};
             iframe,
             calType = params.calType ? toCamelCase("-" + params.calType) : "Single";
 
-        params.capture = false;
+        // params.capture = false;
         el.style.cssText = ieVersion && ieVersion < 8 ? "display:inline;zoom:1" : "display:inline-block";
         UI_CONTROL.call(this, el, params);        
 
@@ -610,7 +614,7 @@ var ecomui = ecomui || {};
             document.body.appendChild(iframe);
         }
 
-        edit.onfocus = ECOM_CALENDAR_EDIT_FOCUS;      
+        // edit.onfocus = ECOM_CALENDAR_EDIT_FOCUS;      
         cal.$show = ECOM_CALENDAR_EDIT_CALSHOW;
         cal.$hide = ECOM_CALENDAR_EDIT_CALHIDE;
         cal.$blur = ECOM_CALENDAR_EDIT_CALBLUR;
@@ -657,6 +661,25 @@ var ecomui = ecomui || {};
         // this._uEdit.style.width = getStyle(this.getOuter(), "width");
     };
 
+    /**
+     * 界面点击强制拦截事件的默认处理
+     * 展开日历时, 如果点击在日历之内, 交给日历处理, 如果但在其外则隐藏日历
+     */
+    ECOM_CALENDAR_EDIT_CLASS.$intercept = function (event) {
+        var cal = this._uCalendar,
+            mouseX = getMouseX(cal), 
+            mouseY = getMouseY(cal);
+
+        if (mouseX < 0 || mouseY < 0 || mouseX > cal.getWidth() || getMouseY(cal) > cal.getHeight()) {
+            cal.hide();
+        }
+        else {
+            var control = findControl(event.target)
+            control && control.click.call(control, event);
+            intercept(this);
+        }
+    };
+
     ECOM_CALENDAR_EDIT_CLASS.reset = function() {
         this._uCalendar.oneditreset && this._uCalendar.oneditreset.call(this);
     };
@@ -681,17 +704,16 @@ var ecomui = ecomui || {};
     /**
      * 处理日历输入框获得焦点
      */
-    function ECOM_CALENDAR_EDIT_FOCUS(e) {
-        var cal = this._cCalendar;
+    ECOM_CALENDAR_EDIT_CLASS.$click = function (event) {
+        var cal = this._uCalendar;
 
-        cal._cWrapper = this._cWrapper;
-        cal._eEdit = this;
+        cal._cWrapper = this;
+        cal._eEdit = this._uEdit;
         
         cal.show();
+        intercept(this);
 
 //        core.mask(0.05);
-        core.setFocused(cal);
-        this.blur();
     }
 
     /**
@@ -743,7 +765,6 @@ var ecomui = ecomui || {};
     function ECOM_CALENDAR_EDIT_CALBLUR(event) {
         this.constructor.prototype.$blur.call(this);
         this.$hide();
-//        core.mask();
     }
 
     /**
@@ -797,10 +818,10 @@ var ecomui = ecomui || {};
     /**
      * 日期点击 
      */
-    function ECOM_CALEDIT_SINGLECAL_DATECLICK(date) {
+    function ECOM_CALEDIT_SINGLECAL_DATECLICK(event, date) {
         var calProps = this._cWrapper._oCalProps;
 
-        this.constructor.prototype.ondateclick.call(this, date);
+        this.constructor.prototype.ondateclick.call(this, event, date);
         this._eEdit.value = formatDate(date, ECOM_CALENDAR_DATEFORMAT);
         this.hide();
 

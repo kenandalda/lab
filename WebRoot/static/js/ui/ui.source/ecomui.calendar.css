@@ -3,7 +3,7 @@
  * -------------------------------------------*/
 
 /*  整体控制 */
-.ec-calendar {margin:1px auto 0;width:175px;text-align:center;}
+.ec-calendar {margin:1px auto 0;width:175px;text-align:center;overflow:hidden!important;}
 
 /* 单日历 */
 .time-single {height:168px;width:177px;border:1px solid #95AAC9;background:#FFF}
