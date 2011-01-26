@@ -10,6 +10,7 @@
 //__gzip_unitize__i
 //__gzip_unitize__list
 //__gzip_unitize__o
+//__gzip_unitize__el
 //__gzip_unitize__params
     var core = ecui = {},
         array = core.array = {},
@@ -19,19 +20,10 @@
         ui = core.ui = {},
         util = core.util = {};
 
-    //__gzip_original__libArray
-    //__gzip_original__libBrowser
-    //__gzip_original__libDom
-    //__gzip_original__libString
-    var lib = baidu,
-        libArray = lib.array,
-        libBrowser = lib.browser,
-        libDom = lib.dom,
-        libString = lib.string;
-
     //__gzip_original__WINDOW
     ///__gzip_original__DOCUMENT
     //__gzip_original__DATE
+    //__gzip_original__FUNCTION
     //__gzip_original__MATH
     //__gzip_original__REGEXP
     //__gzip_original__ABS
@@ -47,6 +39,7 @@
         WINDOW = window,
         DOCUMENT = document,
         DATE = Date,
+        FUNCTION = Function,
         MATH = Math,
         REGEXP = RegExp,
         ABS = MATH.abs,
@@ -59,18 +52,74 @@
         PARSEINT = parseInt,
         ISNAN = isNaN;
 
-    //__gzip_original__isStrict
-    //__gzip_original__isWebkit
-    ///__gzip_original__ieVersion
-    ///__gzip_original__firefoxVersion
-    //__gzip_original__operaVersion
-    var isStrict = libBrowser.isStrict,
-        isWebkit = libBrowser.isWebkit,
+    var USER_AGENT = navigator.userAgent,
+        isStrict = DOCUMENT.compatMode == 'CSS1Compat',
+        ieVersion = /msie (\d+\.\d)/i.test(USER_AGENT) ? DOCUMENT.documentMode || (REGEXP.$1 - 0) : undefined,
+        firefoxVersion = /firefox\/(\d+\.\d)/i.test(USER_AGENT) ? REGEXP.$1 - 0 : undefined,
+        operaVersion = /opera\/(\d+\.\d)/i.test(USER_AGENT) ? REGEXP.$1 - 0 : undefined,
+        safariVersion =
+            /(\d+\.\d)(\.\d)?\s+safari/i.test(USER_AGENT) && !/chrome/i.test(USER_AGENT) ? REGEXP.$1 - 0 : undefined;
 
-        ieVersion = libBrowser.ie,
+    var charset = {
+            utf8: {
+                getLength: function (source) {
+                    return source.replace(/[\x80-\u07ff]/g, '  ').replace(/[\u0800-\uffff]/g, '   ').length;
+                },
 
-        firefoxVersion = libBrowser.firefox,
-        operaVersion = libBrowser.opera;
+                codeLength: function (code) {
+                    return code > 2047 ? 3 : code > 127 ? 2 : 1;
+                }
+            },
+
+            gbk: {
+                getLength: function (source) {
+                    return source.replace(/[\x80-\uffff]/g, '  ').length;
+                },
+
+                codeLength: function (code) {
+                    return code > 127 ? 2 : 1;
+                }
+            }
+        };
+
+    var styleFixer = {
+            display:
+                ieVersion < 8 ? {
+                    get: function (el, style) {
+                        return style.display == 'inline' && style.zoom == 1 ? 'inline-block' : style.display;
+                    },
+
+                    set: function (el, value) {
+                        if (value == 'inline-block') {
+                            value = 'inline';
+                            el.style.zoom = 1;
+                        }
+                        el.style.display = value;
+                    }
+                } : firefoxVersion < 3 ? {
+                    get: function (el, style) {
+                        return style.display == '-moz-inline-box' ? 'inline-block' : style.display;
+                    },
+
+                    set: function (el, value) {
+                        el.style.display = value == 'inline-block' ? '-moz-inline-box' : value;
+                    }
+                } : undefined,
+
+            opacity:
+                ieVersion ? {
+                    get: function (el, style) {
+                        return /alpha\(opacity=(\d+)/.test(style.filter) ? ((REGEXP.$1 - 0) / 100) + '' : '1';
+                    },
+
+                    set: function (el, value) {
+                        el.style.filter =
+                            el.style.filter.replace(/alpha\([^\)]*\)/gi, '') + 'alpha(opacity=' + value * 100 + ')';
+                    }
+                } : undefined,
+
+            'float': ieVersion ? 'styleFloat' : 'cssFloat'
+        };
 
         /**
          * 查询数组中指定对象的位置序号。
@@ -81,7 +130,14 @@
          * @param {Object} obj 需要查询的对象
          * @return {number} 位置序号，不存在返回 -1
          */
-     var indexOf = array.indexOf = libArray.indexOf,
+    var indexOf = array.indexOf = function (list, obj) {
+            for (var i = list.length; i--; ) {
+                if (list[i] === obj) {
+                    break;
+                }
+            }
+            return i;
+        },
 
         /**
          * 从数组中移除对象。
@@ -90,7 +146,13 @@
          * @param {Array} list 数组对象
          * @param {Object} obj 需要移除的对象
          */
-        remove = array.remove = libArray.remove,
+        remove = array.remove = function (list, obj) {
+            for (var i = list.length; i--; ) {
+                if (list[i] === obj) {
+                    list.splice(i, 1);
+                }
+            }
+        },
 
         /**
          * 为 Element 对象添加新的样式。
@@ -99,7 +161,9 @@
          * @param {HTMLElement} el Element 对象
          * @param {string} className 样式名，可以是多个，中间使用空白符分隔
          */
-        addClass = dom.addClass = libDom.addClass,
+        addClass = dom.addClass = function (el, className) {
+            el.className += ' ' + className;
+        },
 
         /**
          * 获取 Element 对象的所有深度为1的子 Element 对象。
@@ -108,7 +172,14 @@
          * @param {HTMLElement} el Element 对象
          * @return {Array} Element 对象数组
          */
-        children = dom.children = libDom.children,
+        children = dom.children = function (el) {
+            for (var result = [], o = el.firstChild; o; o = o.nextSibling) {
+                if (o.nodeType == 1) {
+                    result.push(o);
+                }
+            }
+            return result;    
+        },
 
         /**
          * 判断一个 Element 对象是否包含另一个 Element 对象。
@@ -120,7 +191,8 @@
          * @return {boolean} contained 对象是否被包含于 container 对象的 DOM 节点上
          */
         contain = dom.contain = function (container, contained) {
-            return container == contained || libDom.contains(container, contained);
+            return container.contains ?
+                container.contains(contained) : !(container.compareDocumentPosition(contained) & 47);
         },
 
         /**
@@ -133,7 +205,7 @@
          * @return {HTMLElement} 创建的 Element 对象
          */
         createDom = dom.create = function (className, cssText, tagName) {
-            tagName = DOCUMENT.createElement(tagName || 'DIV');
+            tagName = DOCUMENT.createElement(tagName || 'div');
             if (className) {
                 tagName.className = className;
             }
@@ -150,7 +222,9 @@
          * @param {HTMLElement} el Element 对象
          * @return {HTMLElement} 子 Element 对象
          */
-        first = dom.first = libDom.first,
+        first = dom.first = function (el) {
+            return matchNode(el.firstChild, 'nextSibling');
+        },
 
         /**
          * 获取 Element 对象的父 Element 对象。
@@ -175,7 +249,7 @@
          * @param {HTMLElement} el Element 对象
          * @return {Object} 位置信息
          */
-        getPosition = dom.getPosition = function (element) {
+        getPosition = dom.getPosition = function (el) {
             var top = 0,
                 left = 0,
                 body = DOCUMENT.body,
@@ -192,37 +266,31 @@
                     }
                 }
 
-                o = element.getBoundingClientRect();
+                o = el.getBoundingClientRect();
                 top += html.scrollTop + body.scrollTop - html.clientTop + FLOOR(o.top);
                 left += html.scrollLeft + body.scrollLeft - html.clientLeft + FLOOR(o.left);
             }
-            else if (element == html) {
+            else if (el == html) {
                 top = html.scrollTop + body.scrollTop;
                 left = html.scrollLeft + body.scrollLeft;
             }
             else {
-                for (o = element; o; o = o.offsetParent) {
+                for (o = el; o; o = o.offsetParent) {
                     top += o.offsetTop;
                     left += o.offsetLeft;
                 }
 
-                if (operaVersion || (isWebkit && getStyle(element, 'position') == 'absolute')) {
+                if (operaVersion || (/webkit/i.test(USER_AGENT) && getStyle(el, 'position') == 'absolute')) {
                     top -= body.offsetTop;
                 }
 
-                for (
-                    var o = getParent(element),
-                        style = getStyle(element);
-                    o != html;
-                    o = getParent(o), style = element
-                ) {
+                for (var o = getParent(el), style = getStyle(el); o != html; o = getParent(o), style = el) {
                     left -= o.scrollLeft;
                     if (!operaVersion) {
-                        element = getStyle(o);
-                        body =
-                            firefoxVersion && element.overflow != 'visible' && style.position == 'absolute' ? 2 : 1;
-                        top += toNumber(html.borderTopWidth) * body - o.scrollTop;
-                        left += toNumber(html.borderLeftWidth) * body;
+                        el = getStyle(o);
+                        body = firefoxVersion && el.overflow != 'visible' && style.position == 'absolute' ? 2 : 1;
+                        top += toNumber(el.borderTopWidth) * body - o.scrollTop;
+                        left += toNumber(el.borderLeftWidth) * body;
                     }
                     else if (o.tagName != 'TR') {
                         top -= o.scrollTop;
@@ -243,8 +311,10 @@
          * @return {CssStyle|Object} CssStyle 对象或样式值
          */
         getStyle = dom.getStyle = function (el, name) {
-            return name ? libDom.getStyle(el, name) :
-                el.currentStyle || (ieVersion ? el.style : getComputedStyle(el, null));
+            var fixer = styleFixer[name],
+                style = el.currentStyle || (ieVersion ? el.style : getComputedStyle(el, null));
+
+            return name ? fixer && fixer.get ? fixer.get(el, style) : style[fixer || name] : style;
         },
 
         /**
@@ -262,23 +332,31 @@
 
         /**
          * 将 Element 对象插入指定的 Element 对象之后。
+         * 如果指定的 Element 对象没有父 Element 对象，相当于 remove 操作。
          * @public
          *
          * @param {HTMLElement} el 被插入的 Element 对象
          * @param {HTMLElement} target 目标 Element 对象
          * @return {HTMLElement} 被插入的 Element 对象
          */
-        insertAfter = dom.insertAfter = libDom.insertAfter,
+        insertAfter = dom.insertAfter = function (el, target) {
+            var parent = getParent(target);
+            return parent ? parent.insertBefore(el, target.nextSibling) : removeDom(el);
+        },
 
         /**
          * 将 Element 对象插入指定的 Element 对象之前。
+         * 如果指定的 Element 对象没有父 Element 对象，相当于 remove 操作。
          * @public
          *
          * @param {HTMLElement} el 被插入的 Element 对象
          * @param {HTMLElement} target 目标 Element 对象
          * @return {HTMLElement} 被插入的 Element 对象
          */
-        insertBefore = dom.insertBefore = libDom.insertBefore,
+        insertBefore = dom.insertBefore = function (el, target) {
+            var parent = getParent(target);
+            return parent ? parent.insertBefore(el, target) : removeDom(el);
+        },
 
         /**
          * 向指定的 Element 对象内插入一段 html 代码。
@@ -288,7 +366,24 @@
          * @param {string} position 插入 html 的位置信息，取值为 beforeBegin,afterBegin,beforeEnd,afterEnd
          * @param {string} html 要插入的 html 代码
          */
-        insertHTML = dom.insertHTML = libDom.insertHTML,
+        insertHTML = dom.insertHTML = function (el, position, html) {
+            if (el.insertAdjacentHTML) {
+                el.insertAdjacentHTML(position, html);
+            }
+            else {
+                var name = {
+                        AFTERBEGIN: 'selectNodeContents',
+                        BEFOREEND: 'selectNodeContents',
+                        BEFOREBEGIN: 'setStartBefore',
+                        AFTEREND: 'setEndAfter'
+                    }[position.toUpperCase()],
+                    range = DOCUMENT.createRange();
+
+                range[name](el);
+                range.collapse(position.length > 9);
+                range.insertNode(range.createContextualFragment(html));
+            }
+        },
 
         /**
          * 获取 Element 对象的最后一个子 Element 对象。
@@ -297,7 +392,9 @@
          * @param {HTMLElement} el Element 对象
          * @return {HTMLElement} 子 Element 对象
          */
-        last = dom.last = libDom.last,
+        last = dom.last = function (el) {
+            return matchNode(el.lastChild, 'previousSibling');
+        },
 
         /**
          * 将指定的 Element 对象的内容移动到目标 Element 对象中。
@@ -318,21 +415,15 @@
         },
 
         /**
-         * 获取 Element 对象的下一个子 Element 对象。
+         * 获取 Element 对象的下一个 Element 对象。
          * @public
          *
          * @param {HTMLElement} el Element 对象
-         * @return {HTMLElement} 子 Element 对象
+         * @return {HTMLElement} Element 对象
          */
-        next = dom.next = libDom.next,
-
-        /**
-         * 设置页面加载完毕后自动执行的方法。
-         * @public
-         *
-         * @param {Function} func 需要自动执行的方法
-         */
-        ready = dom.ready = libDom.ready,
+        next = dom.next = function (el) {
+            return matchNode(el.nextSibling, 'nextSibling');
+        },
 
         /**
          * 从页面中移除 Element 对象。
@@ -356,7 +447,25 @@
          * @param {HTMLElement} el Element 对象
          * @param {string} className 样式名，可以是多个，中间用空白符分隔
          */
-        removeClass = dom.removeClass = libDom.removeClass,
+        removeClass = dom.removeClass = function (el, className) {
+            var oldClasses = el.className.split(/\s+/).sort(),
+                newClasses = className.split(/\s+/).sort(),
+                i = oldClasses.length,
+                j = newClasses.length;
+
+            for (; i && j; ) {
+                if (oldClasses[i - 1] == newClasses[j - 1]) {
+                    oldClasses.splice(--i, 1);
+                }
+                else if (oldClasses[i - 1] < newClasses[j - 1]) {
+                    j--;
+                }
+                else {
+                    i--;
+                }
+            }
+            el.className = oldClasses.join(' ');
+        },
 
         /**
          * 设置输入框的表单项属性。
@@ -370,7 +479,7 @@
          */
         setInput = dom.setInput = function (el, name, type) {
             if (!el) {
-                if (ieVersion) {
+                if (ieVersion < 9) {
                     return createDom('', '', '<input type="' + (type || '') + '" name="' + (name || '') + '">');
                 }
 
@@ -383,7 +492,7 @@
                 if (ieVersion) {
                     insertHTML(
                         el,
-                        'afterEnd',
+                        'AFTEREND',
                         '<input type="' + type + '" name="' + name + '" class="' + el.className +
                             '" style="' + el.style.cssText + '" ' + (el.disabled ? 'disabled' : '') +
                             (el.readOnly ? ' readOnly' : '') + '>'
@@ -411,7 +520,15 @@
          * @param {string} name 样式名称
          * @param {string} value 样式值
          */
-        setStyle = dom.setStyle = libDom.setStyle,
+        setStyle = dom.setStyle = function (el, name, value) {
+            var fixer = styleFixer[name];
+            if (fixer && fixer.set) {
+                fixer.set(el, value);
+            }
+            else {
+                el.style[fixer || name] = value;
+            }
+        },
 
         /**
          * 设置 Element 对象的文本。
@@ -434,32 +551,45 @@
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        encodeHTML = string.encodeHTML = libString.encodeHTML,
+        encodeHTML = string.encodeHTML = function (source) {
+            return source.replace(/[&<>"']/g, function (c) {
+                return '&#' + c.charCodeAt(0) + ';';
+            });
+        },
 
         /**
-         * 根据字节长度截取字符串
+         * 计算字符串的字节长度。
+         * 如果没有指定编码集，getByteLength 方法相当于核心的 String.length 属性。
+         * 
+         * @param {string} source 目标字符串
+         * @param {string} charsetName 字符对应的编码集
+         * @return {number} 字节长度
+         */
+        getByteLength = string.getByteLength = function (source, charsetName) {
+            return charsetName ? charset[charsetName].getLength(source) : source.length;
+        },
+
+        /**
+         * 根据字节长度截取字符串。
+         * 如果没有指定编码集，sliceByte 方法相当于核心的 String.slice 方法。
          * 
          * @param {string} source 目标字符串
          * @param {number} length 需要截取的字节长度
-         * @param {number|Function} count 一个非 ascii 字符对应几个字节，或者是计算字节的函数
+         * @param {string} charsetName 字符对应的编码集
          * @return {string} 结果字符串
          */
-        sliceByte = string.sliceByte = function (source, length, count) {
-            for (
-                var i = 0,
-                    func = 'number' == typeof count ? function (charCode) {
-                        return charCode > 127 ? count : 1;
-                    } : count;
-                i < source.length;
-                i++
-            ) {
-                length -= func(source.charCodeAt(i));
-                if (length < 0) {
-                    return source.slice(0, i);
+        sliceByte = string.sliceByte = function (source, length, charsetName) {
+            if (charsetName) {
+                for (var i = 0, func = charset[charsetName].codeLength; i < source.length; i++) {
+                    length -= func(source.charCodeAt(i));
+                    if (length < 0) {
+                        return source.slice(0, i);
+                    }
                 }
-            }
 
-            return source;
+                return source;
+            }
+            return source.slice(0, length);
         },
 
         /**
@@ -470,16 +600,26 @@
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        toCamelCase = string.toCamelCase =
-            libString.toCamelCase,
+        toCamelCase = string.toCamelCase = function (source) {
+            if (source.indexOf('-') < 0) {
+                return source;
+            }
+            return source.replace(/\-./g, function (match) {
+                return match.charAt(1).toUpperCase();
+            });
+        },
 
         /**
-         * 将目标字符串中常见全角字符转换成半角字符
+         * 将目标字符串中常见全角字符转换成半角字符。
          * 
          * @param {string} source 目标字符串
          * @return {string} 结果字符串
          */
-        toHalfWidth = string.toHalfWidth = libString.toHalfWidth,
+        toHalfWidth = string.toHalfWidth = function (source) {
+            return source.replace(/[\u3000\uFF01-\uFF5E]/g, function (c) {
+                return String.fromCharCode(MAX(c.charCodeAt(0) - 65248, 32));
+            });
+        },
 
         /**
          * 过滤字符串两端的空白字符。
@@ -489,7 +629,7 @@
          * @return {string} 结果字符串
          */
         trim = string.trim = function (source) {
-            return source.replace(/(^[\s\t\xa0\u3000]+)|([\u3000\xa0\s\t]+$)/g, '');
+            return source && source.replace(/^\s+|\s+$/g, '');
         },
 
         /**
@@ -532,10 +672,16 @@
          * 对象属性复制。
          * @public
          *
-         * @param {Object} des 目标对象
-         * @param {Object} src 源对象
+         * @param {Object} target 目标对象
+         * @param {Object} source 源对象
+         * @return {Object} 目标对象
          */
-        copy = util.copy = lib.object.extend,
+        copy = util.copy = function (target, source) {
+            for (var key in source) {
+                target[key] = source[key];
+            }
+            return target;
+        },
 
         /**
          * 卸载事件。
@@ -616,25 +762,44 @@
          * @return {Object} subClass 的 prototype 属性
          */
         inherits = util.inherits = function (subClass, superClass) {
-            lib.lang.inherits(subClass, superClass);
+            var oldPrototype = subClass.prototype,
+                clazz = new FUNCTION();
+                
+            clazz.prototype = superClass.prototype;
+            copy(subClass.prototype = new clazz(), oldPrototype);
+            subClass.prototype.constructor = subClass;
+            subClass.superClass = superClass.prototype;
+
             return subClass.prototype;
         },
 
         /**
-         * 将字符串解析成 json 对象。
-         * 
-         * @param {string} source 需要解析的字符串
-         * @return {Object} 解析结果 json 对象
+         * 创建一个定时器对象，从第4个参数起都是传入 func 中的变量。
+         * @public
+         *
+         * @param {Function} func 定时器需要调用的函数
+         * @param {number} delay 定时器延迟调用的毫秒数，如果为负数表示需要连续触发
+         * @param {Object} caller 调用者，在 func 被执行时，this 指针指向的对象，可以为空
+         * @return {Function} 用于关闭定时器的方法
          */
-        parse = util.parse = lib.json.parse,
+        timer = util.timer = function (func, delay, caller) {
+            var args = Array.prototype.slice.call(arguments, 3),
+                handle = (delay < 0 ? setInterval : setTimeout)(function () {
+                    func.apply(caller, args);
+                    if (delay >= 0) {
+                        func = caller = args = null;
+                    }
+                }, ABS(delay));
 
-        /**
-         * 将 json 对象序列化。
-         * 
-         * @param {Object} value 需要序列化的 json 对象
-         * @return {string} 序列化后的字符串
-         */
-        stringify = util.stringify = lib.json.stringify,
+            /**
+             * 中止定时调用操作
+             * @public
+             */
+            return function () {
+                (delay < 0 ? clearInterval : clearTimeout)(handle);
+                func = caller = args = null;
+            };
+        },
 
         /**
          * 将对象转换成数值。
@@ -646,12 +811,99 @@
          */
         toNumber = util.toNumber = function (obj) {
             return PARSEINT(obj) || 0;
-        };
+        },
+
+        /**
+         * 设置页面加载完毕后自动执行的方法。
+         * @public
+         *
+         * @param {Function} func 需要自动执行的方法
+         */
+        ready = dom.ready = (function () {
+            var hasReady = false,
+                list = [],
+                check,
+                numStyles;
+
+            function ready() {
+                if (!hasReady) {
+                    hasReady = true;
+                    for (var i = 0, o; o = list[i++]; ) {
+                        o();
+                    }
+                }
+            }
+
+            if (DOCUMENT.addEventListener && !operaVersion) {
+                DOCUMENT.addEventListener('DOMContentLoaded', ready, false);
+            }
+            else if (ieVersion && WINDOW == top) {
+                check = function () {
+                    try {
+                        DOCUMENT.documentElement.doScroll('left');
+                        ready();
+                    }
+                    catch (e) {
+                        timer(check, 0);
+                    }
+                };
+            }
+            else if (safariVersion) {
+                check = function () {
+                    var i = 0,
+                        list,
+                        o = DOCUMENT.readyState;
+
+                    if (o != 'loaded' && o != 'complete') {
+                        timer(check, 0);
+                    }
+                    else {
+                        if (numStyles === undefined) {
+                            numStyles = 0;
+                            if (list = DOCUMENT.getElementsByTagName('style')) {
+                                numStyles += list.length;
+                            }
+                            if (list = DOCUMENT.getElementsByTagName('link')) {
+                                for (; o = list[i++]; ) {
+                                    if (o.getAttribute('rel') == 'stylesheet') {
+                                        numStyles++;
+                                    }
+                                }
+                            }
+                        }
+                        if (DOCUMENT.styleSheets.length != numStyles) {
+                            timer(check, 0);
+                        }
+                        else {
+                            ready();
+                        }
+                    }
+                };
+            }
+
+            if (check) {
+                check();
+            }
+
+            attachEvent(WINDOW, 'load', ready);
+
+            return function (func) {
+                if (hasReady) {
+                    func();
+                }
+                else {
+                    list.push(func);
+                }
+            };
+        })();
 
 
 
 
 
+    var NORMAL = core.NORMAL = 0,
+        INIT = core.INIT = 1,
+        PAINT = core.PAINT = 2;
 
 //__gzip_unitize__event
     var $bind,
@@ -663,28 +915,7 @@
         calcLeftRevise,
         calcTopRevise,
         calcWidthRevise,
-
-        /**
-         * 创建 ECUI 控件。
-         * 标准的创建 ECUI 控件 的工厂方法，所有的 ECUI 控件 都应该通过 create 方法或者 $create 方法生成。params 参数对象支持的属性如下：
-         * id        {string} 当前控件的 id，提供给 $connect 与 get 方法使用
-         * base      {string} 控件的基本样式，参见 getBaseClass 方法，如果忽略此参数将使用基本 Element 对象的 className 属性
-         * element   {HTMLElement} 与控件绑捆的 Element 对象，参见 getBase 方法，如果忽略此参数将创建 Element 对象与控件绑捆
-         * parent    {ecui.ui.Control} 父控件对象或者父 Element 对象
-         * type      {string} 控件的默认样式，通常情况下省略此参数，使用 "ec-控件名称" 作为控件的默认样式
-         * @public
-         *
-         * @param {string} type 控件的名称
-         * @param {Object} params 初始化参数，参见 ECUI 控件
-         * @return {ecui.ui.Control} ECUI 控件
-         */
-        createControl = core.create = function (type, params) {
-            type = $create(type, params);
-            type.cache();
-            type.init();
-            return type;
-        },
-
+        createControl,
         disposeControl,
         drag,
 
@@ -724,33 +955,6 @@
         setFocused,
         standardEvent,
 
-        /**
-         * 创建一个定时器对象，从第4个参数起都是传入 func 中的变量
-         * @public
-         *
-         * @param {Function} func 定时器需要调用的函数
-         * @param {number} delay 定时器延迟调用的毫秒数，如果为负数表示需要连续触发
-         * @param {Object} caller 调用者，在 func 被执行时，this 指针指向的对象，可以为空
-         */
-        Timer = core.Timer = function (func, delay, caller) {
-            var args = Array.prototype.slice.call(arguments, 3),
-                handle = (delay < 0 ? setInterval : setTimeout)(function () {
-                    func.apply(caller, args);
-                    if (delay >= 0) {
-                        func = caller = args = null;
-                    }
-                }, ABS(delay));
-
-            /**
-             * 中止定时调用操作
-             * @public
-             */
-            this.stop = function () {
-                (delay < 0 ? clearInterval : clearTimeout)(handle);
-                func = caller = args = null;
-            };
-        },
-
         eventNames = [
             'mousedown', 'mouseover', 'mousemove', 'mouseout', 'mouseup',
             'pressstart', 'pressover', 'pressmove', 'pressout', 'pressend',
@@ -773,6 +977,7 @@ Control - ECUI 的核心组成部分，定义了基本的控件行为。
 
 属性
 _bCapture                - 控件是否响应浏览器事件状态
+_bSelect                 - 控件是否允许选中内容
 _bFocusable              - 控件是否允许获取焦点状态
 _bEnabled                - 控件的状态，为false时控件不处理任何事件
 _bCache                  - 是否处于缓存状态
@@ -788,6 +993,7 @@ _sDisplay                - 控件的布局方式，在hide时保存，在show时
 _eBase                   - 控件的基本标签对象
 _eBody                   - 控件用于承载子控件的载体标签，通过setBodyElement函数设置这个值，绑定当前控件
 _cParent                 - 父控件对象
+_aStatus                 - 控件当前的状态集合
 $cache$borderTopWidth    - 上部边框线宽度缓存
 $cache$borderLeftWidth   - 左部边框线宽度缓存
 $cache$borderRightWidth  - 右部边框线宽度缓存
@@ -806,6 +1012,7 @@ $cache$position          - 控件布局方式缓存
      * type    控件的类型样式
      * base    控件的基本样式
      * capture 是否需要捕获鼠标事件，默认捕获
+     * select  是否允许选中内容，默认允许
      * focus   是否允许获取焦点，默认允许
      * enabled 是否可用，默认可用
      * @protected
@@ -817,6 +1024,7 @@ $cache$position          - 控件布局方式缓存
     var UI_CONTROL =
         ui.Control = function (el, params) {
             this._bCapture = params.capture !== false;
+            this._bSelect = params.select !== false;
             this._bFocusable = params.focus !== false;
             this._bEnabled = params.enabled !== false;
             this._sBaseClass = this._sClass = params.base;
@@ -827,6 +1035,8 @@ $cache$position          - 控件布局方式缓存
 
             this._sWidth = el.style.width;
             this._sHeight = el.style.height;
+
+            this._aStatus = ['', ' '];
 
             $bind(el, this);
         },
@@ -949,7 +1159,9 @@ _uClose     - 关闭按钮
 
             // 生成标题控件与内容区域控件对应的Element对象
             //__gzip_original__baseClass
+            //__gzip_original__partParams
             var baseClass = params.base,
+                partParams = {select: false},
                 o = createDom(baseClass + '-main', 'position:relative;overflow:auto'),
                 titleEl = first(el);
 
@@ -967,7 +1179,6 @@ _uClose     - 关闭按钮
                     baseClass + '-close" style="position:absolute"></div>';
                 titleEl = el.firstChild;
             }
-            titleEl.onselectstart = cancel;
 
             el.style.overflow = 'hidden';
             el.appendChild(o);
@@ -976,10 +1187,10 @@ _uClose     - 关闭按钮
             this._bAuto = params.titleAuto !== false;
 
             // 初始化标题区域
-            this._uTitle = $fastCreate(UI_FORM_TITLE, titleEl, this);
+            this._uTitle = $fastCreate(UI_FORM_TITLE, titleEl, this, partParams);
 
             // 初始化关闭按钮
-            this._uClose = $fastCreate(UI_FORM_CLOSE, titleEl.nextSibling, this);
+            this._uClose = $fastCreate(UI_FORM_CLOSE, titleEl.nextSibling, this, partParams);
 
             // 计算当前窗体显示的层级
             this.getOuter().style.zIndex = UI_FORM_ALL.push(this) + 4095;
@@ -1099,20 +1310,20 @@ _nDay       - 从本月1号开始计算的天数，如果是上个月，是负�
             el.style.overflow = 'auto';
 
             // 分别插入日期网格与星期名称网格需要使用的层，星期名称网格初始化
-            for (var i = 0, html = [], baseClass = params.base; i < 7; ) {
-                html[i] =
+            for (var i = 0, list = [], baseClass = params.base; i < 7; ) {
+                list[i] =
                     '<div class="ec-collection-item ' + baseClass + '-name-item" style="float:left">' +
                         ['日', '一', '二', '三', '四', '五', '六'][i++] + '</div>';
             }
-            html[i] =
+            list[i] =
                 '</div><div class="ec-collection ' + baseClass + '-date" style="padding:0px;border:0px">';
             for (; ++i < 50; ) {
-                html.push('<div class="ec-collection-item ' + baseClass + '-date-item" style="float:left"></div>');
+                list[i] = '<div class="ec-collection-item ' + baseClass + '-date-item" style="float:left"></div>';
             }
 
             el.innerHTML =
                 '<div class="ec-collection ' + baseClass + '-name" style="padding:0px;border:0px">' +
-                    html.join('') + '</div>';
+                    list.join('') + '</div>';
 
             this._uName = $fastCreate(UI_COLLECTION, el.firstChild, this);
             this._uDate = $fastCreate(UI_CALENDAR_DATE_COLLECTION, el.lastChild, this);
@@ -1159,7 +1370,6 @@ Item/Items - 定义选项操作相关的基本操作。
         ui.Item = function (el, params) {
             UI_CONTROL.call(this, el, params);
 
-            el.onselectstart = cancel;
             el.style.overflow = 'hidden';
         },
         UI_ITEM_CLASS = inherits(UI_ITEM, UI_CONTROL),
@@ -1219,7 +1429,7 @@ _cPopup      - 是否包含下级弹出菜单
             //__gzip_original__baseClass
             //__gzip_original__buttonParams
             var baseClass = params.base,
-                buttonParams = {focus: false};
+                buttonParams = {select: false, focus: false};
 
             removeDom(el);
             el.style.cssText += ';position:absolute;overflow:hidden';
@@ -1230,9 +1440,8 @@ _cPopup      - 是否包含下级弹出菜单
 
                 el.innerHTML =
                     '<div class="ec-control ' + baseClass +
-                        ('-prev" onselectstart="return false" style="position:absolute;top:0px;left:0px"></div>' +
-                        '<div class="ec-control ') + baseClass +
-                        '-next" onselectstart="return false" style="position:absolute"></div>';
+                        '-prev" style="position:absolute;top:0px;left:0px"></div><div class="ec-control ' +
+                        baseClass + '-next" style="position:absolute"></div>';
 
                 this.$setBody(el.insertBefore(o, el = el.firstChild));
 
@@ -1265,21 +1474,16 @@ _cPopup      - 是否包含下级弹出菜单
          * @param {Object} params 初始化参数
          */
         UI_POPUP_ITEM = UI_POPUP.Item = function (el, params) {
+            UI_ITEM.call(this, el, params);
+
             var o = first(el),
-                childParams = {};
+                tmpEl;
 
             if (o && o.tagName == 'LABEL') {
-                // 需要生成子菜单
-                insertBefore(o, el);
-                o.style.display = 'block';
-                o.className = el.className;
-                el.className = 'ec-popup ' + findControl(getParent(el)).getBaseClass();
-                copy(childParams, params);
-                this._cPopup = $fastCreate(UI_POPUP, el, this, childParams);
-                el = o;
+                moveElements(el, tmpEl = createDom('ec-popup ' + params.parent.getBaseClass()));
+                el.appendChild(o);
+                this._cPopup = $fastCreate(UI_POPUP, tmpEl, this, copy({}, params));
             }
-
-            UI_ITEM.call(this, el, params);
 
             UI_POPUP_ITEM_FLUSH(this);
         },
@@ -1287,7 +1491,6 @@ _cPopup      - 是否包含下级弹出菜单
 
         UI_POPUP_CHAIN_FIRST,
         UI_POPUP_CHAIN_LAST;
-
 
 
 /*
@@ -1339,19 +1542,19 @@ _eContent        - 内容 DOM 元素
 
             //__gzip_original__baseClass
             //__gzip_original__typeClass
+            //__gzip_original__buttonParams
             var typeClass = params.type,
                 baseClass = params.base,
+                buttonParams = {select: false},
                 o = createDom(typeClass + '-title ' + baseClass + '-title', 'position:relative;overflow:hidden');
 
             this._oSelected = params.selected || 0;
 
             // 生成选项卡头的的DOM结构
             o.innerHTML = '<div class="' + typeClass + '-title-prev ' + baseClass +
-                ('-title-prev" onselectstart="return false" style="position:absolute;left:0px;display:none"></div>' +
-                    '<div class="') +
+                '-title-prev" style="position:absolute;left:0px;display:none"></div><div class="' +
                 typeClass + '-title-next ' + baseClass +
-                ('-title-next" onselectstart="return false" style="position:absolute;display:none"></div>' +
-                    '<div class="') +
+                '-title-next" style="position:absolute;display:none"></div><div class="' +
                 baseClass + '-title-main" style="position:absolute;white-space:nowrap"></div>';
 
             moveElements(el, params = o.lastChild);
@@ -1361,8 +1564,8 @@ _eContent        - 内容 DOM 元素
             this.$initItems();
 
             // 滚动按钮
-            this._uNext = $fastCreate(UI_TAB_BUTTON, params = params.previousSibling, this);
-            this._uPrev = $fastCreate(UI_TAB_BUTTON, params.previousSibling, this);
+            this._uNext = $fastCreate(UI_TAB_BUTTON, params = params.previousSibling, this, buttonParams);
+            this._uPrev = $fastCreate(UI_TAB_BUTTON, params.previousSibling, this, buttonParams);
         },
         UI_TAB_CLASS = inherits(UI_TAB, UI_CONTROL),
 
@@ -1388,14 +1591,18 @@ _eContent        - 内容 DOM 元素
          * @param {Object} params 初始化参数
          */
         UI_TAB_ITEM = UI_TAB.Item = function (el, params) {
+            UI_ITEM.call(this, el, params);
+
             //__gzip_original__parent
-            var parent = params.parent,
-                contentEl;
+            var parent = params.parent;
 
             if (el.tagName != 'LABEL') {
-                this.setContent(contentEl = el);
-                // 这里要检查父节点是否存在，如果不存在表示直接生成的对象
-                insertBefore(el = first(el), contentEl);
+                var o = first(el),
+                    tmpEl;
+
+                moveElements(el, tmpEl = createDom(params.base + '-content'), true);
+                el.appendChild(o);
+                this.setContent(tmpEl);
             }
 
             setStyle(el, 'display', 'inline-block');
@@ -1403,8 +1610,6 @@ _eContent        - 内容 DOM 元素
             if (parent && params.selected) {
                 parent._oSelected = this;
             }
-
-            UI_ITEM.call(this, el, params);
         },
         UI_TAB_ITEM_CLASS = inherits(UI_TAB_ITEM, UI_ITEM);
 
@@ -1425,7 +1630,6 @@ Edit - 定义输入数据的基本操作。
 
 属性
 _bHidden - 输入框是否为hidden类型
-_nLock   - 锁定的次数
 _eInput  - INPUT对象
 */
 
@@ -1442,6 +1646,7 @@ _eInput  - INPUT对象
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_EDIT
     var UI_EDIT =
         ui.Edit = function (el, params) {
             var input = el;
@@ -1456,59 +1661,26 @@ _eInput  - INPUT对象
             }
             else {
                 el.style.overflow = 'hidden';
-                if (input = el.getElementsByTagName('input')[0]) {
-                    input.style.border = '0px';
-                }
-                else {
+                if (!(input = el.getElementsByTagName('input')[0])) {
                     input = setInput(null, params.name, params.input);
-                    input.style.border = '0px';
                     input.value = params.value || '';
                     el.appendChild(input);
                 }
+                input.style.border = '0px';
             }
             if (this._bHidden = params.hidden) {
                 input.style.display = 'none';
             }
             setStyle(el, 'display', 'inline-block');
 
-            this._nLock = 0;
             this._eInput = input;
             UI_EDIT_BIND_EVENT(this);
 
             UI_CONTROL.call(this, el, params);
         },
-
         UI_EDIT_CLASS = inherits(UI_EDIT, UI_CONTROL),
-        UI_EDIT_INPUT = {},
 
-        /**
-         * 输入框失去焦点事件处理函数。
-         * @private
-         *
-         * @param {Event} event 事件对象
-         */
-        UI_EDIT_INPUT_BLUR = UI_EDIT_INPUT.blur = function (event) {
-            event = findControl(standardEvent(event).target);
-            // 设置默认失去焦点事件，阻止在blur事件中再次回调
-            event.$blur = UI_CONTROL_CLASS.$blur;
-            event.isEnabled() && loseFocus(event);
-            delete event.$blur;
-        },
-
-        /**
-         * 输入框获得焦点事件处理函数。
-         * @private
-         *
-         * @param {Event} event 事件对象
-         */
-        UI_EDIT_INPUT_FOCUS = UI_EDIT_INPUT.focus = function (event) {
-            event = findControl(standardEvent(event).target);
-            // 设置默认获得焦点事件，阻止在focus事件中再次回调
-            event.$focus = UI_CONTROL_CLASS.$focus;
-            // 如果控件处于不可操作状态，不允许获得焦点
-            event.isEnabled() ? setFocused(event) : event._eInput.blur();
-            delete event.$focus;
-        };
+        UI_EDIT_INPUT = {};
 
 
 /*
@@ -1530,11 +1702,9 @@ _nMinLength - 允许提交的最小长度
 _nMaxLength - 允许提交的最大长度
 _nMinValue  - 允许提交的最小值
 _nMaxValue  - 允许提交的最大值
-_sEncoding  - 字节码编码集
-_sLeft      - 每次操作左边的字符串
-_sSelection - 每次操作被替换的字符串
-_sRight     - 每次操作右边的字符串
+_sCharset   - 字节码编码集
 _sInput     - 每次操作输入的字符串
+_aSegment   - 每次操作左边/中间(被选中的)/右边的字符串
 _oKeyMask   - 允许提交的字符限制正则表达式
 _oFormat    - 允许提交的格式正则表达式
 */
@@ -1544,36 +1714,37 @@ _oFormat    - 允许提交的格式正则表达式
      * 初始化格式化输入框控件。
      * params 参数支持的属性如下：
      * symbol 是否进行全角转半角操作，默认为 true
-     * trim 是否进行前后空格 trim，默认为 true (注：粘贴内容也会进行前后空格过滤)
-     * encoding 字符编码，允许 utf8 与 gb2312，如果不设置表示基于字符验证长度
-     * keyMask 允许的字符集，自动添加正则表达式的[]，需要注意需要转义的字符
+     * trim 是否进行前后空格过滤，默认为 true (注：粘贴内容也会进行前后空格过滤)
+     * charset 字符编码，允许 utf8 与 gbk，如果不设置表示基于字符验证长度
+     * keyMask 允许的字符集正则表达式
      * minLength 最小长度限制
      * maxLength 最大长度限制
      * minValue 数字允许的最小值
      * maxValue 数字允许的最大值
-     * format 字行串的正则表达式，自动添加正则表达式的^$
+     * format 字符串的正则表达式，自动添加正则表达式的^$
      *
      * @public
      *
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_FORMAT_EDIT
     var UI_FORMAT_EDIT =
         ui.FormatEdit = function (el, params) {
-            // 为FormatEdit注册方法
             UI_EDIT.call(this, el, params);
 
             this._bSymbol = params.symbol !== false;
             this._bTrim = params.trim !== false;
-            this._sEncoding = params.encoding;
-            this._oKeyMask = params.keyMask ? new REGEXP('[' + params.keyMask + ']', 'g') : null;
+            this._sCharset = params.charset;
+            this._oKeyMask = params.keyMask ? new REGEXP(params.keyMask, 'g') : null;
             this._nMinLength = params.minLength;
             this._nMaxLength = params.maxLength;
             this._nMinValue = params.minValue;
             this._nMaxValue = params.maxValue;
             this._oFormat = params.format ? new REGEXP('^' + params.format + '$') : null;
-        },
 
+            this._aSegment = ['', '', ''];
+        },
         UI_FORMAT_EDIT_CLASS = inherits(UI_FORMAT_EDIT, UI_EDIT);
 
 
@@ -1608,22 +1779,21 @@ _aInferior - 所有的下级复选框
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_CHECKBOX
     var UI_CHECKBOX =
         ui.Checkbox = function (el, params) {
             params.hidden = true;
             params.input = 'checkbox';
 
             UI_EDIT.call(this, el, params);
-            el = this.getInput();
             if (params.checked) {
-                el.checked = true;
+                this.getInput().checked = true;
             }
 
             this._aInferior = [];
 
             $connect(this, this.setSuperior, params.superior);
         },
-
         UI_CHECKBOX_CLASS = inherits(UI_CHECKBOX, UI_EDIT);
 
 
@@ -1650,18 +1820,17 @@ Radio - 定义一组选项中选择唯一选项的基本操作。
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_RADIO
     var UI_RADIO =
         ui.Radio = function (el, params) {
             params.hidden = true;
             params.input = 'radio';
 
             UI_EDIT.call(this, el, params);
-            el = this.getInput();
             if (params.checked) {
-                el.checked = true;
+                this.getInput().checked = true;
             }
         },
-
         UI_RADIO_CLASS = inherits(UI_RADIO, UI_EDIT);
 
 
@@ -1681,7 +1850,7 @@ Tree - 定义树形结构的基本操作。
 </div>
 
 属性
-_sItemsDisplay - 隐藏时_eItems的状态，在显示时恢复
+_bFold         - 是否收缩子树
 _eItems        - 子控件区域Element对象
 _aTree         - 子控件集合
 */
@@ -1696,42 +1865,37 @@ _aTree         - 子控件集合
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_TREE
     var UI_TREE =
         ui.Tree = function (el, params) {
-            var tmpEl = first(el),
-                childTrees = this._aTree = [];
-
-            params = copy(copy({}, params), getParameters(el));
+            var o = first(el),
+                childTrees = this._aTree = [],
+                tmpEl;
 
             UI_CONTROL.call(this, el, params);
+            this._bFold = false;
 
             // 检查是否存在label标签，如果是需要自动初始化树的子结点
-            if (tmpEl && tmpEl.tagName == 'LABEL') {
+            if (o && o.tagName == 'LABEL') {
+                moveElements(el, tmpEl = createDom());
+                el.appendChild(o);
+                UI_TREE_SETITEMS(this, tmpEl);
 
                 // 初始化子控件
-                for (var i = 0, childItems = createDom(), elements = children(el), o; o = elements[i + 1]; ) {
-                    childItems.appendChild(o);
-                    childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, params);
+                for (var i = 0, list = children(tmpEl); o = list[i]; ) {
+                    (childTrees[i++] = UI_TREE_CREATE_CHILD(o, this, params)).$setParent(this);
                 }
-
-                moveElements(tmpEl, el);
-                removeDom(tmpEl);
-                UI_TREE_SETITEMS(this, childItems);
-                insertAfter(childItems, el);
             }
 
             // 改变默认的展开状态
-            if (el.style.display == 'none' || params.fold) {
-                el.style.display = '';
+            if (params.fold) {
                 this.setFold();
             }
             else {
                 UI_TREE_FLUSH(this);
             }
         },
-
         UI_TREE_CLASS = inherits(UI_TREE, UI_CONTROL);
-
 
 
 /*
@@ -1765,16 +1929,14 @@ _cSelected - 树的根节点拥有，保存当前选中的项
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_RADIO_TREE
     var UI_RADIO_TREE = 
         ui.RadioTree = function (el, params) {
-            params = copy(copy({}, params), getParameters(el));
-            this._sName = params.name;
-            this._sValue = el.getAttribute('value') || params.value;
             UI_TREE.call(this, el, params);
+            this._sName = params.name;
+            this._sValue = params.value;
         },
-
-    UI_RADIO_TREE_CLASS = inherits(UI_RADIO_TREE, UI_TREE);
-
+        UI_RADIO_TREE_CLASS = inherits(UI_RADIO_TREE, UI_TREE);
 
 
 /*
@@ -1809,33 +1971,35 @@ _uCheckbox - 复选框控件
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_CHECK_TREE
     var UI_CHECK_TREE =
         ui.CheckTree = function (el, params) {
-            params = copy(copy({}, params), getParameters(el));
-
             UI_TREE.call(this, el, params);
 
             this._oSuperior = params.superior;
 
-            var i = 0,
-                checkbox = this._uCheckbox = $fastCreate(
-                    UI_CHECKBOX,
-                    el.insertBefore(createDom('ec-checkbox ' + this.getBaseClass() + '-checkbox'), el.firstChild),
-                    this,
-                    params
-                ),
-                childTrees = this.getChildTrees();
-
-            for (; el = childTrees[i++]; ) {
+            for (
+                var i = 0,
+                    checkbox = this._uCheckbox = $fastCreate(
+                        UI_CHECKBOX,
+                        el.insertBefore(createDom('ec-checkbox ' + this.getBaseClass() + '-checkbox'), el.firstChild),
+                        this,
+                        params
+                    ),
+                    list = this.getChildTrees();
+                el = list[i++];
+            ) {
                 if (params = el._oSuperior) {
                     el = el._uCheckbox;
-                    params === true
-                        ? el.setSuperior(checkbox)
-                        : $connect(el, el.setSuperior, params);
+                    if (params === true) {
+                        el.setSuperior(checkbox);
+                    }
+                    else {
+                        $connect(el, el.setSuperior, params);
+                    }
                 }
             }
         },
-
         UI_CHECK_TREE_CLASS = inherits(UI_CHECK_TREE, UI_TREE);
 
 
@@ -1843,12 +2007,7 @@ _uCheckbox - 复选框控件
 Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
 
 属性
-_nRed        - 红色值(0-255)
-_nGreen      - 绿色值(0-255)
-_nBlue       - 蓝色值(0-255)
-_nHue        - 色调(0-1)
-_nSaturation - 饱和度(0-1)
-_nLight      - 亮度(0-1)
+_aValue      - 颜色组，依次是红色、绿色、蓝色(0-255)、色调、饱和度、亮度(0-1)
 */
 
 
@@ -1856,21 +2015,18 @@ _nLight      - 亮度(0-1)
      * 初始化色彩对象。
      * @public
      *
-     * @param {string} color 6 字符色彩值(如FFFFFF)，如果为空将使用000000
+     * @param {string} hex 6 字符色彩值(如FFFFFF)，如果为空将使用000000
      */
-    var Color = core.Color = function (rgb) {
-            if (rgb) {
-                this.setRGB(
-                    PARSEINT(rgb.substring(0, 2), 16),
-                    PARSEINT(rgb.substring(2, 4), 16),
-                    PARSEINT(rgb.substring(4, 6), 16)
-                );
+    //__gzip_original__Color
+    var Color =
+        core.Color = function (hex) {
+            if (hex) {
+                this.setRGB(PARSEINT(hex.slice(0, 2), 16), PARSEINT(hex.slice(2, 4), 16), PARSEINT(hex.slice(4), 16));
             }
             else {
                 this.setRGB(0, 0, 0);
             }
         },
-
         COLOR_CLASS = Color.prototype;
 
 /*
@@ -1889,8 +2045,8 @@ _uMain._uIcon     - 左部色彩选择区箭头
 _uLightbar        - 中部亮度条选择区
 _uLightbar._uIcon - 中部亮度条选择区箭头
 _uColor           - 右部色彩显示区
-_uConfirm         - 确认按钮
 _aValue           - 右部输入区域
+_aButton          - 按钮数组
 */
 
 
@@ -1901,106 +2057,152 @@ _aValue           - 右部输入区域
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_PALETTE
+    //__gzip_original__UI_PALETTE_AREA
+    //__gzip_original__UI_PALETTE_COLLECTION
+    //__gzip_original__UI_PALETTE_EDIT
+    //__gzip_original__UI_PALETTE_BUTTON
     var UI_PALETTE =
         ui.Palette = function (el, params) {
-            var i = 1,
-                inlineBlock = ieVersion < 8 ? 'display:inline;zoom:1' : 'display:inline-block',
-                __gzip_direct__baseClass = params.base,
-                __gzip_direct__params = {capture: false},
+            UI_CONTROL.call(this, el, params);
+
+            //__gzip_original__baseClass
+            //__gzip_original__areaParams
+            var i = 0,
+                baseClass = params.base,
+                areaParams = {capture: false},
                 list = [
-                    '<div class="' + __gzip_direct__baseClass + '-left" style="float:left"><div class="ec-control '
-                        + __gzip_direct__baseClass
-                        + '-image" style="position:relative;overflow:hidden"><div class="ec-control '
-                        + __gzip_direct__baseClass
-                        + '-cross" style="position:absolute"><div></div></div></div></div><div class="'
-                        + __gzip_direct__baseClass + '-mid" style="float:left"><div class="ec-control '
-                        + __gzip_direct__baseClass + '-lightbar" style="position:relative">'
+                    '<div class="' + baseClass + '-left" style="float:left"><div class="ec-control ' +
+                        baseClass + '-image" style="position:relative;overflow:hidden"><div class="ec-control ' +
+                        baseClass + '-cross" style="position:absolute"><div></div></div></div></div><div class="' +
+                        baseClass + '-mid" style="float:left"><div class="ec-control ' +
+                        baseClass + '-lightbar" style="position:relative">'
                 ];
 
-            for (; i < 257; ) {
-                list[i++] = '<div style="height:1px;overflow:hidden"></div>';
+            for (; ++i < 257; ) {
+                list[i] = '<div style="height:1px;overflow:hidden"></div>';
             }
 
-            list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass
-                + '-arrow" style="position:absolute"><div></div></div></div></div><div class="'
-                + __gzip_direct__baseClass
-                + '-right" style="float:left"><p>基本颜色</p><div class="'
-                + __gzip_direct__baseClass + '-basic" style="white-space:normal">';
+            list[i++] =
+                '<div class="ec-control ' + baseClass +
+                    '-arrow" style="position:absolute"><div></div></div></div></div><div class="' +
+                    baseClass + '-right" style="float:left"><p>基本颜色</p><div class="' +
+                    baseClass + '-basic" style="white-space:normal">';
 
             for (; i < 306; ) {
-                list[i++] = '<div class="ec-control ' + __gzip_direct__baseClass + '-area" style="' + inlineBlock
-                    + ';background:#' + UI_PALETTE_BASIC_COLOR[i - 259] + '"></div>';
+                list[i++] =
+                    '<div class="ec-control ' + baseClass + '-area" style="' +
+                        (ieVersion < 8 ? 'display:inline;zoom:1' : 'display:inline-block') +
+                        ';background:#' + UI_PALETTE_BASIC_COLOR[i - 259] + '"></div>';
             }
 
-            list[i] = '</div><table cellspacing="0" cellpadding="0" border="0"><tr><td class="'
-                + __gzip_direct__baseClass + '-color" rowspan="3"><div class="ec-control '
-                + __gzip_direct__baseClass + '-show"></div><input class="ec-edit '
-                + __gzip_direct__baseClass + '-value"></td><th>色调:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>红:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>饱和度:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>绿:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr><tr><th>亮度:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td><th>蓝:</th><td><input class="ec-edit '
-                + __gzip_direct__baseClass + '-edit"></td></tr></table><div class="ec-control '
-                + __gzip_direct__baseClass + '-button">确定</div><div class="ec-control '
-                + __gzip_direct__baseClass + '-button">取消</div></div>';
+            list[i] =
+                '</div><table cellspacing="0" cellpadding="0" border="0"><tr><td class="' +
+                    baseClass + '-color" rowspan="3"><div class="ec-control ' +
+                    baseClass + '-show"></div><input class="ec-edit ' +
+                    baseClass + '-value"></td><th>色调:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td><th>红:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td></tr><tr><th>饱和度:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td><th>绿:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td></tr><tr><th>亮度:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td><th>蓝:</th><td><input class="ec-edit ' +
+                    baseClass + '-edit"></td></tr></table><div class="ec-control ' +
+                    baseClass + '-button">确定</div><div class="ec-control ' +
+                    baseClass + '-button">取消</div></div>';
 
             el.innerHTML = list.join('');
-
-            UI_CONTROL.call(this, el, params);
 
             // 初始化色彩选择区
             el = el.firstChild;
             params = this._uMain = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, areaParams);
 
             // 初始化亮度条选择区
             el = el.nextSibling;
             params = this._uLightbar = $fastCreate(UI_PALETTE_AREA, list = el.firstChild, this);
-            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, __gzip_direct__params);
+            params._uIcon = $fastCreate(UI_PALETTE_AREA, list.lastChild, params, areaParams);
 
             // 初始化基本颜色区
-            el = children(el.nextSibling);
-            (this._uBasic = $fastCreate(UI_COLLECTION, el[1], this)).$click = UI_PALETTE_BUTTON_CLASS.$click;
+            list = children(el.nextSibling);
+            this._uBasic = $fastCreate(UI_PALETTE_COLLECTION, list[1], this);
 
             // 初始化颜色输入框区域
-            list = el[2].getElementsByTagName('td');
-            this._uColor = $fastCreate(UI_CONTROL, list[0].firstChild, this);
+            el = list[2].getElementsByTagName('td');
+            this._uColor = $fastCreate(UI_CONTROL, el[0].firstChild, this);
 
-            this._aValue = [$fastCreate(UI_PALETTE_EDIT, list[0].lastChild, this)];
-            for (i = 1; i < 7; ) {
+            this._aValue = [];
+            for (i = 0; i < 7; ) {
                 this._aValue[i] = $fastCreate(
                     UI_PALETTE_EDIT,
-                    list[i++].lastChild,
+                    el[i].lastChild,
                     this,
-                    {keyMask: '0-9', maxValue: 255, maxLength: 3}
+                    i++ ? {keyMask: '[0-9]', maxValue: 255} : {keyMask: '[0-9A-Fa-f]', maxLength: 6}
                 );
             }
 
-            this._uConfirm = $fastCreate(UI_PALETTE_BUTTON, el[3], this);
-            this._uCancel = $fastCreate(UI_PALETTE_BUTTON, el[4], this);
+            // 初始化确认与取消按钮
+            this._aButton = [
+                $fastCreate(UI_PALETTE_BUTTON, list[3], this),
+                $fastCreate(UI_PALETTE_BUTTON, list[4], this)
+            ];
         },
-
         UI_PALETTE_CLASS = inherits(UI_PALETTE, UI_CONTROL),
+
+        /**
+         * 初始化拾色器控件的区域部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_PALETTE_AREA = UI_PALETTE.Area = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
         UI_PALETTE_AREA_CLASS = inherits(UI_PALETTE_AREA, UI_CONTROL),
-        UI_PALETTE_BUTTON = UI_PALETTE.Button = function (el, params) {
-            UI_CONTROL.call(this, el, params);
+
+        /**
+         * 初始化拾色器控件的基本色彩区域集合部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_PALETTE_COLLECTION = UI_PALETTE.Collection = function (el, params) {
+            UI_COLLECTION.call(this, el, params);
         },
-        UI_PALETTE_BUTTON_CLASS = inherits(UI_PALETTE_BUTTON, UI_CONTROL),
+        UI_PALETTE_COLLECTION_CLASS = inherits(UI_PALETTE_COLLECTION, UI_COLLECTION),
+
+        /**
+         * 初始化拾色器控件的输入框部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_PALETTE_EDIT = UI_PALETTE.Edit = function (el, params) {
             UI_FORMAT_EDIT.call(this, el, params);
         },
         UI_PALETTE_EDIT_CLASS = inherits(UI_PALETTE_EDIT, UI_FORMAT_EDIT),
+
+        /**
+         * 初始化拾色器控件的按钮部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_PALETTE_BUTTON = UI_PALETTE.Button = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+        },
+        UI_PALETTE_BUTTON_CLASS = inherits(UI_PALETTE_BUTTON, UI_CONTROL),
+
         UI_PALETTE_BASIC_COLOR = [
             'FF8080', 'FFFF80', '80FF80', '00FF80', '80FFFF', '0080F0', 'FF80C0', 'FF80FF',
             'FF0000', 'FFFF00', '80FF00', '00FF40', '00FFFF', '0080C0', '8080C0', 'FF00FF',
             '804040', 'FF8040', '00FF00', '008080', '004080', '8080FF', '800040', 'FF0080',
             '800000', 'FF8000', '008000', '008040', '0000FF', '0000A0', '800080', '8000FF',
             '400000', '804000', '004000', '004040', '000080', '000040', '400040', '400080',
-            '000000', '808000', '808040', '808080', '408080', 'C0C0C0', '400040', 'FFFFFF'
+            '000000', '808000', '808040', '808080', '408080', 'C0C0C0', '404040', 'FFFFFF'
         ];
 
 
@@ -2014,7 +2216,7 @@ Scroll - 定义在一个区间轴内移动的基本操作。
 _nTotal         - 滚动条区域允许设置的最大值
 _nStep          - 滚动条移动一次时的基本步长
 _nValue         - 滚动条当前设置的值
-_oTimer         - 定时器的句柄，用于连续滚动处理
+_oStop          - 定时器的句柄，用于连续滚动处理
 _cButton        - 当前正在执行动作的按钮，用于连续滚动的控制
 _uPrev          - 向前滚动按钮
 _uNext          - 向后滚动按钮
@@ -2032,26 +2234,29 @@ _oRange         - 滑动块的合法滑动区间
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_SCROLL
+    //__gzip_original__UI_SCROLL_BLOCK
+    //__gzip_original__UI_SCROLL_BUTTON
+    //__gzip_original__UI_VSCROLL
+    //__gzip_original__UI_HSCROLL
     var UI_SCROLL =
         ui.Scroll = function (el, params) {
-            var __gzip_direct__baseClass = params.base,
-                __gzip_direct__typeClass = params.type,
-                __gzip_direct__params = {focus: false};
+            //__gzip_original__baseClass
+            //__gzip_original__typeClass
+            //__gzip_original__partParams
+            var baseClass = params.base,
+                typeClass = params.type,
+                partParams = {select: false, focus: false};
 
-            params.focus = false;
+            UI_CONTROL.call(this, el, copy(params, partParams));
 
-            // 屏蔽IE下的选中操作
-            el.onselectstart = cancel;
-
-            el.innerHTML = '<div class="'
-                + __gzip_direct__typeClass + '-prev '
-                + __gzip_direct__baseClass + '-prev" style="position:absolute;top:0px;left:0px"></div><div class="'
-                + __gzip_direct__typeClass + '-next '
-                + __gzip_direct__baseClass + '-next" style="position:absolute;top:0px;left:0px"></div><div class="'
-                + __gzip_direct__typeClass + '-block '
-                + __gzip_direct__baseClass + '-block" style="position:absolute"></div>';
-
-            UI_CONTROL.call(this, el, params);
+            el.innerHTML =
+                '<div class="' + typeClass + '-prev ' +
+                    baseClass + '-prev" style="position:absolute;top:0px;left:0px"></div><div class="' +
+                    typeClass + '-next ' +
+                    baseClass + '-next" style="position:absolute;top:0px;left:0px"></div><div class="' +
+                    typeClass + '-block ' +
+                    baseClass + '-block" style="position:absolute"></div>';
 
             // 使用 el 代替 children
             el = children(el);
@@ -2061,16 +2266,31 @@ _oRange         - 滑动块的合法滑动区间
             this._nStep = 1;
 
             // 创建向前/向后滚动按钮与滑动块
-            this._uPrev = $fastCreate(UI_SCROLL_BUTTON, el[0], this, __gzip_direct__params);
-            this._uNext = $fastCreate(UI_SCROLL_BUTTON, el[1], this, __gzip_direct__params);
-            this._uBlock = $fastCreate(UI_SCROLL_BLOCK, el[2], this, __gzip_direct__params);
+            this._uPrev = $fastCreate(UI_SCROLL_BUTTON, el[0], this, partParams);
+            this._uNext = $fastCreate(UI_SCROLL_BUTTON, el[1], this, partParams);
+            this._uBlock = $fastCreate(UI_SCROLL_BLOCK, el[2], this, partParams);
         },
-
         UI_SCROLL_CLASS = inherits(UI_SCROLL, UI_CONTROL),
+
+        /**
+         * 初始化滚动条控件的滑动块部件。
+         * @protected
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SCROLL_BLOCK = UI_SCROLL.Block = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
         UI_SCROLL_BLOCK_CLASS = inherits(UI_SCROLL_BLOCK, UI_CONTROL),
+
+        /**
+         * 初始化滚动条控件的按钮部件。
+         * @protected
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SCROLL_BUTTON = UI_SCROLL.Button = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
@@ -2140,17 +2360,11 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    var UI_BROWSER_SCROLL = function (el, params) {
-            params.capture = false;
+    var UI_BROWSER_SCROLL =
+        function (el, params) {
             UI_CONTROL.call(this, el, params);
-            el.lastChild || el.appendChild(createDom(null, 'padding:0px;border:0px'));
             detachEvent(el, 'scroll', this.scroll);
             attachEvent(el, 'scroll', this.scroll);
-
-            this._sTotal = params.total;
-            this._sOverflow = params.overflow;
-            this._sScrollValue = params.scrollValue;
-            this._sScrollTotal = params.scrollTotal;
         },
         UI_BROWSER_SCROLL_CLASS = inherits(UI_BROWSER_SCROLL, UI_CONTROL);
 
@@ -2162,14 +2376,11 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    var UI_BROWSER_VSCROLL = function (el, params) {
-            params.total = 'height';
-            params.overflow = 'overflowY';
-            params.scrollValue = 'scrollTop';
-            params.scrollTotal = 'scrollHeight';
+    var UI_BROWSER_VSCROLL =
+        function (el, params) {
             UI_BROWSER_SCROLL.call(this, el, params);
-        },
-        UI_BROWSER_VSCROLL_CLASS = inherits(UI_BROWSER_VSCROLL, UI_BROWSER_SCROLL);
+            this._aProperty = ['overflowY', 'scrollTop', 'height', null, 'offsetHeight'];
+        };
 
 
     /**
@@ -2179,14 +2390,11 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    var UI_BROWSER_HSCROLL = function (el, params) {
-            params.total = 'width';
-            params.overflow = 'overflowX';
-            params.scrollValue = 'scrollLeft';
-            params.scrollTotal = 'scrollWidth';
+    var UI_BROWSER_HSCROLL =
+        function (el, params) {
             UI_BROWSER_SCROLL.call(this, el, params);
-        },
-        UI_BROWSER_HSCROLL_CLASS = inherits(UI_BROWSER_HSCROLL, UI_BROWSER_SCROLL);
+            this._aProperty = ['overflowX', 'scrollLeft', 'width', 'offsetWidth', null];
+        };
 
 
     /**
@@ -2213,65 +2421,65 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_PANEL
     var UI_PANEL =
         ui.Panel = function (el, params) {
+            UI_CONTROL.call(this, el, params);
+
+            //__gzip_original__baseClass
             var i = 0,
-                j = 0,
-                __gzip_direct__baseClass = params.base,
-                noBrowser = !params.browser,
+                baseClass = params.base,
+                browser = params.browser,
                 vscroll = params.vScroll !== false,
                 hscroll = params.hScroll !== false,
                 list = [
-                    [vscroll, '_uVScroll', noBrowser ? UI_VSCROLL : UI_BROWSER_VSCROLL],
-                    [hscroll, '_uHScroll', noBrowser ? UI_HSCROLL : UI_BROWSER_HSCROLL],
-                    [vscroll && hscroll, '_uCorner', noBrowser ? UI_CONTROL : UI_BROWSER_CORNER]
+                    [vscroll, '_uVScroll', browser ? UI_BROWSER_VSCROLL : UI_VSCROLL],
+                    [hscroll, '_uHScroll', browser ? UI_BROWSER_HSCROLL : UI_HSCROLL],
+                    [vscroll && hscroll, '_uCorner', browser ? UI_BROWSER_CORNER : UI_CONTROL]
                 ],
-                o = createDom(el.className, el.style.cssText + ';overflow:hidden');
+                o = createDom(
+                    baseClass + '-main',
+                    'position:absolute;top:0px;left:0px' + (hscroll ? ';white-space:nowrap' : '')
+                );
 
-            o.innerHTML =
-                (noBrowser && vscroll
-                    ? '<div class="ec-vscroll ' + __gzip_direct__baseClass
-                        + '-vscroll" style="position:absolute"></div>'
-                    : ''
-                )
-                + (noBrowser && hscroll
-                    ? '<div class="ec-hscroll ' + __gzip_direct__baseClass
-                        + '-hscroll" style="position:absolute"></div>'
-                    : ''
-                )
-                + (noBrowser && vscroll && hscroll
-                    ? '<div class="' + params.type + '-corner ' + __gzip_direct__baseClass
-                        + '-corner" style="position:absolute"></div>'
-                    : '<div style="position:absolute;top:0px;left:0px;overflow:auto;padding:0px;border:0px"><div style="padding:0px;border:0px"></div></div>'
-                )
-                + '<div class="' + __gzip_direct__baseClass
-                    + '-layout" style="position:relative;overflow:hidden"></div>';
-            el.style.cssText = 'position:absolute;top:0px;left:0px' + (hscroll ? ';white-space:nowrap' : '');
-            el.className = __gzip_direct__baseClass + '-main';
-            insertBefore(o, el).lastChild.appendChild(el);
+            el.style.overflow = 'hidden';
+            moveElements(el, o, true);
 
-            UI_CONTROL.call(this, o, params);
-            this.$setBody(el);
+            el.innerHTML =
+                (browser ?
+                    '<div style="position:absolute;top:0px;left:0px;overflow:auto;padding:0px;border:0px">' +
+                        '<div style="width:1px;height:1px;padding:0px;border:0px"></div></div>'
+                    : (vscroll ?
+                        '<div class="ec-vscroll ' + baseClass + '-vscroll" style="position:absolute"></div>' : '') +
+                        (hscroll ?
+                            '<div class="ec-hscroll ' + baseClass + '-hscroll" style="position:absolute"></div>'
+                            : '') +
+                        (vscroll && hscroll ?
+                            '<div class="' + params.type + '-corner ' + baseClass +
+                                '-corner" style="position:absolute"></div>'
+                            : '')
+                ) + '<div class="' + baseClass + '-layout" style="position:relative;overflow:hidden"></div>';
+
+            this.$setBody(el.lastChild.appendChild(o));
 
             this._bAbsolute = params.absolute;
             this._nWheelDelta = params.wheelDelta;
 
-            // 以下使用 el 表示 elements
-            if (noBrowser) {
-                el = children(o);
-            }
-            else {
-                el = [el = this._eBrowser = o.firstChild, el, el];
+            el = el.firstChild;
+            if (browser) {
+                this._eBrowser = el;
             }
 
             // 生成中心区域的Element层容器，滚动是通过改变容器的left与top属性实现
             for (; o = list[i++]; ) {
                 if (o[0]) {
-                    this[o[1]] = $fastCreate(o[2], el[j++], this);
+                    this[o[1]] = $fastCreate(o[2], el, this);
+                    if (!browser) {
+                        el = el.nextSibling;
+                    }
                 }
             }
         },
-
         UI_PANEL_CLASS = inherits(UI_PANEL, UI_CONTROL);
 
 
@@ -2302,23 +2510,29 @@ _eInput - 选项对应的input，form提交时使用
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_LISTBOX
+    //__gzip_original__UI_LISTBOX_ITEM
     var UI_LISTBOX =
         ui.Listbox = function (el, params) {
             params.hScroll = false;
-            params.vScroll = true;
+            UI_PANEL.call(this, el, params);
             this._sName = params.name || '';
 
-            UI_PANEL.call(this, el, params);
-
-            this._cScroll = this.$getSection('VScroll');
             this.$initItems();
         },
-
         UI_LISTBOX_CLASS = inherits(UI_LISTBOX, UI_PANEL),
+
+        /**
+         * 初始化多选框控件的选项部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_LISTBOX_ITEM = UI_LISTBOX.Item = function (el, params) {
             UI_ITEM.call(this, el, params);
-            el.appendChild(this._eInput = setInput(null, params.parent._sName, 'hidden')).value
-                = params.value === undefined ? getText(el) : '' + params.value;
+            el.appendChild(this._eInput = setInput(null, params.parent._sName, 'hidden')).value =
+                params.value === undefined ? getText(el) : params.value;
             this.setSelected(!!params.selected);
         },
         UI_LISTBOX_ITEM_CLASS = inherits(UI_LISTBOX_ITEM, UI_ITEM);
@@ -2326,11 +2540,11 @@ _eInput - 选项对应的input，form提交时使用
 
 ﻿/*
 Select - 定义模拟下拉框行为的基本操作。
-下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基础控件)与下拉选项框
-(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选项数量，在屏幕显示
-不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键盘与滚轮操作，在下
-拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有焦点，就可以通过滚
-轮上下选择选项。
+下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基
+础控件)与下拉选项框(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选
+项数量，在屏幕显示不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键
+盘与滚轮操作，在下拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有
+焦点，就可以通过滚轮上下选择选项。
 
 下拉框控件直接HTML初始化的例子:
 <select ecui="type:select;option-size:3" name="test">
@@ -2360,66 +2574,67 @@ _uOptions     - 下拉选择框
     /**
      * 初始化下拉框控件。
      * params 参数支持的属性如下：
+     * browser    是否使用浏览器原生的滚动条，默认使用模拟的滚动条
      * optionSize 下拉框最大允许显示的选项数量，默认为5
      * @public
      *
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_SELECT
+    //__gzip_original__UI_SELECT_OPTIONS
+    //__gzip_original__UI_SELECT_ITEM
     var UI_SELECT =
         ui.Select = function (el, params) {
             params.hidden = true;
 
+            //__gzip_original__baseClass
+            //__gzip_original__partParams
             var i = 0,
-                __gzip_direct__typeClass = params.type,
-                __gzip_direct__params = {capture: false},
+                list = [],
+                baseClass = params.base,
+                partParams = {capture: false},
                 name = el.name || params.name || '',
                 value = el.value || params.value || '',
                 elements = el.options,
-                o,
-                html = [],
                 optionsEl = createDom(
-                    'ec-panel ' + params.base + '-options',
+                    'ec-panel ' + baseClass + '-options',
                     'position:absolute;z-index:65535;display:none'
-                );
+                ),
+                o = el;
 
             if (elements) {
                 // 移除select标签
                 el = insertBefore(createDom(el.className, el.style.cssText), el);
-                removeDom(el.nextSibling);
+                removeDom(o);
 
                 // 转化select标签
-                for (; o = elements[i]; i++) {
+                for (; o = elements[i]; ) {
                     // 这里的text不进行转义，特殊字符不保证安全
-                    html[i] = '<div ' + getAttributeName() + '="value:' + encodeHTML(o.value) + '">'
-                        + o.text + '</div>';
+                    list[i++] =
+                        '<div ' + getAttributeName() + '="value:' + encodeHTML(o.value) + '">' + o.text + '</div>';
                 }
-                optionsEl.innerHTML = html.join('');
+                optionsEl.innerHTML = list.join('');
             }
             else {
                 moveElements(el, optionsEl);
             }
 
-            el.innerHTML = '<div class="ec-item ' + __gzip_direct__typeClass
-                + '-text"></div><div class="ec-control ' + __gzip_direct__typeClass
-                + '-button" style="position:absolute"></div><input name="' + name + '">';
+            el.innerHTML =
+                '<div class="ec-item ' + baseClass + '-text"></div><div class="ec-control ' + baseClass +
+                    '-button" style="position:absolute"></div><input name="' + name + '">';
 
             UI_EDIT.call(this, el, params);
 
             // 初始化下拉区域，下拉区域需要强制置顶
-            this.$setBody(
-                (this._uOptions = $fastCreate(
-                    UI_SELECT_OPTIONS,
-                    optionsEl,
-                    this,
-                    {hScroll: false, browser: params.browser}
-                )).getBody()
-            );
+            this._uOptions =
+                $fastCreate(UI_SELECT_OPTIONS, optionsEl, this, {hScroll: false, browser: params.browser});
+            this.$setBody(optionsEl);
 
             el = children(el);
 
-            this._uText = $fastCreate(UI_ITEM, el[0], this, __gzip_direct__params);
-            this._uButton = $fastCreate(UI_CONTROL, el[1], this, __gzip_direct__params);
+            this._uText = $fastCreate(UI_ITEM, el[0], this, partParams);
+            this._uButton = $fastCreate(UI_CONTROL, el[1], this, partParams);
             el[2].value = value;
 
             // 初始化下拉区域最多显示的选项数量
@@ -2427,12 +2642,27 @@ _uOptions     - 下拉选择框
 
             this.$initItems();
         },
-
         UI_SELECT_CLASS = inherits(UI_SELECT, UI_EDIT),
+
+        /**
+         * 初始化下拉框控件的下拉选项框部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SELECT_OPTIONS = UI_SELECT.Options = function (el, params) {
             UI_PANEL.call(this, el, params);
         },
         UI_SELECT_OPTIONS_CLASS = inherits(UI_SELECT_OPTIONS, UI_PANEL),
+
+        /**
+         * 初始化下拉框控件的选项部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_SELECT_ITEM = UI_SELECT.Item = function (el, params) {
             UI_ITEM.call(this, el, params);
             this._sValue = params.value === undefined ? getText(el) : '' + params.value;
@@ -2472,13 +2702,13 @@ Combox - 定义可输入下拉框行为的基本操作。
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_COMBOX
     var UI_COMBOX =
         ui.Combox = function (el, params) {
             UI_SELECT.call(this, el, params);
             this.getInput().style.display = '';
             this.$getSection('Text').getOuter().style.display = 'none';
         },
-
         UI_COMBOX_CLASS = inherits(UI_COMBOX, UI_SELECT);
 
 
@@ -2510,28 +2740,38 @@ _eInput - 多选项的INPUT对象
     /**
      * 初始化多选下拉框控件。
      * params 参数支持的属性如下：
+     * optionSize 下拉框最大允许显示的选项数量，默认为5
      * @public
      *
      * @param {Element} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
-    UI_MULTI_SELECT = ui.MultiSelect = function (el, params) {
-        UI_SELECT.call(this, el, params);
-        removeDom(this.getInput());
-    },
-    UI_MULTI_SELECT_CLASS = inherits(UI_MULTI_SELECT, UI_EDIT),
-    UI_MULTI_SELECT_ITEM = UI_MULTI_SELECT.Item = function (el, params) {
-        UI_SELECT_ITEM.call(this, el, params);
+    //__gzip_original__UI_MULTI_SELECT
+    //__gzip_original__UI_MULTI_SELECT_ITEM
+    var UI_MULTI_SELECT =
+        ui.MultiSelect = function (el, params) {
+            UI_SELECT.call(this, el, params);
+            removeDom(this.getInput());
+        },
+        UI_MULTI_SELECT_CLASS = inherits(UI_MULTI_SELECT, UI_EDIT),
 
-        el = params.parent
-            ? params.parent.getBase().appendChild(setInput(null, params.parent.getName(), 'checkbox'))
-            : setInput(null, '', 'checkbox');
+        /**
+         * 初始化多选下拉框控件的选项部件。
+         * @public
+         *
+         * @param {Element} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
+        UI_MULTI_SELECT_ITEM = UI_MULTI_SELECT.Item = function (el, params) {
+            UI_SELECT_ITEM.call(this, el, params);
 
-        el.value = params.value || '';
-        el.style.display = 'none';
-        this._eInput = el;
-    },
-    UI_MULTI_SELECT_ITEM_CLASS = inherits(UI_MULTI_SELECT_ITEM, UI_SELECT_ITEM);
+            el = this._eInput =
+                params.parent.getBase().appendChild(setInput(null, params.parent.getName(), 'checkbox'));
+
+            el.value = params.value || '';
+            el.style.display = 'none';
+        },
+        UI_MULTI_SELECT_ITEM_CLASS = inherits(UI_MULTI_SELECT_ITEM, UI_SELECT_ITEM);
 
 
 /*
@@ -2576,22 +2816,27 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
 
     /**
      * 初始化表格控件。
-     * params 参数支持的属性如下：
      * @public
      *
      * @param {HTMLElement} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_TABLE
+    //__gzip_original__UI_TABLE_ROW
+    //__gzip_original__UI_TABLE_COL
+    //__gzip_original__UI_TABLE_CELL
     var UI_TABLE =
         ui.Table = function (el, params) {
+            //__gzip_original__baseClass
+            //__gzip_original__typeClass
             var i = 0,
-                __gzip_direct__baseClass = params.base,
-                __gzip_direct__typeClass = params.type,
+                baseClass = params.base,
+                typeClass = params.type,
                 rows = this._aRow = [],
                 cols = this._aCol = [],
                 tableEl = first(el),
-                elements = children(tableEl),
-                head = elements[0],
+                list = children(tableEl),
+                head = list[0],
                 j,
                 o;
 
@@ -2601,11 +2846,11 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
 
             // 以下使用 el 表示 head 的 body 元素
             if (head.tagName != 'THEAD') {
-                el = insertBefore(createDom('', '', 'thead'), head).appendChild((elements = children(head)).shift());
+                el = insertBefore(createDom('', '', 'thead'), head).appendChild((list = children(head)).shift());
                 head = getParent(el);
             }
             else {
-                elements = children(elements[1]);
+                list = children(list[1]);
                 el = last(head);
             }
 
@@ -2620,32 +2865,33 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
             }
 
             // 初始化表头区域
-            o = createDom(
-                __gzip_direct__typeClass + '-area ' + __gzip_direct__baseClass + '-area',
-                'position:absolute;top:0px;overflow:hidden'
-            );
-            o.innerHTML = '<div style="white-space:nowrap;position:absolute"><table cellspacing="0"><tbody></tbody></table></div>';
+            o = createDom(typeClass + '-area ' + baseClass + '-area', 'position:absolute;top:0px;overflow:hidden');
+            o.innerHTML =
+                '<div style="white-space:nowrap;position:absolute"><table cellspacing="0"><tbody>' +
+                    '</tbody></table></div>';
             (this._uHead = $fastCreate(UI_CONTROL, this.getBase().appendChild(o), this)).$setBody(el);
 
-            for (j = findConstructor(this, 'Row'); o = elements[i]; i++) {
-                o.className = __gzip_direct__typeClass + '-row ' + __gzip_direct__baseClass + '-row ' + o.className;
-                elements[i] = first(o);
+            for (j = findConstructor(this, 'Row'); o = list[i]; i++) {
+                o.className = typeClass + '-row ' + (trim(o.className) || baseClass + '-row');
+                list[i] = first(o);
                 (rows[i] = $fastCreate(j, o, this))._aCol = [];
             }
 
             // 以下使用 head 表示所有的列标签集合
             for (i = 0, head = children(el); head[i]; i++) {
                 for (j = 0; rows[j]; j++) {
-                    o = elements[j];
+                    o = list[j];
                     if (rows[j]._aCol[i] === undefined) {
                         rows[j]._aCol[i] = o;
-                        elements[j] = next(o);
+                        list[j] = next(o);
 
                         var rowspan = toNumber(o.getAttribute('rowSpan')) || 1,
                             colspan = toNumber(o.getAttribute('colSpan')) || 1;
 
                         while (rowspan--) {
-                            rowspan || colspan--;
+                            if (!rowspan) {
+                                colspan--;
+                            }
                             for (o = colspan; o--; ) {
                                 rows[j + rowspan]._aCol.push(rowspan ? false : null);
                             }
@@ -2656,15 +2902,14 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
 
             for (i = 0; el = head[i]; i++) {
                 o = el.className.split(/\s+/);
-                o = o[0] || o[1] || __gzip_direct__baseClass;
-                el.className = __gzip_direct__typeClass + '-head ' + o + '-head ' + el.className;
-                o = __gzip_direct__typeClass + '-item ' + o + '-item ';
+                o = o[0] || o[1] || baseClass;
+                el.className = typeClass + '-head ' + (trim(el.className) || o + '-head');
 
                 cols[i] = $fastCreate(UI_TABLE_COL, el, this);
-                // 以下使用 elements 代替行控件对象
-                for (j = 0; elements = rows[j]; j++) {
-                    if (el = elements._aCol[i]) {
-                        el.className = o + el.className;
+                // 以下使用 list 代替行控件对象
+                for (j = 0; list = rows[j]; j++) {
+                    if (el = list._aCol[i]) {
+                        el.className = typeClass + '-item ' + (trim(el.className) || o + '-item');
                         el.getControl = ieVersion == 8 ? UI_TABLE_INIT_GETCONTROL() : UI_TABLE_INIT_GETCONTROL;
                     }
                 }
@@ -2672,16 +2917,39 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
 
             this.getBody().appendChild(tableEl);
         },
-
         UI_TABLE_CLASS = inherits(UI_TABLE, UI_PANEL),
+
+        /**
+         * 初始化表格控件的行部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_TABLE_ROW = UI_TABLE.Row = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
         UI_TABLE_ROW_CLASS = inherits(UI_TABLE_ROW, UI_CONTROL),
+
+        /**
+         * 初始化表格控件的列部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_TABLE_COL = UI_TABLE.Col = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
         UI_TABLE_COL_CLASS = inherits(UI_TABLE_COL, UI_CONTROL),
+
+        /**
+         * 初始化表格控件的单元格部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_TABLE_CELL = UI_TABLE.Cell = function (el, params) {
             UI_CONTROL.call(this, el, params);
         },
@@ -2695,6 +2963,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
          * @return {ecui.ui.Control} 单元格控件
          */
         UI_TABLE_INIT_GETCONTROL = ieVersion == 8 ? function () {
+            // 为了防止写入getControl属性而导致的reflow如此处理
             var control;
             return function () {
                 if (!control) {
@@ -2755,6 +3024,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      * @param {HTMLElement} el 关联的 Element 对象
      * @param {Object} params 初始化参数
      */
+    //__gzip_original__UI_LOCKED_TABLE
+    //__gzip_original__UI_LOCKED_TABLE_ROW
     var UI_LOCKED_TABLE =
         ui.LockedTable = function (el, params) {
             UI_TABLE.call(this, el, params);
@@ -2772,14 +3043,15 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             // 以下使用 params 代替 rows
             for (; el = rows[i]; ) {
                 el = el.getBase();
-                list[i++] = '<tr class="' + el.className + '" style="' + el.style.cssText
-                    + '"><td style="padding:0px;border:0px"></td></tr>';
+                list[i++] =
+                    '<tr class="' + el.className + '" style="' + el.style.cssText +
+                        '"><td style="padding:0px;border:0px"></td></tr>';
             }
 
             lockedEl.innerHTML =
-                '<div class="' + params.type + '-area ' + params.base
-                    + '-area"><div style="white-space:nowrap;position:absolute"><table cellspacing="0"><thead><tr><td style="padding:0px;border:0px"></td></tr></thead></table></div></div><div class="' + params.type + '-layout ' + params.base
-                    + '-layout" style="position:relative;overflow:hidden"><div style="white-space:nowrap;position:absolute;top:0px;left:0px"><table cellspacing="0"><tbody>' + list.join('') + '</tbody></table></div></div>';
+                '<div class="' + params.type + '-area ' + params.base +
+                    '-area"><div style="white-space:nowrap;position:absolute"><table cellspacing="0"><thead><tr><td style="padding:0px;border:0px"></td></tr></thead></table></div></div><div class="' + params.type + '-layout ' + params.base +
+                    '-layout" style="position:relative;overflow:hidden"><div style="white-space:nowrap;position:absolute;top:0px;left:0px"><table cellspacing="0"><tbody>' + list.join('') + '</tbody></table></div></div>';
             // 初始化锁定的表头区域，以下使用 list 表示临时变量
             o = this._uLockedHead = $fastCreate(UI_CONTROL, lockedEl.firstChild, this);
             o.$setBody(o.getBase().lastChild.lastChild.firstChild.lastChild);
@@ -2794,8 +3066,15 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             }
             insertBefore(lockedEl, getParent(this.getBody()));
         },
-
         UI_LOCKED_TABLE_CLASS = inherits(UI_LOCKED_TABLE, UI_TABLE),
+
+        /**
+         * 初始化高级表格控件的行部件。
+         * @public
+         *
+         * @param {HTMLElement} el 关联的 Element 对象
+         * @param {Object} params 初始化参数
+         */
         UI_LOCKED_TABLE_ROW = UI_LOCKED_TABLE.Row = function (el, params) {
             UI_TABLE_ROW.call(this, el, params);
         },
@@ -2803,8 +3082,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
 
 
 /*
-Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
-              通过访问Decorator的属性来得到，属性名为控件对象
+Decorator - 装饰器插件基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引
+            用通过访问Decorator的属性来得到，属性名为控件对象
 
 属性
 _sClass  - 装饰器样式
@@ -2819,9 +3098,12 @@ _oInner  - 内层装饰器或者控件对象
      *
      * @param {ecui.ui.Control|ecui.ext.Decorator} control 需要装饰的控件
      * @param {string} baseClass 装饰器的基本样式
+     * @param {Array} list 需要生成的区块样式名称集合
      */
     var EXT_DECORATOR =
-        ext.Decorator = function (control, baseClass) {
+        ext.Decorator = function (control, baseClass, list) {
+            //__transform__id_i
+            //__transform__oldEl_o
             var id = control.getUID(),
                 oldEl = (this._oInner = EXT_DECORATOR[id] || control).getOuter();
 
@@ -2832,9 +3114,19 @@ _oInner  - 内层装饰器或者控件对象
 
             // 给控件的方法设置代理访问
             copy(control, EXT_DECORATOR_PROXY);
-        },
 
+            if (list) {
+                for (id = 0; oldEl = list[id]; ) {
+                    list[id++] =
+                        '<div class="' + baseClass + '-' + oldEl +
+                            '" style="position:absolute;top:0px;left:0px"></div>';
+                }
+
+                insertHTML(this._eOuter, 'BEFOREEND', list.join(''));
+            }
+        },
         EXT_DECORATOR_CLASS = EXT_DECORATOR.prototype,
+
         EXT_DECORATOR_PROXY = {};
 
 /*
@@ -2848,14 +3140,9 @@ LRDecorator - 左右扩展装饰器，将区域分为"左-控件-右"三部分�
      * @param {Control} control 需要装饰的控件
      * @param {string} baseClass 装饰器的基本样式
      */
-    var EXT_LR_DECORATOR = ext.LRDecorator = function (control, baseClass) {
-            EXT_DECORATOR.call(this, control, baseClass);
-            insertHTML(
-                this.getOuter(),
-                'beforeEnd',
-                '<div class="' + baseClass + '-left" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-right" style="position:absolute;top:0px;left:0px"></div>'
-            );
+    var EXT_LR_DECORATOR =
+        ext.LRDecorator = function (control, baseClass) {
+            EXT_DECORATOR.call(this, control, baseClass, ['left', 'right']);
         };
 
 /*
@@ -2869,14 +3156,9 @@ TBDecorator - 上下扩展装饰器，将区域分为"上-控件-下"三部分�
          * @param {Control} control 需要装饰的控件
          * @param {string} baseClass 装饰器的基本样式
          */
-    var EXT_TB_DECORATOR = ext.TBDecorator = function (control, baseClass) {
-            EXT_DECORATOR.call(this, control, baseClass);
-            insertHTML(
-                this.getOuter(),
-                'beforeEnd',
-                '<div class="' + baseClass + '-top" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-bottom" style="position:absolute;top:0px;left:0px"></div>'
-            );
+    var EXT_TB_DECORATOR =
+        ext.TBDecorator = function (control, baseClass) {
+            EXT_DECORATOR.call(this, control, baseClass, ['top', 'bottom']);
         };
 
 /*
@@ -2890,176 +3172,254 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
      * @param {Control} control 需要装饰的控件
      * @param {string} baseClass 装饰器的基本样式
      */
-    var EXT_MAGIC_DECORATOR = ext.MagicDecorator = function (control, baseClass) {
-            EXT_DECORATOR.call(this, control, baseClass);
-            insertHTML(
-                this.getOuter(),
-                'beforeEnd',
-                '<div class="' + baseClass + '-widget0" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget1" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget2" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget3" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget5" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget6" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget7" style="position:absolute;top:0px;left:0px"></div><div class="'
-                    + baseClass + '-widget8" style="position:absolute;top:0px;left:0px"></div>'
+    var EXT_MAGIC_DECORATOR =
+        ext.MagicDecorator = function (control, baseClass) {
+            EXT_DECORATOR.call(
+                this,
+                control,
+                baseClass,
+                ['widget0', 'widget1', 'widget2', 'widget3', 'widget5', 'widget6', 'widget7', 'widget8']
             );
         };
 
 
 
 /*
-Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
-              通过访问Decorator的属性来得到，属性名为控件对象
+Tween - 点击及按压动画插件，通过修改click或pressstart/pressend方法来实现移动时的动画效果
 
 属性
-_sClass  - 装饰器样式
-_eOuter  - 装饰器外框Element
-_oInner  - 内层装饰器或者控件对象
 */
 
 
     /**
      * 初始化点击时动画效果。
+     * params 参数支持的属性如下：
+     * second    动画持续的时间
+     * pressStep 按压时的间隔，如果省略不支持按压移动的动画效果
+     * monitor   需要监控的属性
+     * getValue  获取监控属性的值
+     * setValue  设置监控属性的值
      * @public
      *
-     * @param {ecui.ui.Control|ecui.ext.Decorator} control 需要装饰的控件
-     * @param {string} baseClass 装饰器的基本样式
+     * @param {Function|ecui.ui.Control} object 需要实现动画效果的类或者是对象
+     * @param {Object} params 动画效果的初始化参数
      */
     var EXT_TWEEN =
         ext.Tween = function (object, params) {
+            //__gzip_unitize__start
+            //__gzip_unitize__value
+            //__gzip_unitize__end
+            var click = object.$click,
+                pressstart = object.$pressstart,
+                pressend = object.$pressend,
+                totalTime = (params.second * 1000) || 500,
+                pressStep = params.pressStep,
+                getValue = params.getValue ||
+                    new FUNCTION(
+                        'o',
+                        'return [ecui.util.toNumber(o.' + params.monitor.replace(/\|/g, '),ecui.util.toNumber(o.') +
+                            ')]'
+                    ),
+                setValue = params.setValue ||
+                    new FUNCTION(
+                        'o',
+                        'v',
+                        'o.' + params.monitor.replace(/\|/g, '=v[0]+"px";v.splice(0,1);o.') + '=v[0]+"px"'
+                    );
+
+            /**
+             * 减减速动画。
+             * @private
+             */
             function decelerate() {
                 var params = EXT_TWEEN[this.getUID()],
-                    x = MIN((params.currTime += 20) / totalTime, 1),
+                    start = params.start,
+                    end = params.end,
+                    value = params.value = {},
+                    x = MIN((params.time += 20) / totalTime, 1),
                     name;
 
                 if (x == 1) {
-                    params.timer.stop();
+                    // 移动到达终点准备停止
+                    params.stop();
                     EXT_TWEEN[this.getUID()] = null;
                 }
 
-                params.currValue = {};
-                for (name in params.startValue) {
-                    params.currValue[name] = params.startValue[name] + (params.endValue[name] - params.startValue[name]) * (1 - POW(1 - x, 3));
+                for (name in start) {
+                    // 按比例计算当前值
+                    value[name] = start[name] + (end[name] - start[name]) * (1 - POW(1 - x, 3));
                 }
-                setValue(this, params.currValue);
+                setValue(this, value);
             }
 
+            /**
+             * 匀速动画。
+             * @private
+             */
             function steady() {
                 var params = EXT_TWEEN[this.getUID()],
+                    start = params.start,
+                    end = params.end,
+                    value = params.value,
                     flag = true,
-                    sign,
+                    tmp,
                     name;
 
-                for (name in params.startValue) {
-                    if (params.startValue[name] != params.endValue[name]) {
-                        sign = params.startValue[name] < params.endValue[name];
-                        params.currValue[name] += ('number' == typeof pressStep ? pressStep : pressStep[name]) * (sign ? 1 : -1);
-                        if (params.currValue[name] < params.endValue[name] && sign || params.currValue[name] > params.endValue[name] && !sign) {
+                // 第一个flag用于检测所有的移动是否都结束
+                for (name in start) {
+                    tmp = 'number' == typeof pressStep ? pressStep : pressStep[name];
+                    if (start[name] < end[name]) {
+                        if ((value[name] += tmp) < end[name]) {
+                            flag = false;
+                        }
+                    }
+                    else if (start[name] > end[name]) {
+                        if ((value[name] -= tmp) > end[name]) {
                             flag = false;
                         }
                     }
                 }
+
+                // 以下flag用于检测是否要停止移动
                 if (flag) {
-                    setValue(this, params.endValue);
+                    // 捕获下一步的位置
+                    setValue(this, end);
                     click.call(this);
-                    sign = getValue(this);
-                    for (name in sign) {
-                        if (params.endValue[name] == sign[name]) {
-                            params.currValue[name] = sign[name];
+                    tmp = getValue(this);
+                    for (name in tmp) {
+                        if (end[name] == tmp[name]) {
+                            value[name] = tmp[name];
                         }
                         else {
                             flag = false;
                         }
                     }
                     if (flag) {
-                        params.timer.stop();
+                        params.stop();
                     }
                     else {
-                        params.endValue = sign;
+                        // 得到新的结束位置
+                        params.end = tmp;
                     }
                 }
-                setValue(this, params.currValue);
+
+                setValue(this, value);
             }
 
-            var click = object.$click,
-                pressstart = object.$pressstart,
-                pressend = object.$pressend,
-                totalTime = (params.second * 1000) || 500,
-                pressStep = params.pressStep;
+            /**
+             * 开始动画。
+             * @private
+             *
+             * @param {ecui.ui.Control} control 控件对象
+             * @param {Function} action 动画函数
+             * @param {number} interval 时间间隔
+             */
+            function startTween(action, interval) {
+                // 捕获动画的结束点
+                click.call(this, event);
 
-            if (params.monitor) {
-                var getValue = new Function(
-                        'o',
-                        'return [ecui.util.toNumber(o.' + params.monitor.replace(/\|/g, '),ecui.util.toNumber(o.') +
-                            ')]'
-                    ),
-                    setValue = new Function(
-                        'o',
-                        'v',
-                        'o.' + params.monitor.replace(/\|/g, '=v[0]+"px";v.splice(0,1);o.') + '=v[0]+"px"'
-                    );
-            }
-            else {
-                getValue = params.getValue;
-                setValue = params.setValue;
+                var params = EXT_TWEEN[this.getUID()],
+                    start = params.start,
+                    end = params.end = getValue(this),
+                    flag = false,
+                    name;
+
+                for (name in start) {
+                    if (start[name] != end[name]) {
+                        // 开始与结束的位置有变化，允许开始动画
+                        flag = true;
+                    }
+                }
+
+                if (flag) {
+                    params.time = 0;
+                    action.call(this);
+                    params.stop = timer(action, -interval, this);
+                }
             }
 
             if (pressStep) {
+
+                /**
+                 * 实现动画的点击方法。
+                 * @protected
+                 *
+                 * @param {Event} event 事件对象
+                 */
                 object.$click = function (event) {
-                    var currValue = getValue(this);
+                    // 捕获需要到达的位置
+                    var value = getValue(this);
                     click.call(this, event);
-                    setValue(this, currValue);
+                    setValue(this, value);
                 };
 
+                /**
+                 * 实现动画的按压开始方法。
+                 * @protected
+                 *
+                 * @param {Event} event 事件对象
+                 */
                 object.$pressstart = function (event) {
                     var params = EXT_TWEEN[this.getUID()];
+
                     if (params) {
-                        params.timer.stop();
-                        setValue(this, params.endValue);
+                        // 之前存在未结束的动画，直接结束
+                        params.stop();
+                        setValue(this, params.end);
                     }
                     else {
                         params = EXT_TWEEN[this.getUID()] = {};
-                        params.startValue = getValue(this);
-                        params.currValue = getValue(this);
+                        params.start = getValue(this);
+                        params.value = getValue(this);
                     }
-                    click.call(this, event);
-                    params.endValue = getValue(this);
-                    if (params.startValue != params.endValue) {
-                        params.currTime = 0;
-                        steady.call(this);
-                        params.timer = new Timer(steady, -40, this);
-                    }
+
+                    startTween.call(this, steady, 40);
+
                     pressstart.call(this, event);
                 };
 
+                /**
+                 * 实现动画的按压结束方法。
+                 * @protected
+                 *
+                 * @param {Event} event 事件对象
+                 */
                 object.$pressend = function (event) {
                     var params = EXT_TWEEN[this.getUID()];
-                    params.timer.stop();
-                    params.startValue = params.currValue;
-                    params.timer = new Timer(decelerate, -20, this);
+
+                    // 动画转入减减速运动
+                    params.stop();
+                    params.start = params.value;
+                    params.stop = timer(decelerate, -20, this);
+
                     pressend.call(this, event);
                 };
             }
             else {
+                /**
+                 * 实现动画的点击方法。
+                 * @protected
+                 *
+                 * @param {Event} event 事件对象
+                 */
                 object.$click = function (event) {
-                    var params = EXT_TWEEN[this.getUID()];
+                    var params = EXT_TWEEN[this.getUID()],
+                        flag = false,
+                        name;
+
                     if (params) {
-                        params.timer.stop();
-                        setValue(this, params.endValue);
-                        params.startValue = params.currValue;
+                        // 如果之前有未完成的动画，立即结束，以当前的位置作为新的开始点
+                        params.stop();
+                        setValue(this, params.end);
+                        params.start = params.value;
                     }
                     else {
+                        // 新的动画开始创建
                         params = EXT_TWEEN[this.getUID()] = {};
-                        params.startValue = getValue(this);
+                        params.start = getValue(this);
                     }
-                    click.call(this, event);
-                    params.endValue = getValue(this);
-                    if (params.startValue != params.endValue) {
-                        params.currTime = 0;
-                        decelerate.call(this);
-                        params.timer = new Timer(decelerate, -20, this);
-                    }
+
+                    startTween.call(this, decelerate, 20);
                 };
             }
         };
@@ -3070,15 +3430,26 @@ _oInner  - 内层装饰器或者控件对象
 
 
 
+    /**
+     * 获取 Element 对象指定位置的 Element 对象。
+     * @private
+     *
+     * @param {HTMLElement} el Element 对象
+     * @param {string} direction Element 对象遍历的属性
+     * @return {HTMLElement} 指定位置的 Element 对象
+     */
+    function matchNode(el, direction) {
+        for (; el; el = el[direction]) {
+            if (el.nodeType == 1) {
+                break;
+            }
+        }
+        return el;
+    }
 
 
 
 
-
-
-    core.NORMAL = 0;
-    core.INIT   = 1;
-    core.PAINT  = 2;
 
     (function () {
         var ecuiName = 'ecui',        // Element 中用于自动渲染的 ecui 属性名称
@@ -3088,7 +3459,7 @@ _oInner  - 内层装饰器或者控件对象
             flgFixedOffset,           // 在计算相对位置时，是否需要修正边框样式的影响
             scrollNarrow,             // 浏览器滚动条相对窄的一边的长度
 
-            initRecursion,            // init 操作的递归次数
+            initRecursion = 0,        // init 操作的递归次数
             lastClientWidth,          // 浏览器之前的宽度
 
             plugins = {},             // 扩展组件列表
@@ -3096,9 +3467,9 @@ _oInner  - 内层装饰器或者控件对象
 
             mouseX,                   // 当前鼠标光标的X轴坐标
             mouseY,                   // 当前鼠标光标的Y轴坐标
-            keyCode,                  // 当前键盘按下的键值，解决keypress与keyup中得不到特殊按键的keyCode的问题
+            keyCode = 0,              // 当前键盘按下的键值，解决keypress与keyup中得不到特殊按键的keyCode的问题
 
-            status = core.INIT,       // 框架当前状态
+            status,                   // 框架当前状态
             allControls = [],         // 全部生成的控件，供释放控件占用的内存使用
             independentControls = [], // 独立的控件，即使用create($create)方法创建的控件
             namedControls,            // 所有被命名的控件的集合
@@ -3121,10 +3492,10 @@ _oInner  - 内层装饰器或者控件对象
                     //__transform__control_o
                     var control = event.getTarget();
                     pressedControl = null;
+
                     if (control) {
                         if (!isScrollClick(event)) {
-                            bubble(pressedControl = control, 'mousedown', event);
-                            pressedControl.pressstart(event);
+                            mousedown(control, event);
                         }
                         else if (ieVersion < 8) {
                             return;
@@ -3140,10 +3511,13 @@ _oInner  - 内层装饰器或者控件对象
                         }
                     }
                     else {
-                        if (findControl(event.target)) {
-                            event.preventDefault();
+                        if (control = findControl(event.target)) {
+                            // 如果点击到了disabled的控件上，可能需要取消默认事件
+                            mousedown(control, event, true);
                         }
-                        setFocused();
+                        else {
+                            setFocused();
+                        }
                     }
                 },
 
@@ -3260,15 +3634,13 @@ _oInner  - 内层装饰器或者控件对象
                     if (!isScrollClick(event)) {
                         if (control && !control.isFocusable()) {
                             // 需要捕获但不激活的控件是高优先级处理的控件
-                            bubble(pressedControl = control, 'mousedown', event);
-                            pressedControl.pressstart(event);
+                            mousedown(control, event);
                         }
                         else if (target.onintercept && target.onintercept(event) === false ||
                                     target.$intercept(event) === false) {
                             if (env == currEnv) {
                                 if (control) {
-                                    bubble(pressedControl = control, 'mousedown', event);
-                                    pressedControl.pressstart(event);
+                                    mousedown(control, event);
                                 }
                             }
                             else {
@@ -3359,7 +3731,7 @@ _oInner  - 内层装饰器或者控件对象
                     }
                 }
 
-                status = core.PAINT;
+                status = PAINT;
                 o = currEnv.type;
                 mask(false);
                 if (o != 'zoom') {
@@ -3403,12 +3775,12 @@ _oInner  - 内层装饰器或者控件对象
                     }
                 }
                 if (ieVersion < 8) {
-                    new Timer(mask, 0, null, true);
+                    timer(mask, 0, null, true);
                 }
                 else {
                     mask(true);
                 }
-                status = core.NORMAL;
+                status = NORMAL;
             };
 
         /**
@@ -3418,12 +3790,15 @@ _oInner  - 内层装饰器或者控件对象
          *
          * @param {HTMLElement} el Element 对象
          * @param {ecui.ui.Control} control ECUI 控件
+         * @return {boolean} 绑定操作是否成功
          */
         $bind = core.$bind = function (el, control) {
             if (!el.getControl) {
                 el._cControl = control;
                 el.getControl = getControlByElement;
+                return true;
             }
+            return false;
         };
 
         /**
@@ -3541,6 +3916,9 @@ _oInner  - 内层装饰器或者控件对象
          * @return {ecui.ui.Control} ECUI 控件
          */
         $fastCreate = core.$fastCreate = function (type, el, parent, params) {
+            if (!initRecursion) {
+                status = INIT;
+            }
             var o = el.className.split(' ');
 
             params = params || {};
@@ -3555,6 +3933,9 @@ _oInner  - 内层装饰器或者控件对象
             type.create(params);
 
             allControls.push(type);
+            if (!initRecursion) {
+                status = NORMAL;
+            }
             return type;
         };
 
@@ -3625,6 +4006,33 @@ _oInner  - 内层装饰器或者控件对象
             return flgFixedSize ? toNumber(style.borderLeftWidth) + toNumber(style.borderRightWidth) +
                     toNumber(style.paddingLeft) + toNumber(style.paddingRight)
                 : 0;
+        };
+
+        /**
+         * 创建 ECUI 控件。
+         * 标准的创建 ECUI 控件 的工厂方法，所有的 ECUI 控件 都应该通过 create 方法或者 $create 方法生成。params 参数对象支持的属性如下：
+         * id        {string} 当前控件的 id，提供给 $connect 与 get 方法使用
+         * base      {string} 控件的基本样式，参见 getBaseClass 方法，如果忽略此参数将使用基本 Element 对象的 className 属性
+         * element   {HTMLElement} 与控件绑捆的 Element 对象，参见 getBase 方法，如果忽略此参数将创建 Element 对象与控件绑捆
+         * parent    {ecui.ui.Control} 父控件对象或者父 Element 对象
+         * type      {string} 控件的默认样式，通常情况下省略此参数，使用 "ec-控件名称" 作为控件的默认样式
+         * @public
+         *
+         * @param {string} type 控件的名称
+         * @param {Object} params 初始化参数，参见 ECUI 控件
+         * @return {ecui.ui.Control} ECUI 控件
+         */
+        createControl = core.create = function (type, params) {
+            if (!initRecursion) {
+                status = INIT;
+            }
+            type = $create(type, params);
+            type.cache();
+            type.init();
+            if (!initRecursion) {
+                status = NORMAL;
+            }
+            return type;
         };
 
         /**
@@ -3745,7 +4153,6 @@ _oInner  - 内层装饰器或者控件对象
 
             mouseX = event.pageX;
             mouseY = event.pageY;
-            keyCode = event.which || keyCode;
 
             return event;
         };
@@ -3777,7 +4184,7 @@ _oInner  - 内层装饰器或者控件对象
 
                 insertHTML(
                     body,
-                    'beforeEnd', 
+                    'BEFOREEND',
                     '<div style="position:absolute;overflow:scroll;top:-90px;left:-90px;width:80px;height:80px;' +
                         'border:1px solid"><div style="position:absolute;top:0px;height:90px"></div></div>'
                 );
@@ -3792,7 +4199,7 @@ _oInner  - 内层装饰器或者控件对象
 
                 // 自动初始化所有节点
                 core.init(body);
-                status = core.NORMAL;
+                status = NORMAL;
             }
             return namedControls[id] || null;
         };
@@ -3936,6 +4343,7 @@ _oInner  - 内层装饰器或者控件对象
                 o;
 
             if (!initRecursion++) {
+                status = INIT;
                 detachEvent(WINDOW, 'resize', paint);
             }
 
@@ -3971,6 +4379,7 @@ _oInner  - 内层装饰器或者控件对象
 
             if (!(--initRecursion)) {
                 attachEvent(WINDOW, 'resize', paint);
+                status = NORMAL;
             }
         };
 
@@ -4119,7 +4528,7 @@ _oInner  - 内层装饰器或者控件对象
                 if (!selectorControl) {
                     insertHTML(
                         DOCUMENT.body,
-                        'beforeEnd',
+                        'BEFOREEND',
                         '<div class="ec-control ec-selector" style="overflow:hidden"><div class="ec-selector-box">' +
                             '</div></div>'
                     );
@@ -4165,6 +4574,9 @@ _oInner  - 内层装饰器或者控件对象
             // 对不重复的部分进行获得或失去焦点操作
             bubble(focusedControl, 'blur', null, parent);
             bubble(focusedControl = control, 'focus', null, parent);
+
+            // 只要试图改变激活的控件，键盘控制码就失效
+            keyCode = -keyCode;
         };
 
         /**
@@ -4213,16 +4625,29 @@ _oInner  - 内层装饰器或者控件对象
          */
         currEnv.keydown = currEnv.keypress = currEnv.keyup = function (event) {
             event = standardEvent(event);
+
+            //__gzip_original__type
+            //__gzip_original__which
+            var type = event.type,
+                which = event.which;
+
+            if (type == 'keydown' && ABS(keyCode) != which) {
+                keyCode = which;
+            }
             for (var o = focusedControl; o; o = o.getParent()) {
-                if (o[event.type](event) === false) {
+                if (o[type](event) === false) {
                     event.preventDefault();
                     break;
                 }
             }
+            if (type == 'keyup' && ABS(keyCode) == which) {
+                // 这里是为了防止一次多个键被按下，最后一个被按下的键松开时取消
+                keyCode = 0;
+            }
         };
 
         /**
-         * 双击事件处理。
+         * 双击事件与选中内容开始事件处理。
          * @private
          *
          * @param {Event} event 事件对象
@@ -4231,6 +4656,11 @@ _oInner  - 内层装饰器或者控件对象
             currEnv.dblclick = function (event) {
                 currEnv.mousedown(event);
                 currEnv.mouseup(event);
+            };
+
+            currEnv.selectstart = function (event) {
+                event = standardEvent(event);
+                mousedown(findControl(event.target), event, true);
             };
         }
 
@@ -4252,6 +4682,26 @@ _oInner  - 内层装饰器或者控件对象
                 event.preventDefault();
             }
         };
+
+        /**
+         * 处理鼠标点击。
+         * @private
+         *
+         * @param {ecui.ui.Control} control 需要操作的控件
+         * @param {Event} event 事件对象
+         * @param {boolean} flag 调用方式标志位
+         */
+        function mousedown(control, event, flag) {
+            if (!flag) {
+                bubble(pressedControl = control, 'mousedown', event);
+                pressedControl.pressstart(event);
+            }
+            for (; control; control = control.getParent()) {
+                if (control.isSelectStart()) {
+                    event.preventDefault();
+                }
+            }
+        }
 
         /**
          * 冒泡处理控件事件。
@@ -4441,6 +4891,7 @@ Control - ECUI 的核心组成部分，定义了基本的控件行为。
 
 属性
 _bCapture                - 控件是否响应浏览器事件状态
+_bSelect                 - 控件是否允许选中内容
 _bFocusable              - 控件是否允许获取焦点状态
 _bEnabled                - 控件的状态，为false时控件不处理任何事件
 _bCache                  - 是否处于缓存状态
@@ -4456,6 +4907,7 @@ _sDisplay                - 控件的布局方式，在hide时保存，在show时
 _eBase                   - 控件的基本标签对象
 _eBody                   - 控件用于承载子控件的载体标签，通过setBodyElement函数设置这个值，绑定当前控件
 _cParent                 - 父控件对象
+_aStatus                 - 控件当前的状态集合
 $cache$borderTopWidth    - 上部边框线宽度缓存
 $cache$borderLeftWidth   - 左部边框线宽度缓存
 $cache$borderRightWidth  - 右部边框线宽度缓存
@@ -4565,17 +5017,17 @@ $cache$position          - 控件布局方式缓存
      * @protected
      */
     UI_CONTROL_CLASS.$init = function () {
-        this.setEnabled(this._bEnabled);
+        this.alterClass('disabled', this._bEnabled);
         this.$setSize(this.getWidth(), this.getHeight());
 
         if (this.$ready) {
-            if (getStatus() != core.INIT) {
+            if (getStatus() != INIT) {
                 this.$ready();
             }
             else {
                 if (!UI_CONTROL_READY_LIST) {
                     UI_CONTROL_READY_LIST = [];
-                    new Timer(function () {
+                    timer(function () {
                         for (var i = 0, o; o = UI_CONTROL_READY_LIST[i++]; ) {
                             o.$ready();
                         }
@@ -4653,7 +5105,7 @@ $cache$position          - 控件布局方式缓存
             currStyle = el.style;
 
         currStyle.width = this._sWidth;
-        if (ieVersion < 8 && getStatus() != core.PAINT) {
+        if (ieVersion < 8 && getStatus() != PAINT) {
             // 如果此时浏览器在进行整体的刷新重绘，则不进入此分支
             var style = getStyle(el);
             if (style.width == 'auto' && style.display == 'block') {
@@ -4738,10 +5190,19 @@ $cache$position          - 控件布局方式缓存
      * @param {boolean} isRemoved 为 true 时删除样式，否则新增样式
      */
     UI_CONTROL_CLASS.alterClass = function (className, isRemoved) {
+        className = '-' + className + ' ';
+
         (isRemoved ? removeClass : addClass)(
             this._eBase,
-            this._sType + '-' + className + ' ' + this._sClass + '-' + className
+            this._sType + className + this._sClass + className
         );
+
+        if (isRemoved) {
+            remove(this._aStatus, className);
+        }
+        else {
+            this._aStatus.push(className);
+        }
     };
 
     /**
@@ -5032,6 +5493,16 @@ $cache$position          - 控件布局方式缓存
     };
 
     /**
+     * 判断控件是否允许选中内容。
+     * @public
+     *
+     * @return {boolean} 控件是否允许选中内容
+     */
+    UI_CONTROL_CLASS.isSelectStart = function () {
+        return this._bSelect;
+    };
+
+    /**
      * 判断控件是否处于显示状态。
      * @public
      *
@@ -5082,26 +5553,19 @@ $cache$position          - 控件布局方式缓存
      * @param {string} currClass 控件的当前样式
      */
     UI_CONTROL_CLASS.setClass = function (currClass) {
-        //__gzip_original__typeClass
-        var status = [' '],
-            styleNames = [''],
-            typeClass = this._sType;
+        var oldClass = this._sClass,
+            type = this._sType;
 
-        currClass = currClass || typeClass;
+        currClass = currClass || this._sBaseClass;
 
         // 如果基本样式没有改变不需要执行
-        if (currClass != this._sClass) {
+        if (currClass != oldClass) {
             this._eBase.className =
-                this._eBase.className.replace(
-                    new REGEXP('(^|\\s+)(' + this._sClass + '|' + typeClass + ')(-[^\\s]+)?', 'g'),
-                    function ($0, $1, $2, $3) {
-                        if (indexOf(status, $3) < 0) {
-                            status.push($3);
-                            styleNames.push(currClass + $3);
-                        }
-                        return '';
-                    }
-                ) + status.join(' ' + typeClass) + styleNames.join(' ');
+                this._aStatus.join(type) + this._aStatus.join(currClass) +
+                    this._eBase.className.replace(
+                        new REGEXP('^\\s+|(' + oldClass + '|' + type + ')(-[^\\s]+)?(\\s+|$)|\\s+$', 'g'),
+                        ''
+                    );
 
             this._sClass = currClass;
         }
@@ -5391,9 +5855,6 @@ _uClose     - 关闭按钮
     UI_FORM_TITLE_CLASS.$pressstart = function (event) {
         UI_CONTROL_CLASS.$pressstart.call(this, event);
         drag(this.getParent(), event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -5866,20 +6327,6 @@ Item/Items - 定义选项操作相关的基本操作。
     };
 
     /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_ITEM_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
      * 鼠标移入控件区域事件的默认处理。
      * 鼠标移入控件区域时默认调用 $mouseover 方法。如果控件处于可操作状态(参见 isEnabled)，mouseover 方法触发 onmouseover 事件，如果事件返回值不为 false，则调用 $mouseover 方法。
      * @protected
@@ -5995,12 +6442,12 @@ Item/Items - 定义选项操作相关的基本操作。
      *
      * @param {string|HTMLElement|ecui.ui.Item} item 控件的 html 内容/控件对应的 Element 对象/选项控件
      * @param {number} index 子选项控件需要添加的位置序号
-     * @param {Object} 子控件初始化参数
+     * @param {Object} params 子控件初始化参数
      * @return {ecui.ui.Item} 子选项控件
      */
     UI_ITEMS.add = function (item, index, params) {
         var list = UI_ITEMS[this.getUID()],
-            o = 'ec-item ' + this.getClass() + '-item ';
+            o;
 
         if (item instanceof UI_ITEM) {
             // 选项控件，直接添加
@@ -6009,16 +6456,16 @@ Item/Items - 定义选项操作相关的基本操作。
         else {
             // 根据是字符串还是Element对象选择不同的初始化方式
             if ('string' == typeof item) {
-                this.getBody().appendChild(o = createDom(o));
+                this.getBody().appendChild(o = createDom());
                 o.innerHTML = item;
                 item = o;
             }
-            else {
-                item.className = o + item.className;
-            }
+
+            item.className = 'ec-item ' + (trim(item.className) || this.getBaseClass() + '-item');
 
             params = params || getParameters(item);
             params.parent = this;
+            params.select = false;
             list.push(item = $fastCreate(findConstructor(this, 'Item') || UI_ITEM, item, this, params));
             this.$alterItems();
         }
@@ -6177,20 +6624,6 @@ _cPopup      - 是否包含下级弹出菜单
     };
 
     /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_POPUP_BUTTON_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
-    };
-
-    /**
      * 菜单项点击的默认处理
      * @protected
      *
@@ -6283,7 +6716,7 @@ _cPopup      - 是否包含下级弹出菜单
      */
     UI_POPUP_ITEM_CLASS.add = function (item, index) {
         return (this._cPopup =
-            this._cPopup || createControl('Popup', createDom('ec-popup ' + this.getParent().getBaseClass())))
+            this._cPopup || $fastCreate(UI_POPUP, createDom('ec-popup ' + this.getParent().getBaseClass()), this))
                 .add(item, index);
     };
 
@@ -6314,9 +6747,9 @@ _cPopup      - 是否包含下级弹出菜单
      * @protected
      */
     UI_POPUP_CLASS.$alterItems = function () {
-        if (getParent(this.getOuter())) {
-            UI_POPUP_ITEM_FLUSH(this.getParent());
+        UI_POPUP_ITEM_FLUSH(this.getParent());
 
+        if (getParent(this.getOuter())) {
             //__gzip_original__optionSize
             var list = this.getItems(),
                 len = list.length,
@@ -6496,7 +6929,6 @@ _cPopup      - 是否包含下级弹出菜单
     UI_POPUP_CLASS.setParent = blank;
 
 
-
 /*
 Tab - 定义分页选项卡的操作。
 选项卡控件，继承自基础控件，实现了选项组接口。每一个选项卡都包含一个头部区域与内容区域，选项卡控件存在互斥性，只有唯一
@@ -6567,20 +6999,6 @@ _eContent        - 内容 DOM 元素
         style.left =
             MAX(pos[index], parent.getBodyWidth() - parent.$cache$bodyWidth - parent._uNext.getWidth()) + 'px';
         UI_TAB_FLUSH_BUTTON(parent);
-    };
-
-    /**
-     * 鼠标在控件区域内按下事件的默认处理。
-     * 鼠标在控件区域内按下时默认调用 $mousedown 方法。如果控件处于可操作状态(参见 isEnabled)，mousedown 方法触发 onmousedown 事件，如果事件返回值不为 false，则调用 $mousedown 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_TAB_BUTTON_CLASS.$mousedown = function (event) {
-        UI_CONTROL_CLASS.$mousedown.call(this, event);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -6727,7 +7145,6 @@ _eContent        - 内容 DOM 元素
     UI_TAB_CLASS.$init = function () {
         this._uPrev.$init();
         this._uNext.$init();
-
         UI_ITEMS.$init.call(this);
         for (var i = 0, list = this.getItems(), o; o = list[i++];) {
             o.$setSize(o.getWidth(), o.getHeight());
@@ -6874,7 +7291,6 @@ Edit - 定义输入数据的基本操作。
 
 属性
 _bHidden - 输入框是否为hidden类型
-_nLock   - 锁定的次数
 _eInput  - INPUT对象
 */
 
@@ -6888,10 +7304,14 @@ _eInput  - INPUT对象
     function UI_EDIT_FORM_SUBMIT(event) {
         event = standardEvent(event);
 
+        //__transform__elements_list
+        //__transform__el_o
         for (var i = 0, elements = event.target.elements, el; el = elements[i++]; ) {
             if (el.getControl) {
                 el = el.getControl();
-                el instanceof UI_EDIT && (el.onsubmit && el.onsubmit(event) === false || el.$submit(event));
+                if (!(el.onsubmit && el.onsubmit(event) === false)) {
+                    el.$submit(event);
+                }
             }
         }
     }
@@ -6903,13 +7323,44 @@ _eInput  - INPUT对象
      * @param {ecui.ui.Edit} control 输入框控件对象
      */
     function UI_EDIT_BIND_EVENT(control) {
-        $bind(control._eInput, control);
-        if (!control._bHidden) {
-            for (var name in UI_EDIT_INPUT) {
-                attachEvent(control._eInput, name, UI_EDIT_INPUT[name]);
+        if ($bind(control._eInput, control)) {
+            if (!control._bHidden) {
+                for (var name in UI_EDIT_INPUT) {
+                    attachEvent(control._eInput, name, UI_EDIT_INPUT[name]);
+                }
             }
         }
     }
+
+    /**
+     * 输入框失去/获得焦点事件处理函数。
+     * @private
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_EDIT_INPUT.blur = UI_EDIT_INPUT.focus = function (event) {
+        //__gzip_original__type
+        var type = event.type;
+
+        event = findControl(standardEvent(event).target);
+        // 设置默认失去焦点事件，阻止在blur/focus事件中再次回调
+        event['$' + type] = UI_CONTROL_CLASS['$' + type];
+        if (type == 'blur') {
+            if (event.isEnabled()) {
+                loseFocus(event);
+            }
+        }
+        else {
+            // 如果控件处于不可操作状态，不允许获得焦点
+            if (event.isEnabled()) {
+                setFocused(event);
+            }
+            else {
+                event._eInput.blur();
+            }
+        }
+        delete event['$' + type];
+    };
 
     /**
      * 拖拽内容到输入框时处理函数。
@@ -6925,30 +7376,6 @@ _eInput  - INPUT对象
     };
 
     /**
-     * 输入框键盘事件处理函数。
-     * @private
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_EDIT_INPUT.keydown = UI_EDIT_INPUT.keypress = UI_EDIT_INPUT.keyup = function (event) {
-        event = standardEvent(event);
-        event.stopPropagation();
-        return findControl(event.target)[event.type](event);
-    };
-
-    /**
-     * 控件拥有焦点时，粘贴事件的处理。
-     * 三种方式能改变输入框内容：1) 按键；2) 鼠标粘贴；3) 拖拽内容，用于记录用户选择的内容。
-     * @private
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_EDIT_INPUT.paste = function (event) {
-        event = standardEvent(event);
-        findControl(event.target).$keydown(event);
-    };
-
-    /**
      * 输入框输入内容事件处理函数。
      * @private
      *
@@ -6957,38 +7384,15 @@ _eInput  - INPUT对象
     if (ieVersion) {
         UI_EDIT_INPUT.propertychange = function (event) {
             if (event.propertyName == 'value') {
-                event = findControl(event.srcElement);
-                if (!event._nLock) {
-                    event._nLock++;
-                    event.change();
-                    event._nLock--;
-                }
+                findControl(standardEvent(event).target).change();
             }
-        }
+        };
     }
     else {
         UI_EDIT_INPUT.input = function () {
             findControl(this).change();
-        }
+        };
     }
-
-    /**
-     * 控件失去焦点事件的默认处理。
-     * 控件失去焦点时默认调用 $blur 方法，删除控件在 $focus 方法中添加的扩展样式 -focus。如果控件处于可操作状态(参见 isEnabled)，blur 方法触发 onblur 事件，如果事件返回值不为 false，则调用 $blur 方法。
-     * @protected
-     */
-    UI_EDIT_CLASS.$blur = function () {
-        UI_CONTROL_CLASS.$blur.call(this);
-
-        var input = this._eInput;
-        detachEvent(input, 'blur', UI_EDIT_INPUT_BLUR);
-        try {
-            input.blur();
-        }
-        catch (e) {
-        }
-        attachEvent(input, 'blur', UI_EDIT_INPUT_BLUR);
-    };
 
     /**
      * 销毁控件的默认处理。
@@ -6999,24 +7403,6 @@ _eInput  - INPUT对象
         this._eInput.getControl = undefined;
         this._eInput = null;
         UI_CONTROL_CLASS.$dispose.call(this);
-    };
-
-    /**
-     * 控件获得焦点事件的默认处理。
-     * 控件获得焦点时默认调用 $focus 方法，调用 alterClass 方法为控件添加扩展样式 -focus。如果控件处于可操作状态(参见 isEnabled)，focus 方法触发 onfocus 事件，如果事件返回值不为 false，则调用 $focus 方法。
-     * @protected
-     */
-    UI_EDIT_CLASS.$focus = function () {
-        UI_CONTROL_CLASS.$focus.call(this);
-
-        var input = this._eInput;
-        detachEvent(input, 'focus', UI_EDIT_INPUT_FOCUS);
-        try {
-            input.focus();
-        }
-        catch (e) {
-        }
-        attachEvent(input, 'focus', UI_EDIT_INPUT_FOCUS);
     };
 
     /**
@@ -7042,9 +7428,8 @@ _eInput  - INPUT对象
      */
     UI_EDIT_CLASS.$setSize = function (width, height) {
         UI_CONTROL_CLASS.$setSize.call(this, width, height);
-        var style = this._eInput.style;
-        style.width = this.getBodyWidth() + 'px';
-        style.height = this.getBodyHeight() + 'px';
+        this._eInput.style.width = this.getBodyWidth() + 'px';
+        this._eInput.style.height = this.getBodyHeight() + 'px';
     };
 
     /**
@@ -7083,10 +7468,9 @@ _eInput  - INPUT对象
      * @return {number} 输入框当前选区的结束位置
      */
     UI_EDIT_CLASS.getSelectionEnd = ieVersion ? function () {
-        var range = DOCUMENT.selection.createRange().duplicate(),
-            length = this._eInput.value.length;
+        var range = DOCUMENT.selection.createRange().duplicate();
 
-        range.moveStart('character', -length);
+        range.moveStart('character', -this._eInput.value.length);
         return range.text.length;
     } : function () {
         return this._eInput.selectionEnd;
@@ -7099,6 +7483,7 @@ _eInput  - INPUT对象
      * @return {number} 输入框当前选区的起始位置，即输入框当前光标的位置
      */
     UI_EDIT_CLASS.getSelectionStart = ieVersion ? function () {
+        //__gzip_original__length
         var range = DOCUMENT.selection.createRange().duplicate(),
             length = this._eInput.value.length;
 
@@ -7137,18 +7522,6 @@ _eInput  - INPUT对象
     };
 
     /**
-     * 设置控件的可操作状态。
-     * @public
-     *
-     * @param {boolean} status 控件是否可操作，默认为 true
-     */
-    UI_EDIT_CLASS.setEnabled = function (status) {
-        UI_CONTROL_CLASS.setEnabled.call(this, status);
-        // TODO 这里还是有问题，如果不可用时，IE下点击不会触发事件
-        this._eInput.readOnly = !status;
-    };
-
-    /**
      * 设置控件的表单项名称。
      * 输入框控件可以在表单中被提交，setName 方法设置提交时用的表单项名称，表单项名称可以使用 getName 方法获取。
      * @public
@@ -7168,10 +7541,40 @@ _eInput  - INPUT对象
      * @param {string} value 控件的值
      */
     UI_EDIT_CLASS.setValue = function (value) {
-        this._nLock++;
-        this._eInput.value = value;
-        this._nLock--;
+        //__gzip_original__input
+        var input = this._eInput,
+            func = UI_EDIT_INPUT.propertychange;
+        if (func) {
+            detachEvent(input, 'propertychange', func);
+        }
+        input.value = value;
+        if (func) {
+            attachEvent(input, 'propertychange', func);
+        }
     };
+
+    (function () {
+        function build(name) {
+            UI_EDIT_CLASS['$' + name] = function () {
+                UI_CONTROL_CLASS['$' + name].call(this);
+
+                timer(function () {
+                    //__gzip_original__input
+                    var input = this._eInput;
+                    detachEvent(input, name, UI_EDIT_INPUT.blur);
+                    try {
+                        input[name]();
+                    }
+                    catch (e) {
+                    }
+                    attachEvent(input, name, UI_EDIT_INPUT.blur);
+                }, 0, this);
+            };
+        }
+
+        build('blur');
+        build('focus');
+    })();
 
 
 /*
@@ -7193,28 +7596,13 @@ _nMinLength - 允许提交的最小长度
 _nMaxLength - 允许提交的最大长度
 _nMinValue  - 允许提交的最小值
 _nMaxValue  - 允许提交的最大值
-_sEncoding  - 字节码编码集
-_sLeft      - 每次操作左边的字符串
-_sSelection - 每次操作被替换的字符串
-_sRight     - 每次操作右边的字符串
+_sCharset   - 字节码编码集
 _sInput     - 每次操作输入的字符串
+_aSegment   - 每次操作左边/中间(被选中的)/右边的字符串
 _oKeyMask   - 允许提交的字符限制正则表达式
 _oFormat    - 允许提交的格式正则表达式
 */
 
-
-    /**
-     * 按指定编码计算字符串的字节长度。
-     * 为了简化处理，将 utf8 的非 ascii 字符均按三字节计算，gb2312 均按两字节计算。
-     * @private
-     *
-     * @param {string} source 源字符串
-     * @param {string} encoding 编码名称
-     * @return {number} 字符串的字节长度
-     */
-    function UI_FORMAT_EDIT_BYTELENGTH(source, encoding) {
-        return (encoding ? source.replace(/[^\x00-\xff]/g, encoding == 'utf8' ? 'aaa' : 'aa') : source).length;
-    }
 
     /**
      * 控件失去焦点事件的默认处理。
@@ -7244,15 +7632,13 @@ _oFormat    - 允许提交的格式正则表达式
      * @param {Event} event 事件对象
      */
     UI_FORMAT_EDIT_CLASS.$keydown = UI_FORMAT_EDIT_CLASS.$mousemove = function (event) {
+        UI_EDIT_CLASS['$' + event.type].call(this, event);
+
         var value = this.getInput().value,
             start = this.getSelectionStart(),
             end = this.getSelectionEnd();
 
-        this._sLeft = value.slice(0, start);
-        this._sRight = value.slice(end);
-        this._sSelection = value.slice(start, end);
-
-        UI_EDIT_CLASS['$' + event.type].call(this, event);
+        this._aSegment = [value.slice(0, start), value.slice(start, end), value.slice(end)];
     };
 
     /**
@@ -7263,7 +7649,9 @@ _oFormat    - 允许提交的格式正则表达式
      */
     UI_FORMAT_EDIT_CLASS.$submit = function (event) {
         UI_EDIT_CLASS.$submit.call(this, event);
-        this.validate() || event.preventDefault();
+        if (!this.validate()) {
+            event.preventDefault();
+        }
     };
 
     /**
@@ -7271,56 +7659,61 @@ _oFormat    - 允许提交的格式正则表达式
      * @public
      */
     UI_FORMAT_EDIT_CLASS.change = function () {
-        // 获取本次输入的内容
+        //__gzip_original__keyMask
+        ///__gzip_original__length
+        ///__gzip_original__max
+        //__gzip_original__charsetName
+        //__gzip_original__segments
+        //__gzip_original__left
+        //__gzip_original__right
+        //__gzip_original__start
         var value = this.getValue(),
             keyMask = this._oKeyMask,
             length = this._nMaxLength,
             max = this._nMaxValue,
-            encoding = this._sEncoding,
-            left = this._sLeft || '',
-            right = this._sRight || '',
-            selection = this._sSelection || '',
+            charsetName = this._sCharset,
+            segments = this._aSegment,
+            left = segments[0],
+            right = segments[2],
             start = left.length,
-            end = value.length - right.length,
-            inputValue = end < 0 ? undefined : value.slice(start, end);
+            end = value.length - right.length;
 
         // 如果是删除操作直接结束
-        if (inputValue) {
+        if (value = end < 0 ? undefined : value.slice(start, end)) {
             // 进行全角转半角操作
             if (this._bSymbol) {
-                inputValue = toHalfWidth(inputValue);
-            }
-
-            // 过滤不合法的字符集
-            if (keyMask) {
-                inputValue = (inputValue.match(keyMask) || []).join('');
+                value = toHalfWidth(value);
             }
 
             // 过滤前后空格
             if (this._bTrim) {
-                inputValue = trim(inputValue);
+                value = trim(value);
+            }
+
+            // 过滤不合法的字符集
+            if (keyMask) {
+                value = (value.match(keyMask) || []).join('');
             }
 
             // 当maxLength有值时，计算当前还能插入内容的长度
-            if (length > 0) {
-                length -= UI_FORMAT_EDIT_BYTELENGTH(left, encoding) + UI_FORMAT_EDIT_BYTELENGTH(right, encoding);
-                inputValue = encoding ? sliceByte(inputValue, length) : inputValue.slice(0, length);
+            if (length) {
+                value = sliceByte(value, length - getByteLength(left + right, charsetName), charsetName);
             }
 
-            if (!inputValue) {
+            if (!value) {
                 this.restore();
                 return;
             }
 
             // 如果存在_nMaxVal，则判断是否符合最大值
-            if (max !== undefined && !(max >= left + inputValue + right - 0)) {
-                inputValue = selection;
+            if (!(max === undefined || max >= left + value + right - 0)) {
+                value = segments[1];
             }
 
-            this.setValue(left + inputValue + right);
-            this.setCaret(start + inputValue.length);
+            this.setValue(left + value + right);
+            this.setCaret(start + value.length);
         }
-        this._sInput = inputValue;
+        this._sInput = value;
 
         UI_EDIT_CLASS.change.call(this);
     };
@@ -7330,10 +7723,8 @@ _oFormat    - 允许提交的格式正则表达式
      * @public
      */
     UI_FORMAT_EDIT_CLASS.restore = function () {
-        var left = this._sLeft || '';
-
-        this.setValue(left + (this._sSelection || '') + (this._sRight || ''));
-        this.setCaret(left.length);
+        this.setValue(this._aSegment.join(''));
+        this.setCaret(this._aSegment[0].length);
     };
 
     /**
@@ -7343,23 +7734,41 @@ _oFormat    - 允许提交的格式正则表达式
      * @return {boolean} 当前值是否合法
      */
     UI_FORMAT_EDIT_CLASS.validate = function () {
-        var err = [],
+        //__gzip_original__minLength
+        //__gzip_original__maxLength
+        //__gzip_original__minValue
+        //__gzip_original__maxValue
+        //__gzip_original__format
+        var err = {},
             minLength = this._nMinLength,
             maxLength = this._nMaxLength,
             minValue = this._nMinValue,
             maxValue = this._nMaxValue,
-            pattern = this._oPattern,
+            format = this._oFormat,
             value = this.getValue(),
-            length = UI_FORMAT_EDIT_BYTELENGTH(value, this._sEncoding);
+            length = getByteLength(value, this._sCharset);
 
-        minLength > length && err.push(['minLength', minLength]);
-        maxLength < length && err.push(['maxLength', maxLength]);
-        minValue > value - 0 && err.push(['minValue', minValue]);
-        maxValue < value - 0 && err.push(['maxValue', maxValue]);
-        (pattern && !pattern.test(value)) && err.push(['pattern']);
+        if (minLength > length) {
+            err.minLength = minLength;
+        }
+        if (maxLength < length) {
+            err.maxLength = maxLength;
+        }
+        if (minValue > value - 0) {
+            err.minValue = minValue;
+        }
+        if (maxValue < value - 0) {
+            err.maxValue = maxValue;
+        }
+        if (format && !format.test(value)) {
+            err.format = true;
+        }
 
-        value = !err[0];
-        value || (this.onerror && this.onerror(err));
+        if (!(value = !err.length)) {
+            if (this.onerror) {
+                this.onerror(err);
+            }
+        }
         return value;
     };
 
@@ -7391,11 +7800,8 @@ _aInferior - 所有的下级复选框
      *
      * @param {ecui.ui.Checkbox} control 复选框对象
      * @param {number} status 新的状态，0--全选，1--未选，2--半选
-     * @return {boolean} 状态是否发生了改变
      */
     function UI_CHECKBOX_CHANGE(control, status) {
-        var superior = control._cSuperior;
-
         if (status !== control._nStatus) {
             // 状态发生改变时进行处理
             control.setClass(control.getBaseClass() + ['-checked', '', '-part'][status]);
@@ -7404,12 +7810,12 @@ _aInferior - 所有的下级复选框
             control.getInput().checked = !status;
 
             // 如果有上级复选框，刷新上级复选框的状态
-            superior && UI_CHECKBOX_FLUSH(superior);
+            if (control._cSuperior) {
+                UI_CHECKBOX_FLUSH(control._cSuperior);
+            }
 
             control.change();
-            return true;
         }
-        return false;
     }
 
     /**
@@ -7419,15 +7825,17 @@ _aInferior - 所有的下级复选框
      * @param {ecui.ui.Checkbox} control 复选框控件
      */
     function UI_CHECKBOX_FLUSH(control) {
-        for (var i = 0, o, status; o = control._aInferior[i]; ) {
-            if (i++ && status != o._nStatus) {
+        for (var i = 0, status, o; o = control._aInferior[i++]; ) {
+            if (status !== undefined && status != o._nStatus) {
                 status = 2;
                 break;
             }
             status = o._nStatus;
         }
 
-        i && UI_CHECKBOX_CHANGE(control, status);
+        if (status !== undefined) {
+            UI_CHECKBOX_CHANGE(control, status);
+        }
     }
 
     /**
@@ -7439,7 +7847,6 @@ _aInferior - 所有的下级复选框
      */
     UI_CHECKBOX_CLASS.$click = function (event) {
         UI_EDIT_CLASS.$click.call(this, event);
-
         this.setChecked(!!this._nStatus);
     };
 
@@ -7451,11 +7858,11 @@ _aInferior - 所有的下级复选框
      * @param {Event} event 事件对象
      */
     UI_CHECKBOX_CLASS.$keydown = UI_CHECKBOX_CLASS.$keypress = UI_CHECKBOX_CLASS.$keyup = function (event) {
-        if (UI_EDIT_CLASS['$' + event.type](event) === false) {
-            return false;
-        }
+        UI_EDIT_CLASS['$' + event.type].call(this, event);
         if (event.which == 32) {
-            event.type == 'keyup' && this.$click(event);
+            if (event.type == 'keyup' && getKey() == 32) {
+                this.setChecked(!!this._nStatus);
+            }
             return false;
         }
     };
@@ -7466,7 +7873,23 @@ _aInferior - 所有的下级复选框
      * @protected
      */
     UI_CHECKBOX_CLASS.$ready = function () {
-        this._aInferior.length || UI_CHECKBOX_CHANGE(this, this.getInput().checked ? 0 : 1);
+        if (!this._aInferior.length) {
+            UI_CHECKBOX_CHANGE(this, this.getInput().checked ? 0 : 1);
+        }
+    };
+
+    /**
+     * 设置当前控件的父控件。
+     * 复选框控件改变父控件时，还需要同步清除主从附属关系。
+     * @public
+     *
+     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
+     */
+    UI_CHECKBOX_CLASS.$setParent = function (parent) {
+        UI_EDIT_CLASS.$setParent.call(this, parent);
+        if (!parent) {
+            this.setSuperior();
+        }
     };
 
     /**
@@ -7508,24 +7931,11 @@ _aInferior - 所有的下级复选框
      * @param {boolean} status 是否选中，默认选中
      */
     UI_CHECKBOX_CLASS.setChecked = function (status) {
-        if (UI_CHECKBOX_CHANGE(this, status !== false ? 0 : 1)) {
-            // 如果有下级复选框，全部改为与当前复选框相同的状态
-            for (var i = 0, o; o = this._aInferior[i++]; ) {
-                o.setChecked(status);
-            }
+        UI_CHECKBOX_CHANGE(this, status !== false ? 0 : 1);
+        // 如果有下级复选框，全部改为与当前复选框相同的状态
+        for (var i = 0, o; o = this._aInferior[i++]; ) {
+            o.setChecked(status);
         }
-    };
-
-    /**
-     * 设置当前控件的父控件。
-     * 复选框控件改变父控件时，还需要同步清除主从附属关系。
-     * @public
-     *
-     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
-     */
-    UI_CHECKBOX_CLASS.setParent = function (parent) {
-        UI_EDIT_CLASS.setParent.call(this, parent);
-        this.getParent() || this.setSuperior();
     };
 
     /**
@@ -7537,17 +7947,19 @@ _aInferior - 所有的下级复选框
      */
     UI_CHECKBOX_CLASS.setSuperior = function (superior) {
         var oldSuperior = this._cSuperior;
-        this._cSuperior = superior;
+        if (oldSuperior != superior) {
+            this._cSuperior = superior;
 
-        // 已经设置过上级复选框，需要先释放
-        if (oldSuperior) {
-            remove(oldSuperior._aInferior, this);
-            UI_CHECKBOX_FLUSH(oldSuperior);
-        }
+            // 已经设置过上级复选框，需要先释放
+            if (oldSuperior) {
+                remove(oldSuperior._aInferior, this);
+                UI_CHECKBOX_FLUSH(oldSuperior);
+            }
 
-        if (superior) {
-            superior._aInferior.push(this);
-            UI_CHECKBOX_FLUSH(superior);
+            if (superior) {
+                superior._aInferior.push(this);
+                UI_CHECKBOX_FLUSH(superior);
+            }
         }
     };
 
@@ -7598,11 +8010,11 @@ Radio - 定义一组选项中选择唯一选项的基本操作。
      * @param {Event} event 事件对象
      */
     UI_RADIO_CLASS.$keydown = UI_RADIO_CLASS.$keypress = UI_RADIO_CLASS.$keyup = function (event) {
-        if (UI_EDIT_CLASS['$' + event.type](event) === false) {
-            return false;
-        }
+        UI_EDIT_CLASS['$' + event.type].call(this, event);
         if (event.which == 32) {
-            event.type == 'keyup' && this.$click(event);
+            if (event.type == 'keyup' && getKey() == 32) {
+                this.checked();
+            }
             return false;
         }
     };
@@ -7624,9 +8036,8 @@ Radio - 定义一组选项中选择唯一选项的基本操作。
     UI_RADIO_CLASS.checked = function () {
         if (!this.isChecked()) {
             for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
-                UI_RADIO_FLUSH(o, false);
+                UI_RADIO_FLUSH(o, o == this);
             }
-            UI_RADIO_FLUSH(this, true);
         }
     };
 
@@ -7638,22 +8049,23 @@ Radio - 定义一组选项中选择唯一选项的基本操作。
      * @return {Array} 单选框控件数组
      */
     UI_RADIO_CLASS.getItems = function () {
+        //__gzip_original__form
         var i = 0,
-            elements = this.getInput(),
-            o = elements.form,
+            list = this.getInput(),
+            form = list.form,
+            o = list.name,
             result = [];
 
-        if (o) {
-            elements = o[elements.name];
-            for (; o = elements[i++]; ) {
+        if (form) {
+            for (list = form[o]; o = list[i++]; ) {
                 if (o.getControl) {
                     result.push(o.getControl());
                 }
             }
         }
-        else if (elements.name) {
+        else if (o) {
             return query({type: UI_RADIO, custom: function (control) {
-                return control.getName() == elements.name;
+                return !control.getInput().form && control.getName() == o;
             }});
         }
         else {
@@ -7688,7 +8100,7 @@ Tree - 定义树形结构的基本操作。
 </div>
 
 属性
-_sItemsDisplay - 隐藏时_eItems的状态，在显示时恢复
+_bFold         - 是否收缩子树
 _eItems        - 子控件区域Element对象
 _aTree         - 子控件集合
 */
@@ -7699,14 +8111,12 @@ _aTree         - 子控件集合
      * @private
      *
      * @param {ecui.ui.Tree} tree 树控件
-     * @param {HTMLElement} childItems 子树选项组的 Element 对象，如果省略将创建一个 Element 对象
-     * @return {HTMLElement} 子树选项组的 Element 对象
+     * @param {HTMLElement} items 子树选项组的 Element 对象
      */
-    function UI_TREE_SETITEMS(tree, childItems) {
-        childItems = tree._eItems = childItems || createDom();
-        childItems.className = tree.getType() + '-items ' + tree.getBaseClass() + '-items';
-        childItems.style.cssText = '';
-        return childItems;
+    function UI_TREE_SETITEMS(tree, items) {
+        tree._eItems = items;
+        items.className = tree.getType() + '-items ' + tree.getBaseClass() + '-items';
+        items.style.cssText = '';
     }
 
     /**
@@ -7717,7 +8127,7 @@ _aTree         - 子控件集合
      */
     function UI_TREE_FLUSH(control) {
         control.setClass(
-            control.getBaseClass() + (control._aTree.length ? control._eItems.style.display ? '-fold' : '' : '-empty')
+            control.getBaseClass() + (control._aTree.length ? control._bFold ? '-fold' : '-nonleaf' : '')
         );
     }
 
@@ -7732,7 +8142,7 @@ _aTree         - 子控件集合
      */
     function UI_TREE_CREATE_CHILD(el, parent, params) {
         el.className = parent.getType() + ' ' + (trim(el.className) || parent.getBaseClass());
-        return $fastCreate(parent.constructor, el, parent, params);
+        return $fastCreate(parent.constructor, el, null, copy(copy({}, params), getParameters(el)));
     }
 
     /**
@@ -7743,9 +8153,9 @@ _aTree         - 子控件集合
      * @param {boolean} status 显示/隐藏子树状态
      */
     function UI_TREE_SET_FOLD(tree, status) {
-        for (var i = 0, child; child = tree._aTree[i++]; ) {
-            child.setFold(status);
-            UI_TREE_SET_FOLD(child, status);
+        for (var i = 0, o; o = tree._aTree[i++]; ) {
+            o.setFold(status);
+            UI_TREE_SET_FOLD(o, status);
         }
     }
 
@@ -7784,11 +8194,41 @@ _aTree         - 子控件集合
     UI_TREE_CLASS.$hide = function () {
         UI_CONTROL_CLASS.$hide.call(this);
 
-        var o = this._eItems;
-        if (o) {
-            o = o.style;
-            this._sItemsDisplay = o.display;
-            o.display = 'none';
+        if (this._eItems) {
+            this._eItems.style.display = 'none';
+        }
+    };
+
+    /**
+     * 控件渲染完成后初始化的默认处理。
+     * $init 方法在控件渲染完成后调用，参见 create 与 init 方法。
+     * @protected
+     */
+    UI_TREE_CLASS.$init = function () {
+        UI_CONTROL_CLASS.$init.call(this);
+        for (var i = 0, list = this._aTree, o; o = list[i++]; ) {
+            o.$init();
+        }
+    };
+
+     /**
+     * 控件移除子控件事件的默认处理。
+     * @protected
+     *
+     * @param {ecui.ui.Tree} child 子树控件
+     */
+    UI_TREE_CLASS.$setParent = function (parent) {
+        var oldParent = this.getParent();
+
+        UI_CONTROL_CLASS.$setParent.call(this, parent);
+
+        if (oldParent instanceof UI_TREE) {
+            remove(oldParent._aTree, this);
+            UI_TREE_FLUSH(oldParent);
+        }
+
+        if (this._eItems) {
+            insertAfter(this._eItems, this.getOuter());
         }
     };
 
@@ -7800,9 +8240,8 @@ _aTree         - 子控件集合
     UI_TREE_CLASS.$show = function () {
         UI_CONTROL_CLASS.$show.call(this);
 
-        if (this._sItemsDisplay !== undefined) {
-            this._eItems.style.display = this._sItemsDisplay;
-            this._sItemsDisplay = undefined;
+        if (this._eItems && !this._bFold) {
+            this._eItems.style.display = 'block';
         }
 
         for (var parent = this; parent = parent.getParent(); ) {
@@ -7816,23 +8255,32 @@ _aTree         - 子控件集合
      *
      * @param {string|ecui.ui.Tree} item 子树控件的 html 内容/树控件
      * @param {number} index 子树控件需要添加的位置序号，不指定将添加在最后
+     * @param {Object} params 子树控件初始化参数
      * @return {ecui.ui.Tree} 树控件
      */
-    UI_TREE_CLASS.add = function (item, index) {
-        var o = item,
-            items = this._aTree;
+    UI_TREE_CLASS.add = function (item, index, params) {
+        var list = this._aTree,
+            o;
 
         if ('string' == typeof item) {
-            items.push(item = UI_TREE_CREATE_CHILD(createDom(), this, {}));
-            item.$setParent();
-            item.$setBodyHTML(o);
+            o = createDom();
+            o.innerHTML = item;
+            item = UI_TREE_CREATE_CHILD(o, this, params);
         }
-        item.setParent(this);
 
-        if (item.getParent() && (o = items[index]) && o != item) {
-            items.splice(index, 0, items.pop());
-            item._eItems && insertAfter(item._eItems, insertBefore(item.getOuter(), o.getOuter()));
+        if (o = list[index]) {
+            o = o.getOuter();
         }
+        else {
+            index = list.length;
+            o = null;
+        }
+        list.splice(index, 0, item);
+        (this._eItems || UI_TREE_SETITEMS(this, createDom())).insertBefore(item.getOuter(), o);
+
+        item.$setParent(this);
+        UI_TREE_FLUSH(this);
+
         return item;
     };
 
@@ -7892,8 +8340,8 @@ _aTree         - 子控件集合
      * @return {ecui.ui.Tree} 树控件，如果没有，返回 null
      */
     UI_TREE_CLASS.getNext = function () {
-        var items = this.getParent();
-        return items instanceof UI_TREE && items._aTree[indexOf(items._aTree, this) + 1] || null;
+        var parent = this.getParent();
+        return parent instanceof UI_TREE && parent._aTree[indexOf(parent._aTree, this) + 1] || null;
     };
 
     /**
@@ -7903,8 +8351,8 @@ _aTree         - 子控件集合
      * @return {ecui.ui.Tree} 树控件，如果没有，返回 null
      */
     UI_TREE_CLASS.getPrev = function () {
-        var items = this.getParent();
-        return items instanceof UI_TREE && items._aTree[indexOf(items._aTree, this) - 1] || null;
+        var parent = this.getParent();
+        return parent instanceof UI_TREE && parent._aTree[indexOf(parent._aTree, this) - 1] || null;
     };
 
     /**
@@ -7914,8 +8362,13 @@ _aTree         - 子控件集合
      * @return {ecui.ui.Tree} 树控件的根
      */
     UI_TREE_CLASS.getRoot = function () {
-        for (var root = this, parent; (parent = root.getParent()) instanceof UI_TREE; root = parent) {};
-        return root;
+        for (
+            var o = this, parent;
+            // 这里需要考虑Tree位于上一个Tree的节点内部
+            (parent = o.getParent()) instanceof UI_TREE && indexOf(parent._aTree, o) >= 0;
+            o = parent
+        ) {};
+        return o;
     };
 
     /**
@@ -7925,7 +8378,7 @@ _aTree         - 子控件集合
      * @return {boolean} true 表示子控件区域隐藏，false 表示子控件区域显示
      */
     UI_TREE_CLASS.isFold = function () {
-        return !this._eItems || !!this._eItems.style.display;
+        return !this._eItems || this._bFold;
     };
 
     /**
@@ -7937,50 +8390,10 @@ _aTree         - 子控件集合
      */
     UI_TREE_CLASS.setFold = function (status) {
         if (this._eItems) {
-            this._eItems.style.display = status !== false ? 'none' : '';
-        }
-
-        UI_TREE_FLUSH(this);
-    };
-
-    /**
-     * 设置当前控件的父控件。
-     * @public
-     *
-     * @param {HTMLElement|ecui.ui.Control|ecui.ui.Tree} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
-     */
-    UI_TREE_CLASS.setParent = function (parent) {
-        var el = this.getOuter(),
-            o = this.getParent();
-
-        if (parent != getParent(el) && (!parent || parent != o)) {
-            if (o instanceof UI_TREE) {
-                // 先将树结点从上级树控件中移除
-                remove(o._aTree, this);
-                UI_TREE_FLUSH(o);
-            }
-
-            if (o = parent instanceof UI_TREE && parent.getBody()) {
-                // 根节点变化，移除可能的选中项
-                parent.$setBody(parent._eItems || UI_TREE_SETITEMS(parent));
-            }
-
-            UI_CONTROL_CLASS.setParent.call(this, parent);
-
-            if (o) {
-                parent.$setBody(o);
-                parent._aTree.push(this);
-                UI_TREE_FLUSH(parent);
-            }
-
-            // 如果包含子结点容器，需要将子结点容器显示在树控件之后
-            if (this._eItems) {
-                // 以下使用 parent 表示外层 DOM 对象
-                getParent(el) ? insertAfter(this._eItems, el) : removeDom(this._eItems);
-            }
+            this._eItems.style.display = (this._bFold = status !== false) ? 'none' : 'block';
+            UI_TREE_FLUSH(this);
         }
     };
-
 
 
 /*
@@ -8008,12 +8421,12 @@ _cSelected - 树的根节点拥有，保存当前选中的项
      * 设置当前树控件的表单提交项的值
      * @private
      *
-     * @param {ecui.ui.Tree} tree 树控件
-     * @param {string} value 树控件的值
+     * @param {ecui.ui.RadioTree} tree 树控件
+     * @param {InputElement} input 输入框 Element 对象
      */
-    function UI_RADIO_TREE_SETVALUE(tree, value) {
-        tree._eInput || tree.getBody().appendChild(tree._eInput = setInput('', tree.getName(), 'hidden'));
-        tree._eInput.value = value;
+    function UI_RADIO_TREE_SETVALUE(tree, input) {
+        tree.getBody().appendChild(tree._eInput = setInput(input, tree._sName, 'hidden'));
+        tree._eInput.value = tree._sValue;
     }
 
     /**
@@ -8024,12 +8437,18 @@ _cSelected - 树的根节点拥有，保存当前选中的项
      */
     UI_RADIO_TREE_CLASS.$click = function (event) {
         if (getMouseX(this) <= toNumber(getStyle(this.getBase(), 'paddingLeft'))) {
-            var root = this.getRoot();
+            var root = this.getRoot(),
+                selected = root._cSelected;
 
-            root._cSelected && root._cSelected.alterClass('selected', true);
-            this.alterClass('selected');
-            root._cSelected = this;
-            UI_RADIO_TREE_SETVALUE(root, this._sValue);
+            if (selected != this) {
+                if (selected) {
+                    selected.alterClass('selected', true);
+                    selected = selected._eInput;
+                }
+                UI_RADIO_TREE_SETVALUE(this, selected);
+                this.alterClass('selected');
+                root._cSelected = this;
+            }
 
             this.setFold = blank;
         }
@@ -8046,6 +8465,36 @@ _cSelected - 树的根节点拥有，保存当前选中的项
     UI_RADIO_TREE_CLASS.$dispose = function () {
         this._eInput = null;
         UI_TREE_CLASS.$dispose.call(this);
+    };
+
+    /**
+     * 直接设置父控件。
+     * @protected
+     *
+     * @param {ecui.ui.Control} parent ECUI 控件对象
+     */
+    UI_RADIO_TREE_CLASS.$setParent = function (parent) {
+        var root = this.getRoot(),
+            selected = root._cSelected;
+
+        UI_TREE_CLASS.$setParent.call(this, parent);
+
+        if (this == selected) {
+            selected.alterClass('selected', true);
+            if (selected._eInput) {
+                removeDom(selected._eInput);
+            }
+            root._cSelected = null;
+        }
+
+        selected = this._cSelected;
+        if (selected) {
+            selected.alterClass('selected', true);
+            if (selected._eInput) {
+                removeDom(selected._eInput);
+            }
+            this._cSelected = null;
+        }
     };
 
     /**
@@ -8077,30 +8526,6 @@ _cSelected - 树的根节点拥有，保存当前选中的项
     UI_RADIO_TREE_CLASS.getValue = function () {
         return this._sValue;
     };
-
-    /**
-     * 设置当前控件的父控件。
-     * @public
-     *
-     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
-     */
-    UI_RADIO_TREE_CLASS.setParent = function (parent) {
-        var root = this.getRoot();
-
-        UI_TREE_CLASS.setParent.call(this, parent);
-
-        if (root._cSelected == this) {
-            this.alterClass('selected', true);
-            root._cSelected = null;
-            UI_RADIO_TREE_SETVALUE(root, '');
-        }
-        if (this._cSelected) {
-            this._cSelected.alterClass('selected', true);
-            this._cSelected = null;
-            this._eInput && removeDom(this._eInput);
-        }
-    };
-
 
 
 /*
@@ -8143,11 +8568,8 @@ _uCheckbox - 复选框控件
      * @protected
      */
     UI_CHECK_TREE_CLASS.$init = function () {
-        for (var i = 0, list = this.getChildTrees(), o; o = list[i++]; ) {
-            o.$init();
-        }
-        this._uCheckbox.$init();
         UI_TREE_CLASS.$init.call(this);
+        this._uCheckbox.$init();
     };
 
     /**
@@ -8198,12 +8620,7 @@ _uCheckbox - 复选框控件
 Color - 色彩类，定义从 RGB 到 HSL 之间的互相转化
 
 属性
-_nRed        - 红色值(0-255)
-_nGreen      - 绿色值(0-255)
-_nBlue       - 蓝色值(0-255)
-_nHue        - 色调(0-1)
-_nSaturation - 饱和度(0-1)
-_nLight      - 亮度(0-1)
+_aValue      - 颜色组，依次是红色、绿色、蓝色(0-255)、色调、饱和度、亮度(0-1)
 */
 
 
@@ -8229,8 +8646,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 蓝色值(0-255)
      */
     COLOR_CLASS.getBlue = function () {
-        return this._nBlue;
-    }
+        return this._aValue[2];
+    };
 
     /**
      * 获取 RGB 模式下的绿色值
@@ -8239,8 +8656,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 绿色值(0-255)
      */
     COLOR_CLASS.getGreen = function () {
-        return this._nGreen;
-    }
+        return this._aValue[1];
+    };
 
     /**
      * 获取 HSL 模式下的色调
@@ -8249,8 +8666,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 色调(0-1)
      */
     COLOR_CLASS.getHue = function () {
-        return this._nHue;
-    }
+        return this._aValue[3];
+    };
 
     /**
      * 获取 HSL 模式下的亮度
@@ -8259,8 +8676,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 亮度(0-1)
      */
     COLOR_CLASS.getLight = function () {
-        return this._nLight;
-    }
+        return this._aValue[5];
+    };
 
     /**
      * 获取 RGB 模式下 6 字符表示的 16 进制色彩值
@@ -8269,14 +8686,19 @@ _nLight      - 亮度(0-1)
      * @return {string} 6 字符色彩值(如FFFFFF)
      */
     COLOR_CLASS.getRGB = function () {
-        var red = this._nRed,
-            green = this._nGreen,
-            blue = this._nBlue;
+        //__gzip_original__red
+        //__gzip_original__green
+        //__gzip_original__blue
+        var values = this._aValue,
+            red = values[0],
+            green = values[1],
+            blue = values[2];
 
-        return ((red < 16 ? '0' : '') + red.toString(16)
-            + (green < 16 ? '0' : '') + green.toString(16)
-            + (blue < 16 ? '0' : '') + blue.toString(16)).toUpperCase();
-    }
+        return (
+            (red < 16 ? '0' : '') + red.toString(16) + (green < 16 ? '0' : '') + green.toString(16) +
+            (blue < 16 ? '0' : '') + blue.toString(16)
+        ).toUpperCase();
+    };
 
     /**
      * 获取 RGB 模式下的红色值
@@ -8285,8 +8707,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 红色值(0-255)
      */
     COLOR_CLASS.getRed = function () {
-        return this._nRed;
-    }
+        return this._aValue[0];
+    };
 
     /**
      * 获取 HSL 模式下的饱和度
@@ -8295,8 +8717,8 @@ _nLight      - 亮度(0-1)
      * @return {number} 饱和度(0-1)
      */
     COLOR_CLASS.getSaturation = function () {
-        return this._nSaturation;
-    }
+        return this._aValue[4];
+    };
 
     /**
      * 设置 RGB 模式的色彩
@@ -8307,34 +8729,30 @@ _nLight      - 亮度(0-1)
      * @param {number} blue 蓝色值(0-255)
      */
     COLOR_CLASS.setRGB = function (red, green, blue) {
-        this._nRed = red;
-        this._nGreen = green;
-        this._nBlue = blue;
+        var redRate = red / 255,
+            greenRate = green / 255,
+            blueRate = blue / 255,
+            minValue = MIN(redRate, greenRate, blueRate),
+            maxValue = MAX(redRate, greenRate, blueRate),
+            saturation = maxValue - minValue,
+            light = (maxValue + minValue) / 2,
+            hue;
 
-        red /= 255;
-        green /= 255;
-        blue /= 255;
-
-        var minValue = MIN(red, green, blue),
-            maxValue = MAX(red, green, blue),
-            value = maxValue - minValue,
-            h;
-
-        this._nLight = (maxValue + minValue) / 2;
-        if (value) {
-            h = red == maxValue
-                ? (green - blue) / 6 / value
-                : (green == maxValue ? 1 / 3 + (blue - red) / 6 / value : 2 / 3 + (red - green) / 6 / value);
-            this._nHue = h < 0 ? h += 1 : (h > 1 ? h -= 1 : h);
-            this._nSaturation = this._nLight < 0.5
-                ? value / (maxValue + minValue)
-                : value / (2 - maxValue - minValue);
+        if (saturation) {
+            hue = redRate == maxValue ?
+                (greenRate - blueRate) / 6 / saturation : (greenRate == maxValue ?
+                    1 / 3 + (blueRate - redRate) / 6 / saturation : 2 / 3 + (redRate - greenRate) / 6 / saturation
+                );
+            hue = hue < 0 ? hue += 1 : (hue > 1 ? hue -= 1 : hue);
+            saturation = light < 0.5 ? saturation / (maxValue + minValue) : saturation / (2 - maxValue - minValue);
         }
         else {
-            this._nHue = 0;
-            this._nSaturation = 0;
+            hue = 0;
+            saturation = 0;
         }
-    }
+
+        this._aValue = [red, green, blue, hue, saturation, light];
+    };
 
     /**
      * 设置 HSL 模式的色彩
@@ -8348,14 +8766,15 @@ _nLight      - 亮度(0-1)
         var maxValue = light + MIN(light, 1 - light) * saturation,
             minValue = 2 * light - maxValue;
 
-        this._nHue = hue;
-        this._nSaturation = saturation;
-        this._nLight = light;
-
-        this._nRed = COLOR_HUE2RGB(minValue, maxValue, hue + 1 / 3);
-        this._nGreen = COLOR_HUE2RGB(minValue, maxValue, hue);
-        this._nBlue = COLOR_HUE2RGB(minValue, maxValue, hue - 1 / 3);
-    }
+        this._aValue = [
+            COLOR_HUE2RGB(minValue, maxValue, hue + 1 / 3),
+            COLOR_HUE2RGB(minValue, maxValue, hue),
+            COLOR_HUE2RGB(minValue, maxValue, hue - 1 / 3),
+            hue,
+            saturation,
+            light
+        ];
+    };
 
 
 /*
@@ -8374,13 +8793,13 @@ _uMain._uIcon     - 左部色彩选择区箭头
 _uLightbar        - 中部亮度条选择区
 _uLightbar._uIcon - 中部亮度条选择区箭头
 _uColor           - 右部色彩显示区
-_uConfirm         - 确认按钮
 _aValue           - 右部输入区域
+_aButton          - 按钮数组
 */
 
 
     /**
-     * 刷新色彩值输入框
+     * 刷新色彩值输入框。
      * @private
      *
      * @param {ecui.ui.Palette} palette 拾色器控件对象
@@ -8389,14 +8808,16 @@ _aValue           - 右部输入区域
     function UI_PALETTE_VALUES_FLUSH(palette, colors) {
         for (var i = 0; i < 7; i++) {
             if (colors[i] !== undefined) {
-                i || (palette._uColor.getBase().style.backgroundColor = '#' + colors[i]);
+                if (!i) {
+                    palette._uColor.getBase().style.backgroundColor = '#' + colors[i];
+                }
                 palette._aValue[i].setValue(colors[i]);
             }
         }
     }
 
     /**
-     * 刷新亮度条选择区
+     * 刷新亮度条选择区。
      * @private
      *
      * @param {ecui.ui.Palette} palette 拾色器控件对象
@@ -8411,34 +8832,34 @@ _aValue           - 右部输入区域
     }
 
     /**
-     * 刷新箭头位置
+     * 刷新箭头位置。
      * @private
      *
      * @param {ecui.ui.Palette} palette 拾色器控件对象
      */
     function UI_PALETTE_POSITION_FLUSH(palette) {
-        var x = palette._aValue[1].getValue(),
-            y = palette._aValue[3].getValue();
+        //__gzip_original__values
+        var values = palette._aValue,
+            x = values[1].getValue(),
+            y = values[3].getValue();
 
         palette._uMain._uIcon.setPosition(x, 255 - y);
-        palette._uLightbar._uIcon.getOuter().style.top = 255 - palette._aValue[5].getValue() + 'px';
+        palette._uLightbar._uIcon.getOuter().style.top = 255 - values[5].getValue() + 'px';
         UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
     }
 
     /**
-     * 刷新 RGB 色彩空间相关区域
+     * 刷新 RGB 色彩空间相关区域。
      * @private
      *
      * @param {ecui.ui.Palette} palette 拾色器控件对象
      */
     function UI_PALETTE_RGB_FLUSH(palette) {
-        var color = new Color();
+        //__gzip_original__values
+        var values = palette._aValue,
+            color = new Color();
 
-        color.setHSL(
-            palette._aValue[1].getValue() / 255,
-            palette._aValue[3].getValue() / 255,
-            palette._aValue[5].getValue() / 255
-        );
+        color.setHSL(values[1].getValue() / 255, values[3].getValue() / 255, values[5].getValue() / 255);
 
         UI_PALETTE_VALUES_FLUSH(palette, [
             color.getRGB(),
@@ -8452,19 +8873,17 @@ _aValue           - 右部输入区域
     }
 
     /**
-     * 刷新 HSL 色彩空间相关区域
+     * 刷新 HSL 色彩空间相关区域。
      * @private
      *
      * @param {ecui.ui.Palette} palette 拾色器控件对象
      */
     function UI_PALETTE_HSL_FLUSH(palette) {
-        var color = new Color();
+        //__gzip_original__values
+        var values = palette._aValue,
+            color = new Color();
 
-        color.setRGB(
-            palette._aValue[2].getValue() - 0,
-            palette._aValue[4].getValue() - 0,
-            palette._aValue[6].getValue() - 0
-        );
+        color.setRGB(values[2].getValue() - 0, values[4].getValue() - 0, values[6].getValue() - 0);
 
         UI_PALETTE_VALUES_FLUSH(palette, [
             color.getRGB(),
@@ -8479,7 +8898,7 @@ _aValue           - 右部输入区域
     }
 
     /**
-     * 色彩选择区箭头或亮度条选择区箭头拖曳移动事件的默认处理
+     * 色彩选择区箭头或亮度条选择区箭头拖曳移动事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
@@ -8489,24 +8908,26 @@ _aValue           - 右部输入区域
     UI_PALETTE_AREA_CLASS.$dragmove = function (event, x, y) {
         UI_CONTROL_CLASS.$dragmove.call(this, event, x, y);
 
+        //__gzip_original__values
         var parent = this.getParent(),
-            palette = parent.getParent();
+            palette = parent.getParent(),
+            values = palette._aValue;
 
         y = 255 - y;
         if (parent == palette._uMain) {
-            palette._aValue[1].setValue(x);
-            palette._aValue[3].setValue(y);
+            values[1].setValue(x);
+            values[3].setValue(y);
             UI_PALETTE_LIGHTBAR_FLUSH(palette, x / 255, y / 255);
         }
         else {
-            palette._aValue[5].setValue(y);
+            values[5].setValue(y);
         }
 
         UI_PALETTE_RGB_FLUSH(palette);
     };
 
     /**
-     * 色彩选择区或亮度条选择区左键按压开始事件的默认处理
+     * 色彩选择区或亮度条选择区左键按压开始事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
@@ -8514,13 +8935,13 @@ _aValue           - 右部输入区域
     UI_PALETTE_AREA_CLASS.$pressstart = function (event) {
         UI_CONTROL_CLASS.$pressstart.call(this, event);
 
-        var isMain = this == this.getParent()._uMain,
-            control = this._uIcon,
-            x = isMain ? getMouseX(this) : control.getX(),
+        var control = this._uIcon,
+            x,
             y = getMouseY(this),
             range = {top: 0, bottom: 255 + control.getHeight()};
 
-        if (isMain) {
+        if (this == this.getParent()._uMain) {
+            x = getMouseX(this);
             range.left = 0;
             range.right = 255 + control.getWidth();
         }
@@ -8528,49 +8949,27 @@ _aValue           - 右部输入区域
             if (y < 0 || y > 255) {
                 return;
             }
-            range.left = range.right = x;
+            range.left = range.right = x = control.getX();
         }
 
         control.setPosition(x, y);
         drag(control, event, range);
-        control.$dragmove.call(control, event, x, y);
+        control.$dragmove(event, x, y);
     };
 
     /**
-     * 基本色彩区、确认或取消按钮鼠标点击事件的默认处理
+     * 基本色彩区鼠标点击事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_PALETTE_BUTTON_CLASS.$click = function (event) {
-        UI_CONTROL_CLASS.$click.call(this, event);
-
-        var palette = this.getParent();
-
-        if (this == palette._uConfirm) {
-            palette.onconfirm && palette.onconfirm();
-        }
-        else if (this == palette._uCancel) {
-            palette.hide();
-        }
-        else {
-            // 以下使用 event 表示 text
-            event = UI_PALETTE_BASIC_COLOR[this.getIndex()];
-            UI_PALETTE_VALUES_FLUSH(palette = palette.getParent(), [
-                undefined,
-                undefined,
-                PARSEINT(event.slice(0, 2), 16),
-                undefined,
-                PARSEINT(event.slice(2, 4), 16),
-                undefined,
-                PARSEINT(event.slice(4), 16)
-            ]);
-            UI_PALETTE_HSL_FLUSH(palette);
-        }
+    UI_PALETTE_COLLECTION_CLASS.$click = function (event) {
+        UI_COLLECTION_CLASS.$click.call(this, event);
+        this.getParent().getParent().setColor(new Color(UI_PALETTE_BASIC_COLOR[this.getIndex()]));
     };
 
     /**
-     * 色彩输入框内容改变事件的默认处理
+     * 色彩输入框内容改变事件的默认处理。
      * @protected
      */
     UI_PALETTE_EDIT_CLASS.$change = function () {
@@ -8581,7 +8980,7 @@ _aValue           - 右部输入区域
 
         if (this == parent._aValue[0]) {
             text = this.$getInputText();
-            if (text && text.length == 6 && !text.replace(/[0-9a-f]/ig, '')) {
+            if (text && text.length == 6) {
                 parent.setColor(new Color(text));
             }
             else {
@@ -8591,7 +8990,7 @@ _aValue           - 右部输入区域
         else {
             if (!text) {
                 this.setValue(0);
-                new Timer(function () {
+                timer(function () {
                     this.setCaret(1);
                 }, 0, this);
             }
@@ -8604,13 +9003,13 @@ _aValue           - 右部输入区域
                 UI_PALETTE_POSITION_FLUSH(parent);
             }
             else {
-                UI_PALETTE_HSL_FLUSH(parent)
+                UI_PALETTE_HSL_FLUSH(parent);
             }
         }
     };
 
     /**
-     * RGB 色彩输入框键盘按压事件的默认处理
+     * RGB 色彩输入框键盘按压事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
@@ -8634,19 +9033,35 @@ _aValue           - 右部输入区域
                 }
 
                 which = String.fromCharCode(which).toUpperCase();
-                if (which >= '0' && which <= '9' || which >= 'A' && which <= 'F') {
+                if (/[0-9A-F]/.test(which)) {
                     text = text.slice(0, start) + which + text.slice(end);
                     if (text.length == 6) {
-                        which = end + end % 2;
-                        parent._aValue[which].setValue(PARSEINT(text.slice(which - 2, which), 16));
-                        UI_PALETTE_HSL_FLUSH(parent);
+                        parent.setColor(new Color(text));
                         this.setCaret(end);
                     }
                     event.preventDefault();
                 }
             }
         }
-    }
+    };
+
+    /**
+     * 确认或取消按钮鼠标点击事件的默认处理。
+     * @protected
+     *
+     * @param {Event} event 事件对象
+     */
+    UI_PALETTE_BUTTON_CLASS.$click = function (event) {
+        UI_CONTROL_CLASS.$click.call(this, event);
+
+        event = this.getParent();
+        if (indexOf(event._aButton, this)) {
+            event.hide();
+        }
+        else if (event.onconfirm) {
+            event.onconfirm();
+        }
+    };
 
     /**
      * 计算控件的缓存。
@@ -8660,7 +9075,7 @@ _aValue           - 右部输入区域
         UI_CONTROL_CLASS.$cache.call(this, style, cacheSize);
 
         this._uMain.cache(false, true);
-        this._uLightbar.cache(true, true);
+        this._uLightbar.cache(false, true);
     };
 
     /**
@@ -8683,14 +9098,8 @@ _aValue           - 右部输入区域
     UI_PALETTE_CLASS.$setSize = function (width, height) {
         UI_CONTROL_CLASS.$setSize.call(this, width, height);
 
-        var i = 1;
-
         this._uMain.setBodySize(256, 256);
         this._uLightbar.setBodySize(0, 256);
-
-        for (; i < 7; ) {
-            this._aValue[i++].paint();
-        }
     };
 
     /**
@@ -8733,7 +9142,7 @@ Scroll - 定义在一个区间轴内移动的基本操作。
 _nTotal         - 滚动条区域允许设置的最大值
 _nStep          - 滚动条移动一次时的基本步长
 _nValue         - 滚动条当前设置的值
-_oTimer         - 定时器的句柄，用于连续滚动处理
+_oStop          - 定时器的句柄，用于连续滚动处理
 _cButton        - 当前正在执行动作的按钮，用于连续滚动的控制
 _uPrev          - 向前滚动按钮
 _uNext          - 向后滚动按钮
@@ -8745,34 +9154,35 @@ _oRange         - 滑动块的合法滑动区间
 
 
     /**
-     * 停止自动滚动
-     * @private
-     *
-     * @param {ecui.ui.Scroll} control 滚动条对象
-     */
-    function UI_SCROLL_STOP(control) {
-        var timer = control._oTimer;
-        timer && timer.stop();
-    }
-
-    /**
      * 控扭控件自动滚动。
      * @private
      *
      * @param {ecui.ui.Scroll.Button} button 触发滚动的按钮
      * @param {number} step 单次滚动步长
+     * @param {number} interval 触发时间间隔，默认50ms
      */
-    function UI_SCROLL_MOVE(button, step) {
+    function UI_SCROLL_MOVE(button, step, interval) {
+        //__gzip_original__value
         var scroll = button.getParent(),
-            __gzip_direct__value = scroll._nValue,
+            value = scroll._nValue,
             isPrev = scroll._uPrev == button;
-        UI_SCROLL_STOP(scroll);
 
-        if (isPrev && __gzip_direct__value || !isPrev && __gzip_direct__value < scroll._nTotal) {
-            isPrev
-                ? scroll.$allowPrev() && scroll.setValue(__gzip_direct__value - step)
-                : scroll.$allowNext() && scroll.setValue(__gzip_direct__value + step);
-            scroll._oTimer = new Timer(UI_SCROLL_MOVE, 200, null, button, step);
+        if (scroll._oStop) {
+            scroll._oStop();
+        }
+
+        if (isPrev && value || !isPrev && value < scroll._nTotal) {
+            if (isPrev) {
+                if (scroll.$allowPrev()) {
+                    scroll.setValue(value - step);
+                }
+            }
+            else {
+                if (scroll.$allowNext()) {
+                    scroll.setValue(value + step);
+                }
+            }
+            scroll._oStop = timer(UI_SCROLL_MOVE, interval || 200, null, button, step, 40);
         }
     }
 
@@ -8805,9 +9215,6 @@ _oRange         - 滑动块的合法滑动区间
         UI_CONTROL_CLASS.$pressstart.call(this, event);
 
         drag(this, event, this._oRange);
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -8829,50 +9236,25 @@ _oRange         - 滑动块的合法滑动区间
     };
 
     /**
-     * 控扭控件按压状态结束事件的默认处理。
+     * 控扭控件按压状态结束事件与控扭控件按压状态中鼠标移出控件区域事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_BUTTON_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
+    UI_SCROLL_BUTTON_CLASS.$pressend = UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseout' ? '$pressout' : '$pressend'].call(this, event);
+        this.getParent()._oStop();
     };
 
     /**
-     * 控扭控件按压状态中鼠标移出控件区域事件的默认处理。
+     * 控扭控件按压状态中鼠标移入控件区域事件与控扭控件按压状态开始事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_BUTTON_CLASS.$pressout = function (event) {
-        UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this.getParent());
-    };
-
-    /**
-     * 控扭控件按压状态中鼠标移入控件区域事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressover = function (event) {
-        UI_CONTROL_CLASS.$pressover.call(this, event);
+    UI_SCROLL_BUTTON_CLASS.$pressover = UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseover' ? '$pressover' : '$pressstart'].call(this, event);
         UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-    };
-
-    /**
-     * 控扭控件按压状态开始事件的默认处理。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_BUTTON_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-        UI_SCROLL_MOVE(this, MAX(this.getParent()._nStep, 5));
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
     };
 
     /**
@@ -8897,8 +9279,8 @@ _oRange         - 滑动块的合法滑动区间
      * @protected
      */
     UI_SCROLL_CLASS.$hide = function () {
-        UI_SCROLL_CLASS.setValue.call(this, 0);
         UI_CONTROL_CLASS.$hide.call(this);
+        UI_SCROLL_CLASS.setValue.call(this, 0);
     };
 
     /**
@@ -8907,62 +9289,35 @@ _oRange         - 滑动块的合法滑动区间
      * @protected
      */
     UI_SCROLL_CLASS.$init = function () {
+        UI_CONTROL_CLASS.$init.call(this);
         this._uPrev.$init();
         this._uNext.$init();
         this._uBlock.$init();
-        UI_CONTROL_CLASS.$init.call(this);
     };
 
     /**
-     * 控件按压状态结束事件的默认处理。
-     * 鼠标左键按压控件结束时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressend 方法触发 onpressend 事件，如果事件返回值不为 false，则调用 $pressend 方法。
+     * 控件按压状态结束事件与控件按压状态中鼠标移出控件区域事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_CLASS.$pressend = function (event) {
-        UI_CONTROL_CLASS.$pressend.call(this, event);
-        UI_SCROLL_STOP(this);
+    UI_SCROLL_CLASS.$pressend = UI_SCROLL_CLASS.$pressout = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseout' ? '$pressout' : '$pressend'].call(this, event);
+        this._oStop();
     };
 
     /**
-     * 控件按压状态中鼠标移出控件区域事件的默认处理。
-     * 控件按压状态中鼠标移出控件区域时停止自动滚动，恢复控件状态。如果控件处于可操作状态(参见 isEnabled)，pressout 方法触发 onpressout 事件，如果事件返回值不为 false，则调用 $pressout 方法。
+     * 控件按压状态中鼠标移入控件区域事件与控件按压状态开始事件的默认处理。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_SCROLL_CLASS.$pressout = function (event) {
-        UI_CONTROL_CLASS.$pressout.call(this, event);
-        UI_SCROLL_STOP(this);
-    };
-
-    /**
-     * 控件按压状态中鼠标移入控件区域事件的默认处理。
-     * 控件按压状态中鼠标移入控件区域开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressover 方法触发 onpressover 事件，如果事件返回值不为 false，则调用 $pressover 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressover = function (event) {
-        UI_CONTROL_CLASS.$pressover.call(this, event);
-        UI_SCROLL_MOVE(this._cButton, this.$getPageStep());
-    };
-
-    /**
-     * 控件按压状态开始事件的默认处理。
-     * 鼠标左键按压控件开始时计算自动滚动的方向，并开始自动滚动。如果控件处于可操作状态(参见 isEnabled)，pressstart 方法触发 onpressstart 事件，如果事件返回值不为 false，则调用 $pressstart 方法。
-     * @protected
-     *
-     * @param {Event} event 事件对象
-     */
-    UI_SCROLL_CLASS.$pressstart = function (event) {
-        UI_CONTROL_CLASS.$pressstart.call(this, event);
-
-        UI_SCROLL_MOVE(this._cButton = this.$allowPrev() ? this._uPrev : this._uNext, this.$getPageStep());
-
-        // 屏蔽普通W3C兼容的浏览器的选择操作
-        event.preventDefault();
+    UI_SCROLL_CLASS.$pressover = UI_SCROLL_CLASS.$pressstart = function (event) {
+        UI_CONTROL_CLASS[event.type == 'mouseover' ? '$pressover' : '$pressstart'].call(this, event);
+        UI_SCROLL_MOVE(
+            event.type == 'mouseover' ? this._cButton : this._cButton = this.$allowPrev() ? this._uPrev : this._uNext,
+            this.$getPageStep()
+        );
     };
 
     /**
@@ -9038,8 +9393,11 @@ _oRange         - 滑动块的合法滑动区间
      */
     UI_SCROLL_CLASS.scroll = function () {
         var parent = this.getParent();
-        this.change();
-        parent && (parent.onscroll && parent.onscroll() === false || parent.$scroll());
+        if (parent) {
+            if (!(parent.onscroll && parent.onscroll() === false)) {
+                parent.$scroll();
+            }
+        }
     };
 
     /**
@@ -9112,8 +9470,7 @@ _oRange         - 滑动块的合法滑动区间
      * @return {boolean} 是否允许向最大值方向移动
      */
     UI_VSCROLL_CLASS.$allowNext = function () {
-        var block = this._uBlock;
-        return getMouseY(this) > block.getY() + block.getHeight();
+        return getMouseY(this) > this._uBlock.getY() + this._uBlock.getHeight();
     };
 
     /**
@@ -9136,6 +9493,7 @@ _oRange         - 滑动块的合法滑动区间
      * @param {number} y 滑动块实际到达的Y轴坐标
      */
     UI_VSCROLL_CLASS.$calcDragValue = function (x, y) {
+        //__gzip_original__range
         var block = this._uBlock,
             range = block._oRange;
         return (y - range.top) / (range.bottom - this._uPrev.getHeight() - block.getHeight()) * this._nTotal;
@@ -9184,15 +9542,16 @@ _oRange         - 滑动块的合法滑动区间
     UI_VSCROLL_CLASS.$setSize = function (width, height) {
         UI_SCROLL_CLASS.$setSize.call(this, width, height);
 
+        //__gzip_original__next
         var bodyWidth = this.getBodyWidth(),
             prevHeight = this.$cache$paddingTop,
-            __gzip_direct__next = this._uNext;
+            next = this._uNext;
 
         // 设置滚动按钮与滑动块的信息
         this._uPrev.$setSize(bodyWidth, prevHeight);
-        __gzip_direct__next.$setSize(bodyWidth, this.$cache$paddingBottom);
+        next.$setSize(bodyWidth, this.$cache$paddingBottom);
         this._uBlock.$setSize(bodyWidth);
-        __gzip_direct__next.setPosition(0, this.getBodyHeight() + prevHeight);
+        next.setPosition(0, this.getBodyHeight() + prevHeight);
 
         this.$flush();
     };
@@ -9206,8 +9565,7 @@ _oRange         - 滑动块的合法滑动区间
      * @return {boolean} 是否允许向最大值方向移动
      */
     UI_HSCROLL_CLASS.$allowNext = function () {
-        var block = this._uBlock;
-        return getMouseX(this) > block.getX() + block.getWidth();
+        return getMouseX(this) > this._uBlock.getX() + this._uBlock.getWidth();
     };
 
     /**
@@ -9230,6 +9588,7 @@ _oRange         - 滑动块的合法滑动区间
      * @param {number} y 滑动块实际到达的Y轴坐标
      */
     UI_HSCROLL_CLASS.$calcDragValue = function (x, y) {
+        //__gzip_original__range
         var block = this._uBlock,
             range = block._oRange;
         return (x - range.left) / (range.right - this._uPrev.getWidth() - block.getWidth()) * this._nTotal;
@@ -9278,15 +9637,16 @@ _oRange         - 滑动块的合法滑动区间
     UI_HSCROLL_CLASS.$setSize = function (width, height) {
         UI_SCROLL_CLASS.$setSize.call(this, width, height);
 
+        //__gzip_original__next
         var bodyHeight = this.getBodyHeight(),
             prevWidth = this.$cache$paddingLeft,
-            __gzip_direct__next = this._uNext;
+            next = this._uNext;
 
         // 设置滚动按钮与滑动块的信息
         this._uPrev.$setSize(prevWidth, bodyHeight);
-        __gzip_direct__next.$setSize(this.$cache$paddingRight, bodyHeight);
+        next.$setSize(this.$cache$paddingRight, bodyHeight);
         this._uBlock.$setSize(0, bodyHeight);
-        __gzip_direct__next.setPosition(this.getBodyWidth() + prevWidth, 0);
+        next.setPosition(this.getBodyWidth() + prevWidth, 0);
 
         this.$flush();
     };
@@ -9321,30 +9681,13 @@ $cache$mainHeight         - layout区域的实际高度
 
 
     /**
-     * 获取一页的步长。
-     * $getPageStep 方法根据 getStep 方法获取的步长，计算父控件一页的步长的大小，一页的步长一定是滚动条控件步长的整数倍。
-     * @protected
-     *
-     * @return {number} 一页的步长
-     */
-    UI_BROWSER_SCROLL_CLASS.$getPageStep = blank;
-
-    /**
      * 隐藏控件。
      * @protected
      */
     UI_BROWSER_SCROLL_CLASS.$hide = UI_BROWSER_SCROLL_CLASS.hide = function () {
-        this.getBase().style[this._sOverflow] = 'hidden';
+        this.getBase().style[this._aProperty[0]] = 'hidden';
         UI_BROWSER_SCROLL_CLASS.setValue.call(this, 0);
     };
-
-    /**
-     * 设置滚动条控件的单页滚动距离。
-     * @protected
-     *
-     * @param {number} value 单页滚动距离
-     */
-    UI_BROWSER_SCROLL_CLASS.$setPageStep = blank;
 
     /**
      * 直接设置控件的当前值。
@@ -9353,9 +9696,7 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {number} value 控件的当前值
      */
     UI_BROWSER_SCROLL_CLASS.$setValue = UI_BROWSER_SCROLL_CLASS.setValue = function (value) {
-        if (value >= 0 && value < this.getTotal()) {
-            this.getBase()[this._sScrollValue] = value;
-        }
+        this.getBase()[this._aProperty[1]] = MIN(MAX(0, value), this.getTotal());
     };
 
     /**
@@ -9363,17 +9704,18 @@ $cache$mainHeight         - layout区域的实际高度
      * @protected
      */
     UI_BROWSER_SCROLL_CLASS.$show = UI_BROWSER_SCROLL_CLASS.show = function () {
-        this.getBase().style[this._sOverflow] = 'scroll';
+        this.getBase().style[this._aProperty[0]] = 'scroll';
     };
 
     /**
-     * 获取滚动条控件的单次滚动距离。
-     * getStep 方法返回滚动条控件发生滚动时，移动的最小步长值，通过 setStep 设置。
+     * 获取控件区域的高度。
      * @public
      *
-     * @return {number} 单次滚动距离
+     * @return {number} 控件的高度
      */
-    UI_BROWSER_SCROLL_CLASS.getStep = blank;
+    UI_BROWSER_SCROLL_CLASS.getHeight = function () {
+        return this._aProperty[4] ? this.getBase()[this._aProperty[4]] : getScrollNarrow();
+    };
 
     /**
      * 获取滚动条控件的最大值。
@@ -9383,7 +9725,7 @@ $cache$mainHeight         - layout区域的实际高度
      * @return {number} 控件的最大值
      */
     UI_BROWSER_SCROLL_CLASS.getTotal = function () {
-        return this.getBase()[this._sScrollTotal];
+        return toNumber(this.getBase().lastChild.style[this._aProperty[2]]);
     };
 
     /**
@@ -9394,7 +9736,17 @@ $cache$mainHeight         - layout区域的实际高度
      * @return {number} 滚动条控件的当前值
      */
     UI_BROWSER_SCROLL_CLASS.getValue = function () {
-        return this.getBase()[this._sScrollValue];
+        return this.getBase()[this._aProperty[1]];
+    };
+
+    /**
+     * 获取控件区域的宽度。
+     * @public
+     *
+     * @return {number} 控件的宽度
+     */
+    UI_BROWSER_SCROLL_CLASS.getWidth = function () {
+        return this._aProperty[3] ? this.getBase()[this._aProperty[3]] : getScrollNarrow();
     };
 
     /**
@@ -9404,7 +9756,7 @@ $cache$mainHeight         - layout区域的实际高度
      * @return {boolean} 控件是否显示
      */
     UI_BROWSER_SCROLL_CLASS.isShow = function () {
-        return getStyle(this.getBase(), this._sOverflow) != 'hidden';
+        return this.getBase().style[this._aProperty[0]] != 'hidden';
     };
 
     /**
@@ -9413,18 +9765,11 @@ $cache$mainHeight         - layout区域的实际高度
      * @public
      */
     UI_BROWSER_SCROLL_CLASS.scroll = function (event) {
-        event = findControl(standardEvent(event).target);
-        event && (event.onscroll && event.onscroll() === false || event.$scroll());
+        event = findControl(standardEvent(event).target).getParent();
+        if (!(event.onscroll && event.onscroll() === false)) {
+            event.$scroll();
+        }
     };
-
-    /**
-     * 设置滚动条控件的单次滚动距离。
-     * setStep 方法设置的值必须大于0，否则不会进行操作。
-     * @public
-     *
-     * @param {number} value 单次滚动距离
-     */
-    UI_BROWSER_SCROLL_CLASS.setStep = blank;
 
     /**
      * 设置滚动条控件的最大值。
@@ -9434,68 +9779,27 @@ $cache$mainHeight         - layout区域的实际高度
      * @param {number} value 控件的最大值
      */
     UI_BROWSER_SCROLL_CLASS.setTotal = function (value) {
-        this.getBase().lastChild.style[this._sTotal] = value + 'px';
+        this.getBase().lastChild.style[this._aProperty[2]] = value + 'px';
     };
 
-    /**
-     * 滚动条控件当前值移动指定的步长次数。
-     * 参数 value 必须是整数, 正数则向最大值方向移动，负数则向0方向移动，允许移动的区间在0-最大值之间，参见 setStep、setTotal 与 setValue 方法。
-     * @public
-     *
-     * @param {number} n 移动的步长次数
-     */
-    UI_BROWSER_SCROLL_CLASS.skip = blank;
-
-    UI_BROWSER_SCROLL_CLASS.$cache = UI_BROWSER_SCROLL_CLASS.$init = UI_BROWSER_SCROLL_CLASS.$setSize
-        = UI_BROWSER_SCROLL_CLASS.cache = UI_BROWSER_SCROLL_CLASS.setPosition = blank;
+    UI_BROWSER_SCROLL_CLASS.$cache = UI_BROWSER_SCROLL_CLASS.$getPageStep =
+        UI_BROWSER_SCROLL_CLASS.$init = UI_BROWSER_SCROLL_CLASS.$setPageStep =
+        UI_BROWSER_SCROLL_CLASS.$setSize = UI_BROWSER_SCROLL_CLASS.alterClass = UI_BROWSER_SCROLL_CLASS.cache =
+        UI_BROWSER_SCROLL_CLASS.getStep = UI_BROWSER_SCROLL_CLASS.setPosition =
+        UI_BROWSER_SCROLL_CLASS.setStep = UI_BROWSER_SCROLL_CLASS.skip = blank;
 
 
-    /**
-     * 获取控件区域的高度。
-     * @public
-     *
-     * @return {number} 控件的高度
-     */
-    UI_BROWSER_VSCROLL_CLASS.getHeight = function () {
-        return this.getBase().offsetHeight;
-    };
-
-    /**
-     * 获取控件区域的宽度。
-     * @public
-     *
-     * @return {number} 控件的宽度
-     */
-    UI_BROWSER_VSCROLL_CLASS.getWidth = function () {
-        return getScrollNarrow();
-    };
+    inherits(UI_BROWSER_VSCROLL, UI_BROWSER_SCROLL);
 
 
-    /**
-     * 获取控件区域的高度。
-     * @public
-     *
-     * @return {number} 控件的高度
-     */
-    UI_BROWSER_HSCROLL_CLASS.getHeight = function () {
-        return getScrollNarrow();
-    };
-
-    /**
-     * 获取控件区域的宽度。
-     * @public
-     *
-     * @return {number} 控件的宽度
-     */
-    UI_BROWSER_HSCROLL_CLASS.getWidth = function () {
-        return this.getBase().offsetWidth;
-    };
+    inherits(UI_BROWSER_HSCROLL, UI_BROWSER_SCROLL);
 
 
-    UI_BROWSER_CORNER_CLASS.$cache = UI_BROWSER_CORNER_CLASS.$hide = UI_BROWSER_CORNER_CLASS.$init
-        = UI_BROWSER_CORNER_CLASS.$setSize = UI_BROWSER_CORNER_CLASS.$show
-        = UI_BROWSER_CORNER_CLASS.cache = UI_BROWSER_CORNER_CLASS.hide
-        = UI_BROWSER_CORNER_CLASS.setPosition = UI_BROWSER_CORNER_CLASS.show = blank;
+    (function () {
+        for (var name in UI_CONTROL_CLASS) {
+            UI_BROWSER_CORNER_CLASS[name] = blank;
+        }
+    })();
 
 
     /**
@@ -9513,21 +9817,23 @@ $cache$mainHeight         - layout区域的实际高度
             mainWidth = body.offsetWidth,
             mainHeight = body.offsetHeight;
 
+        style = getStyle(getParent(body));
+        this.$cache$layoutWidthRevise = calcWidthRevise(style);
+        this.$cache$layoutHeightRevise = calcHeightRevise(style);
+
         // 考虑到内部Element绝对定位的问题，中心区域的宽度与高度修正
         if (this._bAbsolute) {
             for (
                 var i = 0,
-                    pos = getPosition(body),
-                    x = pos.left,
-                    y = pos.top,
-                    elements = body.getElementsByTagName('*');
-                // 以下使用 style 代替临时的 DOM 节点对象
-                style = elements[i++];
+                    list = body.all || body.getElementsByTagName('*'),
+                    pos = getPosition(body);
+                // 以下使用 body 代替临时的 DOM 节点对象
+                body = list[i++];
             ) {
-                if (style.offsetWidth && getStyle(style, 'position') == 'absolute') {
-                    pos = getPosition(style);
-                    mainWidth = MAX(mainWidth, pos.left - x + style.offsetWidth);
-                    mainHeight = MAX(mainHeight, pos.top - y + style.offsetHeight);
+                if (body.offsetWidth && getStyle(body, 'position') == 'absolute') {
+                    style = getPosition(body);
+                    mainWidth = MAX(mainWidth, style.left - pos.left + body.offsetWidth);
+                    mainHeight = MAX(mainHeight, style.top - pos.top + body.offsetHeight);
                 }
             }
         }
@@ -9535,13 +9841,15 @@ $cache$mainHeight         - layout区域的实际高度
         this.$cache$mainWidth = mainWidth;
         this.$cache$mainHeight = mainHeight;
 
-        style = getStyle(getParent(body));
-        this.$cache$layoutWidthRevise = calcWidthRevise(style);
-        this.$cache$layoutHeightRevise = calcHeightRevise(style);
-
-        this._uVScroll && this._uVScroll.cache(true, true);
-        this._uHScroll && this._uHScroll.cache(true, true);
-        this._uCorner && this._uCorner.cache(true, true);
+        if (this._uVScroll) {
+             this._uVScroll.cache(true, true);
+        }
+        if (this._uHScroll) {
+             this._uHScroll.cache(true, true);
+        }
+        if (this._uCorner) {
+            this._uCorner.cache(true, true);
+        }
     };
 
     /**
@@ -9560,9 +9868,15 @@ $cache$mainHeight         - layout区域的实际高度
      * @protected
      */
     UI_PANEL_CLASS.$init = function () {
-        this._uVScroll && this._uVScroll.$init();
-        this._uHScroll && this._uHScroll.$init();
-        this._uCorner && this._uCorner.$init();
+        if (this._uVScroll) {
+            this._uVScroll.$init();
+        }
+        if (this._uHScroll) {
+            this._uHScroll.$init();
+        }
+        if (this._uCorner) {
+            this._uCorner.$init();
+        }
         UI_CONTROL_CLASS.$init.call(this);
     };
 
@@ -9575,11 +9889,12 @@ $cache$mainHeight         - layout区域的实际高度
      */
     UI_PANEL_CLASS.$keydown = UI_PANEL_CLASS.$keypress = function (event) {
         var which = getKey(),
-            mod = which % 2,
-            scroll = mod ? this._uHScroll : this._uVScroll;
+            scroll = which % 2 ? this._uHScroll : this._uVScroll;
 
         if (which >= 37 && which <= 40 && !event.target.value) {
-            scroll && scroll.skip(which + mod - 39);
+            if (scroll) {
+                scroll.skip(which + which % 2 - 39);
+            }
             return false;
         }
     };
@@ -9599,6 +9914,7 @@ $cache$mainHeight         - layout区域的实际高度
             var value = scroll.getValue(),
                 delta = this._nWheelDelta || FLOOR(20 / scroll.getStep()) || 1,
                 scroll;
+
             scroll.skip(event.detail > 0 ? delta : -delta);
             return value == scroll.getValue();
         }
@@ -9633,6 +9949,7 @@ $cache$mainHeight         - layout区域的实际高度
             bodyHeight = this.getBodyHeight(),
             mainWidth = this.$cache$mainWidth,
             mainHeight = this.$cache$mainHeight,
+            browser = this._eBrowser,
             vscroll = this._uVScroll,
             hscroll = this._uHScroll,
             corner = this._uCorner,
@@ -9644,15 +9961,27 @@ $cache$mainHeight         - layout区域的实际高度
             vsHeight = innerHeight + paddingHeight;
 
         // 设置垂直与水平滚动条与夹角控件的位置
-        vscroll && vscroll.setPosition(hsWidth, 0);
-        hscroll && hscroll.setPosition(0, vsHeight);
-        corner && corner.setPosition(hsWidth, vsHeight);
+        if (vscroll) {
+            vscroll.setPosition(hsWidth, 0);
+        }
+        if (hscroll) {
+            hscroll.setPosition(0, vsHeight);
+        }
+        if (corner) {
+            corner.setPosition(hsWidth, vsHeight);
+        }
 
         if (mainWidth <= bodyWidth && mainHeight <= bodyHeight) {
             // 宽度与高度都没有超过层控件的宽度与高度，不需要显示滚动条
-            vscroll && vscroll.$hide();
-            hscroll && hscroll.$hide();
-            corner && corner.$hide();
+            if (vscroll) {
+                vscroll.$hide();
+            }
+            if (hscroll) {
+                hscroll.$hide();
+            }
+            if (corner) {
+                corner.$hide();
+            }
             innerWidth = bodyWidth;
             innerHeight = bodyHeight;
         }
@@ -9662,10 +9991,10 @@ $cache$mainHeight         - layout区域的实际高度
                     // 宽度与高度都超出了显示滚动条后余下的宽度与高度，垂直与水平滚动条同时显示
                     if (mainWidth > innerWidth && mainHeight > innerHeight) {
                         hscroll.$setSize(hsWidth);
-                        hscroll.setTotal(mainWidth - (this._eBrowser ? 0 : innerWidth));
+                        hscroll.setTotal(mainWidth - (browser ? 0 : innerWidth));
                         hscroll.$show();
                         vscroll.$setSize(0, vsHeight);
-                        vscroll.setTotal(mainHeight - (this._eBrowser ? 0 : innerHeight));
+                        vscroll.setTotal(mainHeight - (browser ? 0 : innerHeight));
                         vscroll.$show();
                         corner.$setSize(vsWidth, hsHeight);
                         corner.$show();
@@ -9677,9 +10006,11 @@ $cache$mainHeight         - layout区域的实际高度
                     if (mainWidth > bodyWidth) {
                         // 宽度超出控件的宽度，高度没有超出显示水平滚动条后余下的高度，只显示水平滚动条
                         hscroll.$setSize(bodyWidth + paddingWidth);
-                        hscroll.setTotal(mainWidth - (this._eBrowser ? 0 : bodyWidth));
+                        hscroll.setTotal(mainWidth - (browser ? 0 : bodyWidth));
                         hscroll.$show();
-                        vscroll && vscroll.$hide();
+                        if (vscroll) {
+                            vscroll.$hide();
+                        }
                         innerWidth = bodyWidth;
                     }
                     else {
@@ -9690,9 +10021,11 @@ $cache$mainHeight         - layout区域的实际高度
                     if (mainHeight > bodyHeight) {
                         // 高度超出控件的高度，宽度没有超出显示水平滚动条后余下的宽度，只显示水平滚动条
                         vscroll.$setSize(0, bodyHeight + paddingHeight);
-                        vscroll.setTotal(mainHeight - (this._eBrowser ? 0 : bodyHeight));
+                        vscroll.setTotal(mainHeight - (browser ? 0 : bodyHeight));
                         vscroll.$show();
-                        hscroll && hscroll.$hide();
+                        if (hscroll) {
+                            hscroll.$hide();
+                        }
                         innerHeight = bodyHeight;
                     }
                     else {
@@ -9706,14 +10039,18 @@ $cache$mainHeight         - layout区域的实际高度
         innerWidth -= this.$cache$layoutWidthRevise;
         innerHeight -= this.$cache$layoutHeightRevise;
 
-        vscroll && vscroll.$setPageStep(innerHeight);
-        hscroll && hscroll.$setPageStep(innerWidth);
+        if (vscroll) {
+            vscroll.$setPageStep(innerHeight);
+        }
+        if (hscroll) {
+            hscroll.$setPageStep(innerWidth);
+        }
     
         // 设置内部定位器的大小，以下使用 corner 表示 style
-        if (this._eBrowser) {
-            corner = this._eBrowser.style;
-            corner.width = bodyWidth + this.$cache$paddingLeft + this.$cache$paddingRight + 'px';
-            corner.height = bodyHeight + this.$cache$paddingTop + this.$cache$paddingBottom + 'px';
+        if (browser) {
+            corner = browser.style;
+            corner.width = bodyWidth + paddingWidth + 'px';
+            corner.height = bodyHeight + paddingHeight + 'px';
         }
 
         corner = getParent(this.getBody()).style;
@@ -9767,14 +10104,14 @@ _eInput - 选项对应的input，form提交时使用
 
 
     /**
-     * 计算当前鼠标移入的选项编号
+     * 计算当前鼠标移入的选项编号。
      * @private
      *
      * @param {ecui.ui.Item} control 选项控件
      */
     function UI_LISTBOX_OVERED(control) {
         var parent = control.getParent(),
-            vscroll = parent._cScroll,
+            vscroll = parent.$getSection('VScroll'),
             step = vscroll.getStep(),
             o = getMouseY(parent),
             oldTop = control._nTop;
@@ -9788,11 +10125,15 @@ _eInput - 选项对应的input，form提交时使用
             }
             else {
                 // 超出控件范围，3像素点对应一个选项
-                o = FLOOR((o - MAX(0, oldTop)) / 3);
                 // 如果不滚动，需要恢复原始的移动距离
-                o ? vscroll.skip(o) : (control._nTop = oldTop);
+                if (o = FLOOR((o - MAX(0, oldTop)) / 3)) {
+                    vscroll.skip(o);
+                }
+                else {
+                    control._nTop = oldTop;
+                }
             }
-            o += control._nLastIndex;
+            o += control._nLast;
         }
         else if (o < 0) {
             if (o > oldTop) {
@@ -9801,11 +10142,15 @@ _eInput - 选项对应的input，form提交时使用
             }
             else {
                 // 超出控件范围，3像素点对应一个选项
-                o = CEIL((o - MIN(0, oldTop)) / 3);
                 // 如果不滚动，需要恢复原始的移动距离
-                o ? vscroll.skip(o) : (control._nTop = oldTop);
+                if (o = CEIL((o - MIN(0, oldTop)) / 3)) {
+                    vscroll.skip(o);
+                }
+                else {
+                    control._nTop = oldTop;
+                }
             }
-            o += control._nLastIndex;
+            o += control._nLast;
         }
         else {
             o = FLOOR((parent.getScrollTop() + o) / step);
@@ -9838,14 +10183,17 @@ _eInput - 选项对应的input，form提交时使用
     };
 
     /**
-     * 选择框选中处理
+     * 选择框选中处理事件的默认处理。
      * @protected
      */
     UI_LISTBOX_ITEM_CLASS.$select = function () {
-        var startIndex = this._nStartIndex,
-            lastIndex = this._nLastIndex,
-            index = UI_LISTBOX_OVERED(this),
+        //__transform__index_o
+        //__transform__items_list
+        //__gzip_original__startIndex
+        var index = UI_LISTBOX_OVERED(this),
             items = this.getParent().getItems(),
+            startIndex = this._nStart,
+            lastIndex = this._nLast,
             fromCancel = 0,
             toCancel = -1,
             fromSelect = 0,
@@ -9890,7 +10238,7 @@ _eInput - 选项对应的input，form提交时使用
             }
         }
 
-        this._nLastIndex = index;
+        this._nLast = index;
 
         // 恢复之前的选择状态
         for (; fromCancel <= toCancel; ) {
@@ -9905,13 +10253,15 @@ _eInput - 选项对应的input，form提交时使用
     };
 
     /**
-     * 选择框选中结束
+     * 选择框选中结束事件的默认处理。
      * @protected
      */
     UI_LISTBOX_ITEM_CLASS.$selectend = function () {
-        var startIndex = this._nStartIndex,
-            index = UI_LISTBOX_OVERED(this),
+        //__transform__index_o
+        //__transform__items_list
+        var index = UI_LISTBOX_OVERED(this),
             items = this.getParent().getItems(),
+            startIndex = this._nStart,
             fromIndex = MIN(startIndex, index),
             toIndex = MAX(startIndex, index);
 
@@ -9928,12 +10278,26 @@ _eInput - 选项对应的input，form提交时使用
     };
 
     /**
-     * 选择框选中开始
+     * 选择框选中开始事件的默认处理。
      * @protected
      */
     UI_LISTBOX_ITEM_CLASS.$selectstart = function () {
-        this._nStartIndex = this._nLastIndex = UI_LISTBOX_OVERED(this);
+        this._nStart = this._nLast = UI_LISTBOX_OVERED(this);
         this.alterClass('selected');
+    };
+
+    /**
+     * 直接设置父控件。
+     * @protected
+     *
+     * @param {ecui.ui.Control} parent ECUI 控件对象
+     */
+    UI_LISTBOX_ITEM_CLASS.$setParent = function (parent) {
+        UI_ITEM_CLASS.$setParent.call(this, parent);
+
+        if (parent instanceof UI_LISTBOX) {
+            this._eInput = setInput(this._eInput, parent._sName);
+        }
     };
 
     /**
@@ -9944,20 +10308,6 @@ _eInput - 选项对应的input，form提交时使用
      */
     UI_LISTBOX_ITEM_CLASS.isSelected = function () {
         return !this._eInput.disabled;
-    };
-
-    /**
-     * 设置当前控件的父控件。
-     * @public
-     *
-     * @param {ecui.ui.Control|HTMLElement} parent 父控件对象/父 Element 对象，忽略参数则将控件移出 DOM 树
-     */
-    UI_LISTBOX_ITEM_CLASS.setParent = function (parent) {
-        UI_ITEM_CLASS.setParent.call(this, parent);
-
-        if (parent instanceof UI_LISTBOX) {
-            this._eInput = setInput(this._eInput, parent._sName);
-        }
     };
 
     /**
@@ -9976,18 +10326,18 @@ _eInput - 选项对应的input，form提交时使用
      * @protected
      */
     UI_LISTBOX_CLASS.$alterItems = function () {
+        //__transform__items_list
         var items = this.getItems(),
-            length = items.length,
-            vscroll = this._cScroll,
-            step = length && items[0].getHeight();
+            vscroll = this.$getSection('VScroll'),
+            step = items.length && items[0].getHeight();
 
         if (step) {
             vscroll.setStep(step);
             this.setItemSize(
-                this.getBodyWidth() - (length * step > this.getBodyHeight() ? vscroll.getWidth() : 0),
+                this.getBodyWidth() - (items.length * step > this.getBodyHeight() ? vscroll.getWidth() : 0),
                 step
             );
-            this.paint();
+            this.$setSize(0, this.getHeight());
         }
     };
 
@@ -10010,7 +10360,9 @@ _eInput - 选项对应的input，form提交时使用
      */
     UI_LISTBOX_CLASS.getSelected = function () {
         for (var i = 0, list = this.getItems(), o, result = []; o = list[i++]; ) {
-            o.isSelected() && result.push(o);
+            if (o.isSelected()) {
+                result.push(o);
+            }
         }
         return result;
     };
@@ -10044,11 +10396,11 @@ _eInput - 选项对应的input，form提交时使用
 
 ﻿/*
 Select - 定义模拟下拉框行为的基本操作。
-下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基础控件)与下拉选项框
-(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选项数量，在屏幕显示
-不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键盘与滚轮操作，在下
-拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有焦点，就可以通过滚
-轮上下选择选项。
+下拉框控件，继承自输入框控件，实现了选项组接口，内部包含了三个部件，分别是下拉框显示的文本(选项控件)、下拉框的按钮(基
+础控件)与下拉选项框(截面控件，只使用垂直滚动条)。下拉框控件扩展了原生 SelectElement 的功能，允许指定下拉选项框的最大选
+项数量，在屏幕显示不下的时候，会自动显示在下拉框的上方。在没有选项时，下拉选项框有一个选项的高度。下拉框控件允许使用键
+盘与滚轮操作，在下拉选项框打开时，可以通过回车键或鼠标点击选择，上下键选择选项的当前条目，在关闭下拉选项框后，只要拥有
+焦点，就可以通过滚轮上下选择选项。
 
 下拉框控件直接HTML初始化的例子:
 <select ecui="type:select;option-size:3" name="test">
@@ -10082,6 +10434,7 @@ _uOptions     - 下拉选择框
      * @param {ecui.ui.Select} control 下拉框控件
      */
     function UI_SELECT_FLUSH(control) {
+        //__gzip_original__options
         var options = control._uOptions,
             scroll = options.$getSection('VScroll'),
             el = options.getOuter(),
@@ -10123,7 +10476,6 @@ _uOptions     - 下拉选择框
             mask();
             restore();
         }
-        removeDom(this.getOuter());
         UI_PANEL_CLASS.$dispose.call(this);
     };
 
@@ -10148,7 +10500,9 @@ _uOptions     - 下拉选择框
     UI_SELECT_ITEM_CLASS.setValue = function (value) {
         var parent = this.getParent();
         this._sValue = value;
-        parent && parent._cSelected == this && UI_EDIT_CLASS.setValue.call(parent, value);
+        if (parent && this == parent._cSelected) {
+            UI_EDIT_CLASS.setValue.call(parent, value);
+        }
     };
 
     /**
@@ -10157,6 +10511,7 @@ _uOptions     - 下拉选择框
      * @protected
      */
     UI_SELECT_CLASS.$alterItems = function () {
+        //__gzip_original__options
         var options = this._uOptions,
             scroll = options.$getSection('VScroll'),
             optionSize = this._nOptionSize,
@@ -10175,7 +10530,7 @@ _uOptions     - 下拉选择框
             );
 
             // 设置options框的大小，如果没有元素，至少有一个单位的高度
-            options.cache(false, true);
+            options.cache(false);
             options.$setSize(width, (MIN(itemLength, optionSize) || 1) * step + options.getInvalidHeight());
         }
     };
@@ -10222,37 +10577,38 @@ _uOptions     - 下拉选择框
      * @param {Event} event 事件对象
      */
     UI_SELECT_CLASS.$keydown = UI_SELECT_CLASS.$keypress = function (event) {
-        if (UI_EDIT_CLASS['$' + event.type](event) === false) {
-            return false;
-        }
+        UI_EDIT_CLASS['$' + event.type](event);
 
+        //__gzip_original__options
+        //__gzip_original__length
         var options = this._uOptions,
             scroll = options.$getSection('VScroll'),
             optionSize = this._nOptionSize,
             which = event.which,
-            items = this.getItems(),
-            length = items.length,
-            active = this.getActived(),
-            show = options.isShow();
+            list = this.getItems(),
+            length = list.length,
+            active = this.getActived();
 
         if (getPressed() != this) {
             // 当前不能存在鼠标操作，否则屏蔽按键
             if (which == 40 || which == 38) {
                 if (length) {
-                    if (show) {
-                        this.$setActived(items[which = MIN(MAX(0, indexOf(items, active) + which - 39), length - 1)]);
+                    if (options.isShow()) {
+                        this.$setActived(list[which = MIN(MAX(0, indexOf(list, active) + which - 39), length - 1)]);
                         which -= scroll.getValue() / scroll.getStep();
                         scroll.skip(which < 0 ? which : which >= optionSize ? which - optionSize + 1 : 0);
                     }
                     else {
-                        this.setSelected(MIN(MAX(0, indexOf(items, this._cSelected) + which - 39), length - 1));
+                        this.setSelected(MIN(MAX(0, indexOf(list, this._cSelected) + which - 39), length - 1));
                     }
                 }
                 return false;
             }
-            else if (which == 27 || which == 13 && show) {
+            else if (which == 27 || which == 13 && options.isShow()) {
                 // 回车键选中，ESC键取消
-                which == 13 && this.setSelected(active);
+                if (which == 13) {
+                    this.setSelected(active);
+                }
                 options.hide();
                 mask();
                 restore();
@@ -10269,15 +10625,20 @@ _uOptions     - 下拉选择框
      * @param {Event} event 事件对象
      */
     UI_SELECT_CLASS.$mousewheel = function (event) {
+        //__gzip_original__options
+        //__gzip_original__length
         var options = this._uOptions,
-            items = this.getItems(),
-            length = items.length;
+            list = this.getItems(),
+            length = list.length;
 
-        options.isShow()
-            ? options.$mousewheel(event)
-            : this.setSelected(
-                length ? MIN(MAX(0, indexOf(items, this._cSelected) + (event.detail > 0 ? 1 : -1)), length - 1) : null
+        if (options.isShow()) {
+            options.$mousewheel(event);
+        }
+        else {
+            this.setSelected(
+                length ? MIN(MAX(0, indexOf(list, this._cSelected) + (event.detail > 0 ? 1 : -1)), length - 1) : null
             );
+        }
         return false;
     };
 
@@ -10290,7 +10651,6 @@ _uOptions     - 下拉选择框
      */
     UI_SELECT_CLASS.$pressstart = function (event) {
         UI_EDIT_CLASS.$pressstart.call(this, event);
-        debug = true;
         this._uOptions.show();
         // 拦截之后的点击，同时屏蔽所有的控件点击事件
         intercept(this);
@@ -10315,7 +10675,9 @@ _uOptions     - 下拉选择框
      * @param {Item} item 选项控件
      */
     UI_SELECT_CLASS.$remove = function (item) {
-        this._cSelected == item && this.setSelected();
+        if (item == this._cSelected) {
+            this.setSelected();
+        }
         UI_ITEMS.$remove.call(this, item);
     };
 
@@ -10327,8 +10689,6 @@ _uOptions     - 下拉选择框
      * @param {number} height 高度，如果不需要设置则省略此参数
      */
     UI_SELECT_CLASS.$setSize = function (width, height) {
-        var __gzip_direct__button = this._uButton;
-
         UI_EDIT_CLASS.$setSize.call(this, width, height);
         this.$locate();
         height = this.getBodyHeight();
@@ -10337,8 +10697,8 @@ _uOptions     - 下拉选择框
         this._uText.$setSize(width = this.getBodyWidth() - height, height);
 
         // 设置下拉按钮
-        __gzip_direct__button.$setSize(height, height);
-        __gzip_direct__button.setPosition(width, 0);
+        this._uButton.$setSize(height, height);
+        this._uButton.setPosition(width, 0);
     };
 
     /**
@@ -10374,11 +10734,13 @@ _uOptions     - 下拉选择框
         // 将选项序号转换成选项
         item = 'number' == typeof item ? this.getItems()[item] : item || null;
 
-        if (this._cSelected !== item) {
+        if (item !== this._cSelected) {
             this._uText.$setBodyHTML(item ? item.getBody().innerHTML : '');
             UI_EDIT_CLASS.setValue.call(this, item ? item._sValue : '');
             this._cSelected = item;
-            this._uOptions.isShow() && this.$setActived(item);
+            if (this._uOptions.isShow()) {
+                this.$setActived(item);
+            }
         }
     };
 
@@ -10390,7 +10752,7 @@ _uOptions     - 下拉选择框
      * @param {string} value 需要选中的值
      */
     UI_SELECT_CLASS.setValue = function (value) {
-        for (var i = 0, items = this.getItems(), o; o = items[i++]; ) {
+        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
             if (o._sValue == value) {
                 this.setSelected(o);
                 return;
@@ -10472,8 +10834,10 @@ _eInput - 多选项的INPUT对象
      */
     function UI_MULTI_SELECT_FLUSH_TEXT(control) {
         if (control) {
-            for (var i = 0, items = control.getItems(), o, text = []; o = items[i++]; ) {
-                o.isSelected() && text.push(getText(o.getOuter()));
+            for (var i = 0, list = control.getItems(), o, text = []; o = list[i++]; ) {
+                if (o.isSelected()) {
+                    text.push(getText(o.getBody()));
+                }
             }
             control.$getSection('Text').$setBodyHTML(text.join(','));
         }
@@ -10520,8 +10884,7 @@ _eInput - 多选项的INPUT对象
      * @param {boolean} status 当前项是否选中，默认选中
      */
     UI_MULTI_SELECT_ITEM_CLASS.setSelected = function (status) {
-        this.alterClass('selected', status === false);
-        this._eInput.checked = status !== false;
+        this.alterClass('selected', !(this._eInput.checked = status !== false));
         UI_MULTI_SELECT_FLUSH_TEXT(this.getParent());
     };
 
@@ -10574,21 +10937,28 @@ _eInput - 多选项的INPUT对象
     };
 
     /**
-     * 控件拥有焦点时，键盘弹起事件的默认处理。
-     * 如果控件处于可操作状态(参见 isEnabled)，keyup 方法触发 on，keyup 事件，如果事件返回值不为 false，则调用 $keyup 方法。
+     * 控件拥有焦点时，键盘按下/弹起事件的默认处理。
+     * 如果控件处于可操作状态(参见 isEnabled)，keyup 方法触发 onkeyup 事件，如果事件返回值不为 false，则调用 $keyup 方法。
      * @protected
      *
      * @param {Event} event 事件对象
      */
-    UI_MULTI_SELECT_CLASS.$keyup = function (event) {
-        if (!this.$getSection('Options').isShow() || UI_EDIT_CLASS.$keyup.call(this, event) === false) {
-            return false;
-        }
+    UI_MULTI_SELECT_CLASS.$keydown = UI_MULTI_SELECT_CLASS.$keypress = UI_MULTI_SELECT_CLASS.$keyup =
+        function (event) {
+            UI_EDIT_CLASS['$' + event.type].call(this, event);
+            if (!this.$getSection('Options').isShow()) {
+                return false;
+            }
 
-        if (event.which == 13 || event.which == 32) {
-            this.getActived().$click();
-        }
-    };
+            var key = getKey();
+            if (key == 13 || key == 32) {
+                if (event.type == 'keyup') {
+                    key = this.getActived();
+                    key.setSelected(!key.isSelected());
+                }
+                return false;
+            }
+        };
 
     /**
      * 鼠标在控件区域滚动滚轮事件的默认处理。
@@ -10599,7 +10969,9 @@ _eInput - 多选项的INPUT对象
      */
     UI_MULTI_SELECT_CLASS.$mousewheel = function (event) {
         var options = this.$getSection('Options');
-        options.isShow() && options.$mousewheel(event);
+        if (options.isShow()) {
+            options.$mousewheel(event);
+        }
         return false;
     };
 
@@ -10658,8 +11030,10 @@ _eInput - 多选项的INPUT对象
      * @return {Array} 选项控件列表
      */
     UI_MULTI_SELECT_CLASS.getSelected = function () {
-        for (var i = 0, items = this.getItems(), o, result = []; o = items[i++]; ) {
-            o.isSelected() && result.push(o);
+        for (var i = 0, list = this.getItems(), o, result = []; o = list[i++]; ) {
+            if (o.isSelected()) {
+                result.push(o);
+            }
         }
         return result;
     };
@@ -10680,7 +11054,7 @@ _eInput - 多选项的INPUT对象
      * @param {Array} values 控件被选中的值列表
      */
     UI_MULTI_SELECT_CLASS.setValue = function (values) {
-        for (var i = 0, items = this.getItems(), o; o = items[i++]; ) {
+        for (var i = 0, list = this.getItems(), o; o = list[i++]; ) {
             o.setSelected(indexOf(values, o._eInput.value) >= 0);
         }
         UI_MULTI_SELECT_FLUSH_TEXT(this);
@@ -10734,11 +11108,11 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @param {ecui.ui.Table.Row} row 行控件
      */
     function UI_TABLE_ROW_INIT(row) {
-        for (var i = 0, cols = row.getParent()._aCol, el, o; o = cols[i]; ) {
+        for (var i = 0, list = row.getParent()._aCol, el, o; o = list[i]; ) {
             if (el = row._aCol[i++]) {
                 o = o.getWidth() - o.getInvalidWidth();
                 while (row._aCol[i] === null) {
-                    o += cols[i++].getWidth();
+                    o += list[i++].getWidth();
                 }
                 el.style.width = o + 'px';
             }
@@ -10753,8 +11127,10 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @param {number} value 控件的当前值
      */
     function UI_TABLE_SCROLL_SETVALUE(value) {
+        //__gzip_original__length
         var i = 1,
             list = this.getParent()[this instanceof UI_VSCROLL ? '_aRow' : '_aCol'],
+            length = list.length,
             oldValue = this.getValue();
 
         value = MIN(MAX(0, value), this.getTotal());
@@ -10764,23 +11140,27 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
         }
 
         if (value > oldValue) {
-            if (list.length == 1) {
+            if (length == 1) {
                 UI_SCROLL_CLASS.setValue.call(this, this.getTotal());
                 return;
             }
             for (; ; i++) {
                 // 计算后移的新位置
                 if (value <= list[i].$cache$pos) {
-                    oldValue < list[i - 1].$cache$pos && i--;
+                    if (oldValue < list[i - 1].$cache$pos) {
+                        i--;
+                    }
                     break;
                 }
             }
         }
         else {
-            for (i = list.length; i--; ) {
+            for (i = length; i--; ) {
                 // 计算前移的新位置
                 if (value >= list[i].$cache$pos) {
-                    i < list.length - 1 && oldValue > list[i + 1].$cache$pos && i++;
+                    if (i < length - 1 && oldValue > list[i + 1].$cache$pos) {
+                        i++;
+                    }
                     break;
                 }
             }
@@ -10798,7 +11178,9 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      */
     UI_TABLE_ROW_CLASS.$click = function (event) {
         var table = this.getParent();
-        table.onrowclick && table.onrowclick(event) !== false || UI_CONTROL_CLASS.$click.call(this, event);
+        if (!(table.onrowclick && table.onrowclick(event) === false)) {
+            UI_CONTROL_CLASS.$click.call(this, event);
+        }
     };
 
     /**
@@ -10863,6 +11245,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @param {number} widthRevise 改变样式后表格宽度的变化，如果省略表示没有变化
      */
     UI_TABLE_COL_CLASS.$setStyles = function (name, value, widthRevise) {
+        //__gzip_original__cols
         var i = 0,
             table = this.getParent(),
             body = this.getBody(),
@@ -10884,7 +11267,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                 o.style[name] = value;
             }
             if (widthRevise && o !== false) {
-                for (j = index; !(o = body[j]); j--) {}
+                for (j = index; !(o = body[j]); j--) {};
 
                 var width = -cols[j].getInvalidWidth(),
                     colspan = 0;
@@ -10907,7 +11290,12 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                 }
             }
         }
-        widthRevise > 0 ? table.resize() : table.paint();
+        if (widthRevise > 0) {
+            table.resize();
+        }
+        else {
+            table.paint();
+        }
     };
 
     /**
@@ -10940,7 +11328,9 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      */
     UI_TABLE_CELL_CLASS.$click = function (event) {
         var table = this.getParent().getParent();
-        table.oncellclick && table.oncellclick(event) !== false || UI_CONTROL_CLASS.$click.call(this, event);
+        if (!(table.oncellclick && table.oncellclick(event) !== false)) {
+            UI_CONTROL_CLASS.$click.call(this, event);
+        }
     };
 
     /**
@@ -11005,6 +11395,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @return {HTMLElement} 单元格 DOM 元素
      */
     UI_TABLE_CLASS.$getCell = function (rowIndex, colIndex) {
+        //__gzip_original__rows
         var rows = this._aRow,
             cols = rows[rowIndex] && rows[rowIndex]._aCol,
             col = cols && cols[colIndex];
@@ -11056,34 +11447,32 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
         var body = this.getBody(),
             vscroll = this.$getSection('VScroll'),
             hscroll = this.$getSection('HScroll'),
-            __gzip_direct__mainWidth = this.$cache$mainWidth,
-            __gzip_direct__mainHeight = this.$cache$mainHeight,
+            mainWidth = this.$cache$mainWidth,
+            mainHeight = this.$cache$mainHeight,
             vsWidth = vscroll && vscroll.getWidth(),
             hsHeight = hscroll && hscroll.getHeight(),
             invalidWidth = this.getInvalidWidth(true),
             invalidHeight = this.getInvalidHeight(true),
-            mainWidthRevise = __gzip_direct__mainWidth + invalidWidth,
-            mainHeightRevise = __gzip_direct__mainHeight + invalidHeight,
+            mainWidthRevise = mainWidth + invalidWidth,
+            mainHeightRevise = mainHeight + invalidHeight,
             bodyWidth = width - invalidWidth,
             bodyHeight = height - invalidHeight,
             o;
 
         this.getBase().style.paddingTop = this.$cache$paddingTop + 'px';
-        first(body).style.width = this._uHead.getBase().lastChild.lastChild.style.width
-            = __gzip_direct__mainWidth + 'px';
+        first(body).style.width = this._uHead.getBase().lastChild.lastChild.style.width = mainWidth + 'px';
 
         // 计算控件的宽度与高度自动扩展
-        if (__gzip_direct__mainWidth <= bodyWidth && __gzip_direct__mainHeight <= bodyHeight) {
+        if (mainWidth <= bodyWidth && mainHeight <= bodyHeight) {
             width = mainWidthRevise;
             height = mainHeightRevise;
         }
-        else if (!(vscroll && hscroll
-            && __gzip_direct__mainWidth > bodyWidth - vsWidth
-            && __gzip_direct__mainHeight > bodyHeight - hsHeight)
+        else if (!(vscroll && hscroll &&
+            mainWidth > bodyWidth - vsWidth && mainHeight > bodyHeight - hsHeight)
         ) {
-            o = mainWidthRevise + (!vscroll || bodyHeight >= __gzip_direct__mainHeight ? 0 : vsWidth);
+            o = mainWidthRevise + (!vscroll || bodyHeight >= mainHeight ? 0 : vsWidth);
             width = hscroll ? MIN(width, o) : o;
-            o = mainHeightRevise + (!hscroll || bodyWidth >= __gzip_direct__mainWidth ? 0 : hsHeight);
+            o = mainHeightRevise + (!hscroll || bodyWidth >= mainWidth ? 0 : hsHeight);
             height = vscroll ? MIN(height, o) : o;
         }
 
@@ -11105,6 +11494,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @return {ecui.ui.Table.Col} 列控件
      */
     UI_TABLE_CLASS.addCol = function (params, index) {
+        //__gzip_original__width
         var i = 0,
             typeClass = this.getType(),
             baseClass = params.base || this.getBaseClass(),
@@ -11177,7 +11567,9 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
             row = this._aRow[index],
             col;
 
-        row || (index = this._aRow.length);
+        if (!row) {
+            index = this._aRow.length;
+        }
 
         for (; col = this._aCol[i]; ) {
             if (row && row._aCol[i] === false || data[i] === false) {
@@ -11200,8 +11592,8 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                     }
                 }
                 rowCols[o] = true;
-                html[j++] = (colspan ? 'width:' + width + 'px" colSpan="' + colspan : 'display:none') + '">'
-                    + data[o] + '</td>';
+                html[j++] = (colspan ? 'width:' + width + 'px" colSpan="' + colspan : 'display:none') + '">' +
+                    data[o] + '</td>';
             }
         }
 
@@ -11338,7 +11730,9 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                         continue;
                     }
                     removeDom(o);
-                    o.getControl != UI_TABLE_INIT_GETCONTROL && disposeControl(o.getControl());
+                    if (o.getControl != UI_TABLE_INIT_GETCONTROL) {
+                        disposeControl(o.getControl());
+                    }
                 }
                 cols.splice(index, 1);
             }
@@ -11352,6 +11746,7 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
      * @param {number} index 行的序号，从0开始计数
      */
     UI_TABLE_CLASS.removeRow = function (index) {
+        //__gzip_original__cols
         var i = 0,
             remove = this._aRow[index],
             cols = remove._aCol,
@@ -11384,7 +11779,9 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
                     }
 
                     row.getBody().insertBefore(o, cell);
-                    o.getControl != UI_TABLE_INIT_GETCONTROL && o.getControl().$setParent(row);
+                    if (o.getControl != UI_TABLE_INIT_GETCONTROL) {
+                        o.getControl().$setParent(row);
+                    }
                 }
             }
 
@@ -11398,19 +11795,26 @@ _aCol        - 行的列Element对象，如果当前列需要向左合并为null
 
     // 初始化事件转发信息
     (function () {
+        function build(name) {
+            var type = name.slice(5);
+
+            UI_TABLE_ROW_CLASS[name] = function (event) {
+                var parent = this.getParent();
+                if (!(parent['onrow' + type] && parent['onrow' + type](event) === false)) {
+                    UI_CONTROL_CLASS[name].call(this, event);
+                }
+            };
+
+            UI_TABLE_CELL_CLASS[name] = function (event) {
+                var parent = this.getParent().getParent();
+                if (!(parent['oncell' + type] && parent['oncell' + type](event) === false)) {
+                    UI_CONTROL_CLASS[name].call(this, event);
+                }
+            };
+        }
+
         for (var i = 0; i < 5; ) {
-            var o = eventNames[i++],
-                type = o.slice(5);
-            UI_TABLE_ROW_CLASS[o] = new Function(
-                'e',
-                'var p=this.getParent();p.onrow' + type + '&&p.onrow' + type
-                    + '(e)!==false||ecui.ui.Control.prototype.' + o + '.call(this,e)'
-            );
-            UI_TABLE_CELL_CLASS[o] = new Function(
-                'e',
-                'var p=this.getParent().getParent();p.oncell' + type + '&&p.oncell' + type
-                    + '(e)!==false||ecui.ui.Control.prototype.' + o + '.call(this,e)'
-            );
+            build(eventNames[i++]);
         }
     })();
 
@@ -11491,7 +11895,9 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
                 el = baseBody.firstChild;
             }
             if (o = list[i++]) {
-                flag || (o = o.getOuter());
+                if (!flag) {
+                    o = o.getOuter();
+                }
                 if (el != o) {
                     (i <= table._nLeft || i > table._nRight ? lockedBody : baseBody).insertBefore(o, el);
                 }
@@ -11513,8 +11919,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      */
     function UI_LOCKED_TABLE_ALL_SPLIT(table) {
         UI_LOCKED_TABLE_ROW_SPLIT(table._uLockedHead);
-        for (var i = 0, row; row = table._aLockedRow[i++]; ) {
-            UI_LOCKED_TABLE_ROW_SPLIT(row);
+        for (var i = 0, o; o = table._aLockedRow[i++]; ) {
+            UI_LOCKED_TABLE_ROW_SPLIT(o);
         }
     }
 
@@ -11545,9 +11951,10 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
             pos = cols[this._nLeft].$cache$pos;
 
         this.$cache$paddingTop = MAX(this.$cache$paddingTop, this._uLockedHead.getBody().offsetHeight);
-        this.$cache$mainWidth -= (this.$cache$paddingLeft = pos)
-            + (this.$cache$paddingRight
-                = this._nRight < cols.length ? this.$cache$mainWidth - cols[this._nRight].$cache$pos : 0);
+        this.$cache$mainWidth -=
+            (this.$cache$paddingLeft = pos) +
+                (this.$cache$paddingRight =
+                    this._nRight < cols.length ? this.$cache$mainWidth - cols[this._nRight].$cache$pos : 0);
 
         // 以下使用 style 代替临时变量 o
         for (; style = cols[i++]; ) {
@@ -11589,7 +11996,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      * @protected
      */
     UI_LOCKED_TABLE_CLASS.$resize = function () {
-        this.getBase().style.paddingLeft = this.getBase().style.paddingRight = '';
+        var o = this.getBase().style;
+        o.paddingLeft = o.paddingRight = '';
         this.$cache$paddingLeft = this.$cache$paddingRight = 0;
         UI_TABLE_CLASS.$resize.call(this);
     };
@@ -11611,8 +12019,8 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      * @param {number} height 高度，如果不需要设置则省略此参数
      */
     UI_LOCKED_TABLE_CLASS.$setSize = function (width, height) {
-        var i = 0,
-            o = this.getBase().style,
+        var o = this.getBase().style,
+            i = 0,
             layout = getParent(this.getBody()),
             lockedHead = this._uLockedHead,
             style = getParent(getParent(lockedHead.getBody())).style;
@@ -11635,14 +12043,12 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
         style.width = toNumber(width) + this.$cache$paddingLeft + this.$cache$paddingRight + 'px';
         style.height = toNumber(layout.style.height) + this.$cache$paddingTop + 'px';
 
-        // 以下使用 lockedHead 代替 lockedRow
-        for (; lockedHead = this._aLockedRow[i++]; ) {
-            o = lockedHead._eFill.style;
-            o.width = width;
+        for (; o = this._aLockedRow[i++]; ) {
+            o._eFill.style.width = width;
 
-            style = MAX(lockedHead.getHeight(), lockedHead._cJoint.getHeight());
-            o.height = style + 'px';
-            lockedHead._cJoint.getCol(this._nLeft).$setSize(0, style);
+            style = MAX(o.getHeight(), o._cJoint.getHeight());
+            o._eFill.style.height = style + 'px';
+            o._cJoint.getCol(this._nLeft).$setSize(0, style);
         }
     };
 
@@ -11660,8 +12066,12 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      */
     UI_LOCKED_TABLE_CLASS.addCol = function (params, index) {
         if (index >= 0) {
-            index < this._nLeft && this._nLeft++;
-            index < this._nRight && this._nRight++;
+            if (index < this._nLeft) {
+                this._nLeft++;
+            }
+            if (index < this._nRight) {
+                this._nRight++;
+            }
         }
         return UI_TABLE_CLASS.addCol.call(this, params, index);
     };
@@ -11677,14 +12087,15 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
     UI_LOCKED_TABLE_CLASS.addRow = function (data, index) {
         this.paint = blank;
 
+        //__gzip_original__lockedRow
         var row = UI_TABLE_CLASS.addRow.call(this, data, index),
             index = indexOf(this.getRows(), row),
             lockedRow = this._aLockedRow[index],
             el = row.getBase(),
             o = createDom();
 
-        o.innerHTML = '<table cellspacing="0"><tbody><tr class="' + el.className + '" style="' + el.style.cssText
-            + '"><td style="padding:0px;border:0px"></td></tr></tbody></table>';
+        o.innerHTML = '<table cellspacing="0"><tbody><tr class="' + el.className + '" style="' + el.style.cssText +
+            '"><td style="padding:0px;border:0px"></td></tr></tbody></table>';
 
         o = UI_LOCKED_TABLE_CREATE_LOCKEDROW(this, el = o.lastChild.lastChild.lastChild, row);
         this._uLockedMain.getBody().lastChild.lastChild.insertBefore(el, lockedRow && lockedRow.getOuter());
@@ -11705,10 +12116,14 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      */
     UI_LOCKED_TABLE_CLASS.removeCol = function (index) {
         UI_TABLE_CLASS.removeCol.call(this, index);
-	if (index >= 0) {
-            index < this._nLeft && this._nLeft--;
-            index < this._nRight && this._nRight--;
-	}
+        if (index >= 0) {
+            if (index < this._nLeft) {
+                this._nLeft--;
+            }
+            if (index < this._nRight) {
+                this._nRight--;
+            }
+        }
     };
 
     /**
@@ -11717,20 +12132,22 @@ _cJoint      - 行(锁定行)对应的锁定行(行)控件
      * @protected
      */
     (function () {
-        for (var i = 0, o; i < 13; ) {
-            o = eventNames[i++];
-            UI_LOCKED_TABLE_ROW_CLASS['$' + o] = new Function(
-                '',
-                '(ecui.ui.Control.prototype.$' + o + ').apply(this,arguments);ecui.ui.Control.prototype.$'
-                    + o + '.apply(this._cJoint,arguments)'
-            );
+        function build(name) {
+            UI_LOCKED_TABLE_ROW_CLASS[name] = function (event) {
+                UI_CONTROL_CLASS[name].call(this, event);
+                UI_CONTROL_CLASS[name].call(this._cJoint, event);
+            };
+        }
+
+        for (var i = 0; i < 13; ) {
+            build('$' + eventNames[i++]);
         }
     })();
 
 
 /*
-Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
-              通过访问Decorator的属性来得到，属性名为控件对象
+Decorator - 装饰器插件基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引
+            用通过访问Decorator的属性来得到，属性名为控件对象
 
 属性
 _sClass  - 装饰器样式
@@ -11752,8 +12169,9 @@ _oInner  - 内层装饰器或者控件对象
         UI_CONTROL_CLASS.$cache.call(this, getStyle(this._eOuter), false);
         this._oInner.$cache$position = 'relative';
         this.$cache$position = style.position == 'absolute' ? 'absolute' : 'relative';
-        this.$cache$layout = ';top:' + style.top + ';left:' + style.left + ';display:'
-            + style.display + (ieVersion ? ';zoom:' + style.zoom : '');
+        this.$cache$layout =
+            ';top:' + style.top + ';left:' + style.left + ';display:' + style.display +
+                (ieVersion ? ';zoom:' + style.zoom : '');
     };
 
     /**
@@ -11779,8 +12197,13 @@ _oInner  - 内层装饰器或者控件对象
      * @protected
      */
     EXT_DECORATOR_CLASS.$resize = function () {
-        this._eOuter.style.width = '';
-        ieVersion || (this._eOuter.style.height = '');
+        //__gzip_original__style
+        var style = this._eOuter.style;
+
+        style.width = '';
+        if (!ieVersion) {
+            style.height = '';
+        }
         this._oInner.$resize(true);
     };
 
@@ -11792,15 +12215,18 @@ _oInner  - 内层装饰器或者控件对象
      * @param {number} height 装饰器区域的高度
      */
     EXT_DECORATOR_CLASS.$setSize = function (width, height) {
+        //__gzip_original__style
+        //__gzip_original__inner
         var style = this._eOuter.style,
+            inner = this._oInner,
             invalidWidth = UI_CONTROL_CLASS.getInvalidWidth.call(this),
             invalidHeight = UI_CONTROL_CLASS.getInvalidHeight.call(this),
             fixedSize = isFixedSize();
 
-        this._oInner.$setSize(width && width - invalidWidth, height && height - invalidHeight, true);
+        inner.$setSize(width && width - invalidWidth, height && height - invalidHeight, true);
 
-        style.width = this._oInner.getWidth(true) + (fixedSize ? 0 : invalidWidth) + 'px';
-        style.height = this._oInner.getHeight(true) + (fixedSize ? 0 : invalidHeight) + 'px';
+        style.width = inner.getWidth(true) + (fixedSize ? 0 : invalidWidth) + 'px';
+        style.height = inner.getHeight(true) + (fixedSize ? 0 : invalidHeight) + 'px';
     };
 
     /**
@@ -11917,11 +12343,10 @@ _oInner  - 内层装饰器或者控件对象
         }
 
         var id = this.getUID(),
-            o = EXT_DECORATOR[id],
-            el = o._eOuter;
+            o = EXT_DECORATOR[id];
 
-        insertBefore(this.getOuter(), el);
-        removeDom(el);
+        insertBefore(this.getOuter(), o._eOuter);
+        removeDom(o._eOuter);
         for (; o != this; o = o._oInner) {
             o.$dispose();
         }
@@ -11929,21 +12354,26 @@ _oInner  - 内层装饰器或者控件对象
     };
 
     (function () {
+        function build(name, index) {
+            EXT_DECORATOR_PROXY[name] = function () {
+                var o = EXT_DECORATOR[this.getUID()],
+                    args = arguments;
+
+                return args[index] ? this.constructor.prototype[name].apply(this, args) : o[name].apply(o, args);
+            };
+        }
 
         // 这里批量生成函数代理
-        for (var i = 0, list = [
+        for (
+            var i = 0, names = [
                 ['$cache', 2], ['$init', 0], ['$resize', 0], ['$setSize', 2],
                 ['alterClass', 2], ['cache', 2], ['getHeight', 0], ['getInvalidHeight', 0],
                 ['getInvalidWidth', 0], ['getOuter', 0], ['getWidth', 0]
-            ], o, name;
-            o = list[i++];
+            ];
+            i < 11;
         ) {
             // 如果是代理进入的，会多出来一个参数作为标志位
-            name = o[0];
-            EXT_DECORATOR_PROXY[name] = new Function(
-                'var o=this,d=ecui.ext.Decorator[o.getUID()],r=arguments;return r[' + o[1]
-                    + ']?o.constructor.prototype.' + name + '.apply(o,r):d.' + name + '.apply(d,r)'
-            );
+            build(names[i][0], names[i++][1]);
         }
     })();
 
@@ -11975,17 +12405,13 @@ LRDecorator - 左右扩展装饰器，将区域分为"左-控件-右"三部分�
     inherits(EXT_LR_DECORATOR, EXT_DECORATOR).$setSize = function (width, height) {
         EXT_DECORATOR_CLASS.$setSize.call(this, width, height);
 
-        var inner = this.getInner(),
-            tmpEl = this.getOuter().lastChild,
-            rightStyle = tmpEl.style,
-            leftStyle = tmpEl.previousSibling.style,
-            padding = this.$cache$paddingLeft;
+        var o = this._eOuter.lastChild,
+            text = ';top:' + this.$cache$paddingTop + 'px;height:' + this._oInner.getHeight(true) + 'px;width:';
 
-        leftStyle.top = rightStyle.top = this.$cache$paddingTop + 'px';
-        rightStyle.left = padding + inner.getWidth(true) + 'px';
-        leftStyle.width = padding + 'px';
-        rightStyle.width = this.$cache$paddingRight + 'px';
-        leftStyle.height = rightStyle.height = inner.getHeight(true) + 'px';
+        o.style.cssText +=
+            text + this.$cache$paddingRight + 'px;left:' +
+                (this.$cache$paddingLeft + this._oInner.getWidth(true)) + 'px';
+        o.previousSibling.style.cssText += text + this.$cache$paddingLeft + 'px';
     };
 
 /*
@@ -12002,17 +12428,13 @@ TBDecorator - 上下扩展装饰器，将区域分为"上-控件-下"三部分�
     inherits(EXT_TB_DECORATOR, EXT_DECORATOR).$setSize = function (width, height) {
         EXT_DECORATOR_CLASS.$setSize.call(this, width, height);
 
-        var inner = this.getInner(),
-            tmpEl = this.getOuter().lastChild,
-            bottomStyle = tmpEl.style,
-            topStyle = tmpEl.previousSibling.style,
-            padding = this.$cache$paddingTop;
+        var o = this._eOuter.lastChild,
+            text = ';left:' + this.$cache$paddingLeft + 'px;width:' + this._oInner.getWidth(true) + 'px;height:';
 
-        bottomStyle.top = padding + inner.getHeight(true) + 'px';
-        topStyle.left = bottomStyle.left = this.$cache$paddingLeft + 'px';
-        topStyle.width = bottomStyle.width = inner.getWidth(true) + 'px';
-        topStyle.height = padding + 'px';
-        bottomStyle.height = this.$cache$paddingBottom + 'px';
+        o.style.cssText +=
+            text + this.$cache$paddingBottom + 'px;top:' +
+                (this.$cache$paddingTop + this._oInner.getHeight(true)) + 'px';
+        o.previousSibling.style.cssText += text + this.$cache$paddingTop + 'px';
     };
 
 /*
@@ -12029,28 +12451,24 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
     inherits(EXT_MAGIC_DECORATOR, EXT_DECORATOR).$setSize = function (width, height) {
         EXT_DECORATOR_CLASS.$setSize.call(this, width, height);
 
-        var inner = this.getInner(),
-            tmpEl = this.getOuter().lastChild,
+        var o = this._eOuter.lastChild,
             i = 9,
             paddingTop = this.$cache$paddingTop,
             paddingLeft = this.$cache$paddingLeft,
-            widthList = inner.getWidth(true),
-            heightList = inner.getHeight(true),
-            topList = ['0px', paddingTop + 'px', paddingTop + heightList + 'px'],
-            leftList = ['0px', paddingLeft + 'px', paddingLeft + widthList + 'px'];
+            widthList = this._oInner.getWidth(true),
+            heightList = this._oInner.getHeight(true),
+            topList = [0, paddingTop, paddingTop + heightList],
+            leftList = [0, paddingLeft, paddingLeft + widthList];
 
-        widthList = [paddingLeft + 'px', widthList + 'px', this.$cache$paddingRight + 'px'];
-        heightList = [paddingTop + 'px', heightList + 'px', this.$cache$paddingBottom + 'px'];
+        widthList = [paddingLeft, widthList, this.$cache$paddingRight];
+        heightList = [paddingTop, heightList, this.$cache$paddingBottom];
 
         for (; i--; ) {
             if (i != 4) {
-                // 以下使用 paddingLeft 表示 row，使用 paddingTop 表示 col，使用 inner 表示 style
-                inner = tmpEl.style;
-                inner.top = topList[FLOOR(i / 3)];
-                inner.left = leftList[i % 3];
-                inner.width = widthList[i % 3];
-                inner.height = heightList[FLOOR(i / 3)];
-                tmpEl = tmpEl.previousSibling;
+                o.style.cssText +=
+                    ';top:' + topList[FLOOR(i / 3)] + 'px;left:' + leftList[i % 3] + 'px;width:' + widthList[i % 3] +
+                        'px;height:' + heightList[FLOOR(i / 3)] + 'px';
+                o = o.previousSibling;
             }
         }
     };
@@ -12058,13 +12476,9 @@ MagicDecorator - 九宫格扩展装饰器，将区域分为"左上-上-右上-�
 
 
 /*
-Decorator - 装饰器基类，使用inline-block附着在控件外围，在控件改变状态时，装饰器同步改变状态。控件最外层装饰器的引用
-              通过访问Decorator的属性来得到，属性名为控件对象
+Tween - 点击及按压动画插件，通过修改click或pressstart/pressend方法来实现移动时的动画效果
 
 属性
-_sClass  - 装饰器样式
-_eOuter  - 装饰器外框Element
-_oInner  - 内层装饰器或者控件对象
 */
 
 
