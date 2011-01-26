@@ -37,7 +37,7 @@
             o;
 
         // 加入省略号
-        o = this._eEllipsis = createDom(typeClass + "-ellipsis");
+        o = this._eEllipsis = createDom(typeClass + '-ellipsis ec-pager-item');
         o.innerHTML = "...";
         hideDom(o);
 

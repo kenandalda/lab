@@ -7,7 +7,7 @@
 
 <script type="text/javascript" charset="utf-8">
     ecui.get("pager").onpageset = function (pageNum) {
-        alert(pageNum);
+        // alert(pageNum);
     }
     ecui.create("xy-pager", {element:baidu.g("foo"), total:100, curPage:3, pageSize:20})
 </script>
