@@ -87,13 +87,22 @@
         document.getElementById('info1').innerHTML = '值:' + this.getValue();    
     };
     
-    // tree1 加号点击
+    // tree1 实现loadChidren方法, 异步载入子节点
     ecui.get('t1').loadChildren = function () {
         var node = this;
-        baidu.ajax.post('/veyron/getChildTree', '', function (xhr, res) {
-            setTimeout(function () {
-                node.insertChildTree(res);
-            }, 3000)
+        baidu.ajax.request('/veyron/getChildTree', {
+            data: 'value=' + node.getValue(),
+            onsuccess: function (xhr, res) {
+                // 延时载入节点, 模拟网速慢的效果
+                setTimeout(function () {
+                    // 调用insertChildTree方法, 将回传的内容插入到子节点中
+                    node.insertChildTree(res);
+                }, 1000);
+            },
+            onfailure: function (xhr, res) {
+                alert("载入错误");
+                node.alterClass('loading', true);
+            }
         });
     };
 
