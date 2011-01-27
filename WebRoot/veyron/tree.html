@@ -85,6 +85,7 @@
     // tree1 点击绑定
     ecui.get('t1').onnodeclick = function (event) {
         document.getElementById('info1').innerHTML = '值:' + this.getValue();    
+        console.log(this.getBase());
     };
     
     // tree1 实现loadChidren方法, 异步载入子节点
@@ -137,6 +138,7 @@
         ].join(';') 
         + '<br/>已选值:'
         + this.getRoot().getCheckedValue().join();
+        console.log(this.getBody().getElementsByTagName('span')[0].innerHTML);
     };
     
     ecui.get('t3').onnodeclick = function (event) {
