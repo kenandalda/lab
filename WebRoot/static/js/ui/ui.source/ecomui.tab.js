@@ -53,7 +53,7 @@ Tab - 定义分页选项卡的操作。
 
             // 加入关闭按钮
             if (params.closable) {
-                var label = this.getBody();
+                var label = first(this.getBody());
                 var closeBtn = createDom(
                     params.base + '-close ' + params.type + '-close', '', 'span');
                 closeBtn.innerHTML = 'x';
@@ -69,6 +69,8 @@ Tab - 定义分页选项卡的操作。
 
         /**
          * 动态添加新的选项卡
+         * @public
+         *
          * @param {Object} options 选项
          * @param {Function} callback 创建之后的回调函数
          */
@@ -93,6 +95,9 @@ Tab - 定义分页选项卡的操作。
             if (!settings.background) {
                 this.setSelected(newTab);
             }
+            else {
+                newTab.getContent() && (newTab.getContent().style.display = 'none');
+            }
             callback && callback.call(this, newTab);
             this.resize();
         };
@@ -102,9 +107,10 @@ Tab - 定义分页选项卡的操作。
          */
         ECOM_TAB_ITEM_CLOSE_CLASS.$click = function (event) {
             UI_CONTROL_CLASS.$click.call(this, event);
-            var tabItem = this.getParent();
-            tabItem.getParent().remove(tabItem);
-            tabItem.getParent().resize();
+            var tabItem = this.getParent(),
+                parent = tabItem.getParent();
+            parent.remove(tabItem);
+            parent.resize();
         };
 
         // 修复高度问题
