@@ -6,7 +6,9 @@ var ecomui = ecomui || {};
 
 (function() {
  /**
-  * TODO ondataclick参数改变, 第一个参数为event
+  * TODO 日历的$setSize修正
+  * TODO 日历输入框清空
+  * TODO 双日历输入框初始有值时置灰
   */
 
         // 适配器 
@@ -17,8 +19,9 @@ var ecomui = ecomui || {};
         libDom = lib.dom,
         ui = core.ui,
         util = core.util,
+        pkg = ecomui,
 
-        ieVersion = lib.browser.ie,
+        ieVersion = core.browser.ie,
         $fastCreate = core.$fastCreate,
         createDom = dom.create,
         blank = util.blank || function(){},
@@ -300,7 +303,7 @@ var ecomui = ecomui || {};
      *    @param {String} range
      */ 
     // {{{
-    function ECOM_CALENDAR_PARSERANGE(range) {
+    pkg.parseCalRange = ECOM_CALENDAR_PARSERANGE = function (range) {
         var range = range + "",
             reTmp = "(\\d{4}\\d{2}\\d{2}|now|\\d+(?:y|m))?",
             re = new RegExp(reTmp + "-" + reTmp),
@@ -486,7 +489,24 @@ var ecomui = ecomui || {};
 
          ECOM_CALENDAR_SETYEARSELECT(yearSelect, range);
 
-         yearSelect.value = year;
+         // 年份不在select范围内的处理
+         for (var i = 0, o, yearInRange = false; o = yearSelect.options[i]; i++) {
+            if (o.value.toString() == year.toString()) {
+                yearInRange = true;
+                break;
+            }
+         }
+
+         if (yearInRange) {
+            yearSelect.value = year;
+         }
+         else {
+            year = yearSelect.options[0].value;
+            yearSelect.value = year;
+            this.$cal$year = year;
+            ECOM_CALENDAR_SELECTCHANGE.call(yearSelect);
+         }
+
          monthSelect.value = month;
 
          yearSelect.onchange = monthSelect.onchange = ECOM_CALENDAR_SELECTCHANGE;
@@ -558,7 +578,7 @@ var ecomui = ecomui || {};
             UI_CONTROL,
             o = createDom(
                 "ec-ecom-calendar-clear ec-ecom-calendar-clear ec-inline-block",
-                ""),
+                "position:absolute;"),
             this
         );
         el.appendChild(o);
@@ -913,13 +933,18 @@ var ecomui = ecomui || {};
             beginInput,
             endInput;
 
+        function toAbsoluteRange(rangeStr) {
+            var o = ECOM_CALENDAR_PARSERANGE(rangeStr),
+                dateFormat = 'yyyyMMdd';
+            return formatDate(o.from, dateFormat) + "-" + formatDate(o.to, dateFormat);
+        }
 
         wrapper._bLoose = params.loose || false;
         wrapper._sBeginName = params.beginName || "dateFrom";
         wrapper._sEndName = params.endName || "dateTo";
         wrapper._sBeginVal = params.beginVal || "";
         wrapper._sEndVal = params.endVal || "";
-        wrapper._sRange = params.range || ECOM_CALENDAR_DEFAULTS.range;
+        wrapper._sRange = toAbsoluteRange(params.range || ECOM_CALENDAR_DEFAULTS.range);
 
         if (inputs.length != 3) {
             // 标签里没有隐藏输入框则动态创建
@@ -944,7 +969,8 @@ var ecomui = ecomui || {};
         
         for (var i = 0, o; o = types[i++];) {
             for (var j = 0, p; p = ECOM_CALENDAR_PROPNAMES[j++];) {
-                wrapper._oCalProps["_o" + o + "Props"][p] = this["_u" + o + "Cal"]["$cal$" + p];    
+                wrapper._oCalProps["_o" + o + "Props"][p] 
+                    = p == "range" ? toAbsoluteRange(this["_u" + o + "Cal"]["$cal$" + p]) : this["_u" + o + "Cal"]["$cal$" + p];
             }
         }
 

@@ -11,7 +11,7 @@
 
 <process>
     <!--去掉svn，cvs目录-->
-    <find type="file" pattern=".*\.svn.*|.*CVS.*|.*\.xml|.*\.bat|.*archive.*" invert="true" />
+    <find type="file" pattern=".*\.svn.*|.*CVS.*|.*\.xml|.*\.bat" invert="true" />
 
     <find type="file" pattern=".*\.js">
         <merge to="%output_dir%../ui.js" />

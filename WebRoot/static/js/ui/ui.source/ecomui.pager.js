@@ -33,19 +33,23 @@ var ecomui = ecomui || {};
 
             var htmls = [],
                 bind = params.bind,
-                o
-                typeClass = params.type,
-                baseClass = params.base; 
+                o; 
+
+            /*
+            this._nCurPage = parseInt(params.curPage, 10);
+            this._nPageSize = parseInt(params.pageSize, 10);
+            this._nTotal = parseInt(params.total, 10);
+            */
 
             this.setProps(params);
             bind && (this._cBind = (typeof bind == "string" ? core.get(bind) : bind));
 
             UI_CONTROL.call(this, el, params);
 
-            htmls.push('<div class="' + typeClass + '-body">');
+            htmls.push('<div class="ec-page-body">');
 
             // 首页/上一页
-            htmls.push('<div class="' + typeClass + '-first">首页</div><div class="' + typeClass + '-prev">上一页</div>');
+            htmls.push('<div class="ec-pager-first">首页</div><div class="ec-pager-prev">上一页</div>');
 
             // 页码
             var range = this.$getPageNumRange(), 
@@ -59,7 +63,7 @@ var ecomui = ecomui || {};
             }
 
             // 下一页/尾页
-            htmls.push('<div class="' + typeClass + '-next">下一页</div><div class="' + typeClass + '-last">尾页</div>');
+            htmls.push('<div class="ec-pager-next">下一页</div><div class="ec-pager-last">尾页</div>');
             htmls.push('</div>');
 
             el.innerHTML = htmls.join("");
@@ -68,15 +72,15 @@ var ecomui = ecomui || {};
             this.$initItems();
             
             // go按钮
-            o = this._uGoOp = createDom(typeClass + "-go", "", "span");
-            o.innerHTML = '<input class="' + typeClass + '-input" type="text" style="width:25px" /><button type="button" class="' + typeClass + '-button">转到</button>';
+            o = this._uGoOp = createDom("ec-pager-go", "", "span");
+            o.innerHTML = '<input class="ec-pager-input" type="text" style="width:25px" /><button type="button" class="ec-pager-button">转到</button>';
             this._uGoInput = o.firstChild;
             (this._uGoBtn = o.lastChild)._cInput = this._uGoInput;
             this._uGoBtn._cWrapper = this;
             el.appendChild(o);
 
             // 记录说明文字
-            o = createDom(typeClass + "-summary", "", "span");
+            o = createDom("ec-pager-summary", "", "span");
             o.innerHTML = "<span>共<em></em>页, <em></em>条记录</span><span style='display:none'>不存在记录</span>";
             this._uSummaryText = o.firstChild;
             this._uNoRecText = o.lastChild;

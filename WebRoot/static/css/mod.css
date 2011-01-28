@@ -1,3 +1,24 @@
 /**
  * 模块公用css文件
  */
+
+/* 工具css */
+.hidden{display:none}
+.invisible{visibility:hidden}
+.visible{visibility:visible}
+.f-left{float:left}
+.f-right{float:right}
+.f-clear:after{content:".";display:block;height:0;clear:both;visibility:hidden;}
+.block{display:block}
+.inline{display:inline}
+.inline-block{display:-moz-inline-stack;display:inline-block;*display:inline;zoom:1;}
+
+/* 模块 */
+.audit-textarea {width:500px;height:100px}
+.upload-text {background:url("img/upload.png") no-repeat scroll 0 0 transparent;cursor:pointer;margin-left:20px;padding:6px 0 6px 35px;}
+.fieldErr {color:red}
+.recip-table-wrapper, .lite-table-wrapper {width:100%;overflow:auto;*padding-bottom:20px;*overflow-y:hidden}
+table.fixed-layout {table-layout:fixed}
+
+/*fix*/
+#ecomtable_contractModRec{width:700px}

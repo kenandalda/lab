@@ -18,7 +18,7 @@
 	toArray = lib.lang.toArray,
     each = lib.array.each,
     contains = lib.dom.contains,
-    ieVersion = lib.browser.ie,
+    ieVersion = core.browser.ie,
 
 	_mapList = {},
 	_unitList = [],

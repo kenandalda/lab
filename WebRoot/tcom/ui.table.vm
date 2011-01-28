@@ -199,7 +199,7 @@
                             #if($velocityCount==1)first#end
                             #if($lst.noprint)noprint#end" 
                     style="#if($lst.chn.trim() == '')display:none;#end">
-                    <div style="">#if($eval)#evaluate($eval)#else$!text#end</div>
+                    <div style="#if($lst.width.trim().endsWith('px'))width:$lst.width#end">#if($eval)#evaluate($eval)#else$!text#end</div>
                 </td>
             #end
         </tr>
@@ -293,7 +293,7 @@
                         #set($eval = '$!utils.escapeInH(' + $eval + ')')
                     #end
                     <td class="#if($velocityCount==1)first#end ec-ecom-table-body-item"
-                        style="#if($lst.chn.trim() == '')display:none;#end"><div>#evaluate($eval)</div></td>
+                        style="#if($lst.chn.trim() == '')display:none;#end"><div style="#if($lst.width.trim().endsWith('px'))width:$lst.width#end">#evaluate($eval)</div></td>
                 #end
             </tr>
             #end

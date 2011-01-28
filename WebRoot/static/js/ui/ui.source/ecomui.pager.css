@@ -1,6 +1,6 @@
 .ec-pager {zoom:1;margin:10px 0;color:#346665}
 .ec-pager:after {content:".";display:block;height:0;clear:both;visibility:hidden}
-.ec-pager-item, .ec-pager-button {float:left;height:20px;line-height:20px;background:url("img/table_bluegray.gif") repeat-x 0 -150px;border:1px solid #BCBCBC;color:#346665;margin:0;padding:0 3px;cursor:pointer; margin:0 2px 0 0}
+.ec-pager-item, .ec-pager-button {float:left;height:20px;line-height:20px;background:url("img/table.gif") repeat-x 0 -150px;border:1px solid #9CD167;color:#326700;margin:0;padding:0 3px;cursor:pointer; margin:0 2px 0 0}
 /*.ec-pager-button{float:none;height:22px}*/
 .ec-pager-item-over {background-position:0 -176px;}
 .ec-pager-item-press {background:#FFFCE2}
@@ -14,4 +14,3 @@
 .ec-pager-button {height:22px}
 .ec-pager-summary *{vertical-align:bottom}
 .ec-pager em {font-style:normal;color:#000;padding:0 3px;display:inline-block}
-.ec-xy-pager-ellipsis{float:left}

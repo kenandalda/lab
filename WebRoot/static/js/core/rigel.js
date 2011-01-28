@@ -25,6 +25,14 @@ rigel.string = {
     "trim":			baidu.string.trim,
     "toNumber":		function(str) {
     	return parseInt(str) || 0;
+    },
+    "query2HTML":	function(queryStr) {
+    	//"v1=a&v2=b" -> <input type="hidden" name="v1" value="a" /><input type="hidden" name="v2" value="b" />
+    	var postData = queryStr;
+    	postData = postData.replace(/=/g, '\" value=\"');
+		postData = postData.replace(/&/g, '\" /><input type=\"hidden\" name=\"');
+		postData = '<input type="hidden" name="' + postData + '" />';
+		return postData;
     }
 };
 
@@ -90,7 +98,9 @@ rigel.validate = {
 
 rigel.event = {
     on:				baidu.event.on,
-    stop:			baidu.event.stop
+    stop:			baidu.event.stop,
+    stopPropagation:baidu.event.stopPropagation,
+    getKeyCode:		baidu.event.getKeyCode
 };
 
 rigel.dom = {
@@ -264,6 +274,15 @@ rigel.mod.initMultiSelect.change = function(force) {
 		o.data = config;
 		rigel.mod.initMultiSelect(select.config, select.level + 1);
 		info = select.config[select.level + 1];
+		
+		// 是否存在备份值，存在则恢复
+        var curSelect = rigel.g(info.id),
+            bakValue  = curSelect.getAttribute('value_');
+        if (bakValue) {
+            curSelect.value = bakValue;
+            curSelect.removeAttribute('value_');
+        }
+        
 		(info.url) && (rigel.g(info.id).onchange());
 	});
 }
