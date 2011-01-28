@@ -22,11 +22,13 @@
 .ec-checkbox {background:url("img/tree-icons.gif") 0 -60px no-repeat;width:13px;height:13px}
 .ec-checkbox-checked {background-position:0 -90px}
 .ec-checkbox-disabled {background-position:0 -120px}
+.ec-checkbox-part {background-position:0 -150px}
 .ec-check-tree {cursor:default;padding-left:20px;zoom:1}
 .ec-check-tree-items .ec-check-tree{padding-left:44px;}
 .ec-check-tree-items .ec-check-tree-items .ec-check-tree{padding-left:66px;}
 .ec-check-tree-items .ec-check-tree-items .ec-check-tree-items .ec-check-tree{padding-left:88px;}
 .veyron-check-tree-checkbox-checked {background-position:0 -90px}
+.veyron-check-tree-checkbox-part {background-position:0 -150px}
 .veyron-check-tree-checkbox-checked-disabled {background-position:0 -150px}
 .veyron-check-tree-asyncnode {background:url(img/tree-icons.gif) 0px -30px no-repeat}
 .veyron-check-tree-fold {background:url(img/tree-icons.gif) 0px -30px no-repeat}
@@ -49,3 +51,9 @@
 .tree-icon-b {background:url(img/tree-icons.gif) 0px -210px no-repeat}
 .tree-icon-c {background:url(img/tree-icons.gif) 0px -240px no-repeat}
 .tree-icon-d {background:url(img/tree-icons.gif) 0px -270px no-repeat}
+
+/* 禁用选择的节点 */
+/*单选树*/
+.veyron-radio-tree-disablecheck span {color:#CCC;cursor:not-allowed}
+/*多选树*/
+.veyron-check-tree-disablecheck span {color:purple;}

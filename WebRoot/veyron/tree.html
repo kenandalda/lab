@@ -22,12 +22,13 @@
     <div ecui="type:radio-tree;id:t1;name:part;value:1" class="veyron-radio-tree"> 
         <label><span class="tree-icon-a">节点的文本</span></label>
         <div ecui="value:2">
-            <label><span class="tree-icon-a">节点的文本</span></label>
+            <label data-disableCheck="true"><span class="tree-icon-a">节点的文本</span></label>
             <div ecui="value:3" data-async="true"><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:3" data-async="true" data-disableCheck="true"><span class="tree-icon-b">子控件文本</span></div>
             <div ecui="value:4" data-async="true">
                 <label><span class="tree-icon-b">节点的文本</span></label>
                 <div ecui="value:44"><span class="tree-icon-c">子控件文本</span></div>
-                <div ecui="value:45"><span class="tree-icon-d">子控件文本</span></div>
+                <div ecui="value:45" data-disableCheck="true"><span class="tree-icon-d">子控件文本</span></div>
             </div>
             <div ecui="value:5"><span class="tree-icon-b">子控件文本</span></div>
         </div>
@@ -45,9 +46,9 @@
         <label><span class="tree-icon-a">节点的文本</span></label>
         <div ecui="value:2">
             <label><span class="tree-icon-a">节点的文本</span></label>
-            <div ecui="value:3;" data-async="true"><span class="tree-icon-b">子控件文本</span></div>
-            <div ecui="value:4">
-                <label><span class="tree-icon-b">节点的文本</span></label>
+            <div ecui="value:3;" data-async="true" data-disableCheck="true"><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:4" >
+                <label data-disableCheck="true"><span class="tree-icon-b">节点的文本</span></label>
                 <div ecui="value:44"><span class="tree-icon-d">子控件文本</span></div>
                 <div ecui="value:45"><span class="tree-icon-d">子控件文本</span></div>
             </div>
@@ -67,9 +68,10 @@
         <label><span class="tree-icon-a">节点的文本</span></label>
         <div ecui="value:2">
             <label><span class="tree-icon-a">节点的文本</span></label>
-            <div ecui="value:3" data-async="true"><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:3" data-async="true" data-disableCheck="true"><span class="tree-icon-b">子控件文本</span></div>
+            <div ecui="value:3" data-async="true" ><span class="tree-icon-b">子控件文本</span></div>
             <div ecui="value:4">
-                <label><span class="tree-icon-b">节点的文本</span></label>
+                <label data-disableCheck="true"><span class="tree-icon-b">节点的文本</span></label>
                 <div ecui="value:44"><span class="tree-icon-d">子控件文本</span></div>
                 <div ecui="value:45"><span class="tree-icon-d">子控件文本</span></div>
             </div>
@@ -85,7 +87,7 @@
     // tree1 点击绑定
     ecui.get('t1').onnodeclick = function (event) {
         document.getElementById('info1').innerHTML = '值:' + this.getValue();    
-        console.log(this.getBase());
+        // console.log(this.getBase());
     };
     
     // tree1 实现loadChidren方法, 异步载入子节点
@@ -138,7 +140,7 @@
         ].join(';') 
         + '<br/>已选值:'
         + this.getRoot().getCheckedValue().join();
-        console.log(this.getBody().getElementsByTagName('span')[0].innerHTML);
+        // console.log(this.getBody().getElementsByTagName('span')[0].innerHTML);
     };
     
     ecui.get('t3').onnodeclick = function (event) {

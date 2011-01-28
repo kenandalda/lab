@@ -43,6 +43,9 @@
     UI_RADIO_TREE_CLASS.$click = function (event) {
         var root = this.getRoot();
         if (getMouseX(this) > toNumber(getStyle(this.getBase(), 'paddingLeft'))) {
+            if (this._bDisabledCheck) {
+                return;
+            }
             var selected = root._cSelected;
 
             if (selected != this) {
@@ -94,9 +97,9 @@
     UI_CHECK_TREE_CLASS.$click = function (event) {
         var root = this.getRoot();
         if (getMouseX(this) > toNumber(getStyle(this.getBase(), 'paddingLeft'))) {
-            var isChecked = this.isChecked();
-            this.setChecked(!isChecked);
-            this.setFold = blank;
+                var isChecked = this.isChecked();
+                this.setChecked(!isChecked);
+                this.setFold = blank;
         }
         else if (root.loadChildren) {
             if (this.getOuter().getAttribute('data-async') && !this.getChildTrees().length) {
@@ -124,6 +127,9 @@
             var superior;
             // 自定义回调
             var root = parent.getRoot();
+            if (parent._bDisabledCheck) {
+                return;
+            }
             if (!root.onnodecheck || root.onnodecheck.call(parent) !== false) {
                 parent.alterClass('selected', status !== true);
                 _UI_CHECKBOX_SETCHECKED.call(this, status);
@@ -223,7 +229,9 @@
             for (var i = 0, o, list = this.getChildTrees(), checkbox; o = list[i++];) {
                checkbox = o.$getSection('Checkbox'); 
                checkbox.setChecked(superior.isChecked());
-               checkbox.setSuperior(superior);
+               if (!this._bDisabledCheck) {
+                   checkbox.setSuperior(superior);
+               }
             }
         }
     };
@@ -254,6 +262,9 @@
             }
             UI_TREE_FLUSH(this);
             this.alterClass('loading', true);
+            if (this._bDisabledCheck) {
+                this.getOuter().className += ' ' + this.getBaseClass() + '-disablecheck'; 
+            }
         }
     }
 
@@ -307,5 +318,29 @@
                 this.getBaseClass() + '-asyncnode'       
             )
         }
+        if (this.getOuter().getAttribute('data-disableCheck')) {
+            this._bDisabledCheck = true;
+            this.getOuter().className += ' ' + this.getBaseClass() + '-disablecheck';
+        }
     };
+
+    UI_CHECK_TREE_CLASS.oncreate = function (params) {
+        UI_TREE_CLASS.oncreate.call(this, params);
+        var checkbox = this._uCheckbox;
+
+        if (this._bDisabledCheck) {
+            checkbox.setEnabled(false);
+        }
+
+        UI_CHECK_TREE_FLUSH_DISABLED(this);
+    };
+
+    function UI_CHECK_TREE_FLUSH_DISABLED (control) {
+        var checkbox = control._uCheckbox;
+        if (control._bDisabledCheck) {
+            for (var i = 0, o, items = checkbox.getInferiors(); o = items[i++]; ) {
+                o.setSuperior();
+            }
+        }
+    }
 })();
