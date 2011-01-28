@@ -84,6 +84,8 @@ try {
         UI_ITEM = ui.Item,
         UI_ITEM_CLASS = UI_ITEM.prototype,
         UI_ITEMS = ui.Items,
+        UI_CHECKBOX = ui.Checkbox,
+        UI_CHECKBOX_CLASS = UI_CHECKBOX.prototype,
 
         ECOM_TABLE_URL_DEFAULTS = {
             pageParam: "page.curPageNum",
@@ -200,7 +202,9 @@ try {
             this._bSyncOp = params.syncOp == true;
 
             // 是否有选择整列表按钮
-            this._bCustom = params.custom;
+            if (params.custom) {
+                this._sAllDataName = typeof params.custom == 'string' ? params.custom : 'isAllData';
+            }
             
             this._bNoData = params.noData === true;
             
@@ -385,7 +389,7 @@ try {
         o = headCell.getElementsByTagName("input");
         if (o[0] && o[0].type == "checkbox") {
             o = o[0];
-            this._cHeadCheckbox = createControl("checkbox", {
+            this._cCheckCurPage = createControl("checkbox", {
                 id: o.getAttribute("data-id"),
                 element: o
             });
@@ -399,8 +403,12 @@ try {
             this._cHeadPopup = createControl('ecom-table-body-head-popup', {
                 id: 'cbctnr_' + dataId,
                 cbid: 'cball_' + dataId,
+                allDataName: this._sAllDataName,
                 element: o
             })
+            o = this._cHeadPopup.getItems();
+            this._cCheckCurPage = o[0]._uCheckbox;
+            this._cCheckAllData = o[1]._uCheckbox;
         }
 
 
@@ -408,11 +416,6 @@ try {
         this._uHead.getBody().cells[0].getControl()
             .constructor.prototype.$click = ECOM_TABLE_HEADCELLCLICK;
 
-        // 整列表选择按钮
-        if (this._bCustom) {
-            var customBtn = core.get("cbCtnr_" + this._nTbId);
-            customBtn && ECOM_TABLE_CUSTOMBTNINIT(customBtn, this);
-        }
     };
 
 
@@ -629,68 +632,6 @@ try {
         }
     };
     
-    /**
-     * 初始化整列表选择按钮
-     */
-    function ECOM_TABLE_CUSTOMBTNINIT(customBtn, table) {
-        var tbId = table._nTbId;
-        
-        var    popup = core.get("cbPop_" + tbId),
-            popupItems = core.query({"parent": popup}),
-            popupItemsLen = popupItems.length;
-            
-        var    cbCurList = core.get("cball_" + tbId),
-            cbWholeList = core.get("cbsall_" + tbId),
-            cbCurInferiors = cbCurList.getInferiors();
-        
-        DOCUMENT.body.appendChild(popup.getOuter());
-        
-        customBtn.onclick = function () {
-            var containerOuter = this.getOuter();
-                containerPos = getPosition(containerOuter);
-
-            popup.setPosition(
-                containerPos.left + this.getBodyWidth(), 
-                containerPos.top
-            );
-
-            popup.show();
-        };
-        
-        cbWholeList.onclick = (function () {
-            var checked = false;
-            return function () {
-                var i = cbCurInferiors.length,
-                    msg = [
-                        "已选择整列表, 子项目不能取消选择",
-                        "已取消选择整列表"
-                    ];
-                
-                var msgBox = table.setMsg((!checked) ? msg[0] : msg[1]);
-                    
-                msgBox.parentNode.parentNode.style.visibility = "visible";
-                
-                var hcbsall = lib.dom.g("hcbsall_" + tbId);
-
-                while (i--) {
-                    cbCurInferiors[i].setChecked(!checked);
-                    cbCurList.setEnabled(checked);
-                    cbCurInferiors[i].setEnabled(checked);
-                }
-
-                hcbsall.value = checked ? 0 : 1;    
-
-                checked = !checked;
-            }
-        })();
-
-        while (popupItemsLen--) {
-            popupItems[popupItemsLen].onclick = function () {
-                var cb = core.query({"parent":this})[0];
-                cb.click();
-            };
-        }    
-    }
     
     /**
      * 竖条默认resize处理
@@ -1046,15 +987,16 @@ try {
     var ECOM_TABLE_BODY_HEAD_POPUP 
         = ui.EcomTableBodyHeadPopup
         = function (el, params) {
-        var cbid = params.cbid;
-        el.innerHTML = '<div style="position:absolute;z-index:32765">'
-            + '<div><input type="checkbox" data-id="' + cbid + '"/>当前页</div>'
-            + '<div><input type="checkbox" />整列表</div>'
+        el.innerHTML = '<div class="' + params.type + '-content" style="position:absolute;z-index:32765">'
+            + '<div><input type="checkbox" data-id="' + params.cbid + '"/>当前页</div>'
+            + '<div><input type="checkbox" name="' + params.allDataName + '" />整列表</div>'
             + '</div>';
         UI_CONTROL.call(this, el, params);    
-        this.$setBody(first(el));
+        var body = first(el);
+        this.$setBody(body);
         this.$initItems();
-        this.getBody().style.display = 'none';
+        document.body.appendChild(body);
+        body.style.display = 'none';
     },
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS = inherits(ECOM_TABLE_BODY_HEAD_POPUP, UI_CONTROL),
     ECOM_TABLE_BODY_HEAD_POPUP_ITEM = ECOM_TABLE_BODY_HEAD_POPUP.Item = function (el, params) {
@@ -1064,17 +1006,15 @@ try {
             cbid = checkbox.getAttribute('data-id');
         this._uCheckbox = createControl('checkbox', {
             id: cbid || 'cbsall' + new Date().getTime(),
-            el: checkbox
+            element: checkbox
         });
         if (cbid) {
             // 当前页
-            // parent._uCurPageCheckbox = this;
-            this._uCheckbox.onclick = ETBHP_ITEM_CPCLICK;
+            this._uCheckbox.$click = ETBHP_ITEM_CPCLICK;
         }
         else {
             // 整列表
-            // parent._uAllDataCheckbox = this;
-            this._uCheckbox.onclick = ETBHP_ITEM_ADCLICK;
+            this._uCheckbox.$click = ETBHP_ITEM_ADCLICK;
         }
     },
     ECOM_TABLE_BODY_HEAD_POPUP_ITEM_CLASS = inherits(ECOM_TABLE_BODY_HEAD_POPUP_ITEM, UI_ITEM);
@@ -1083,7 +1023,8 @@ try {
     // 选择控件点击, 弹出子菜单
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$click = function (event) {
         UI_CONTROL_CLASS.$click.call(this, event);
-        this.getBody().style.display = 'block';
+        var body = this.getBody();
+        body.style.display = 'block';
     };
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$blur = function (event) {
         UI_CONTROL_CLASS.$blur.call(this, event);
@@ -1096,8 +1037,21 @@ try {
         // this.getParent().hide();
     };
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$alterItems = blank;
-    function ETBHP_ITEM_CPCLICK () {}
-    function ETBHP_ITEM_ADCLICK () {}
+    function ETBHP_ITEM_CPCLICK (event) {
+        UI_CHECKBOX_CLASS.$click.call(this, event);
+    }
+    function ETBHP_ITEM_ADCLICK (event) {
+        UI_CHECKBOX_CLASS.$click.call(this, event);
+        var table = this.getParent().getParent().getParent().getParent(),
+            allDataChecked = this.isChecked(),
+            checkCurPage = table._cCheckCurPage;
+
+        checkCurPage.setEnabled(!allDataChecked);
+        for (var i = 0, o, items = checkCurPage.getInferiors(); o = items[i++]; ) {
+            o.setEnabled(!allDataChecked);
+        }
+        table.getParent()._bAllDataChecked = allDataChecked;
+    }
 
     /**
      * 锁定表格
