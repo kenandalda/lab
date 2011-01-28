@@ -1023,8 +1023,13 @@ try {
     // 选择控件点击, 弹出子菜单
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$click = function (event) {
         UI_CONTROL_CLASS.$click.call(this, event);
-        var body = this.getBody();
-        body.style.display = 'block';
+        var body = this.getBody(),
+            pos = getPosition(this.getOuter());
+        setStyles(body, {
+            display: 'block',
+            left: pos.left + 'px',
+            top: pos.top + 'px'
+        })
     };
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$blur = function (event) {
         UI_CONTROL_CLASS.$blur.call(this, event);
