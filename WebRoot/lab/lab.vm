@@ -9,9 +9,10 @@
     <script text="text/javascript" src="${staticRoot}/js/mod/xyPager.js"></script>
 	<style type="text/css">
 		.tb-title td {font-weight:bold;}
-		.nav{padding:0}
-		.nav a{float:left;color:#FFF;display:block;line-height:30px;text-decoration:none;padding:0 13px;}
-		.nav a:hover, .nav a.cur{color:#346665;background:#F6FFB8}
+		.nav{padding:0;background-image:none;background-color:#DCEFD1;height:30px;}
+		.nav a{float:left;color:#326700;display:block;line-height:30px;text-decoration:none;padding:0 13px;}
+		.nav a:hover, .nav a.cur{color:#346665;background:#F6FFB8;}
+        .nav a.cur {font-weight:bold}
         .ec-listbox {width:100px;height:160px;border:1px solid #828790}
         .ec-listbox-item {padding-left:2px;line-height:20px;background:#FFF;cursor:default}
         .ec-listbox-item-selected {background:#3399FF;color:#FFF}
@@ -61,6 +62,7 @@
 		{"en":"CS", "cn":"CS"},
 		{"en":"initor", "cn":"js启动器"},
 		{"en":"ecuitable", "cn":"ecui列表"},
+		{"en":"imgscroll", "cn":"IS"}
     *#
 	#set($testTitleList = [
 		{"en":"table", "cn":"列表"},
@@ -70,8 +72,7 @@
 		{"en":"tab", "cn":"标签页"},
 		{"en":"multiselect", "cn":"多选下拉框"},
 		{"en":"floater", "cn":"浮动层"},
-		{"en":"pager", "cn":"分页"},
-		{"en":"imgscroll", "cn":"IS"}
+		{"en":"pager", "cn":"分页"}
 	])
 	<div class="nav">
 		#foreach($t in $testTitleList)

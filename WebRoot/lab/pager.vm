@@ -1,13 +1,10 @@
-<div ecui="id:pager;sync:pager0;type:xy-pager;cur-page:3;pageSize:20;total:500" class="ec-pager"></div>
-<div ecui="id:pager0;sync:pager;type:xy-pager;cur-page:3;pageSize:20;total:500" class="ec-pager"></div>
-<div ecui="id:pager1;type:xy-pager;cur-page:3;pageSize:20;total:80" class="ec-pager"></div>
-<div ecui="id:pager2;type:xy-pager;cur-page:21;pageSize:20;total:500" class="ec-pager"></div>
-<div ecui="id:pager2;type:xy-pager;cur-page:21;pageSize:20;total:0" class="ec-pager"></div>
-<div id="foo" class="ec-pager"></div>
+<div ecui="id:pager;type:pager;cur-page:3;pageSize:20;total:500" class="ec-pager"></div>
+<div ecui="id:pager1;type:pager;cur-page:3;pageSize:20;total:80" class="ec-pager"></div>
+<div ecui="id:pager2;type:pager;cur-page:21;pageSize:20;total:500" class="ec-pager"></div>
+<div ecui="id:pager2;type:pager;cur-page:21;pageSize:20;total:0" class="ec-pager"></div>
 
 <script type="text/javascript" charset="utf-8">
     ecui.get("pager").onpageset = function (pageNum) {
         alert(pageNum);
     }
-    ecui.create("xy-pager", {element:baidu.g("foo"), total:100, curPage:3, pageSize:20})
 </script>

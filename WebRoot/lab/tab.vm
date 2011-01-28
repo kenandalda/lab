@@ -1,64 +1,15 @@
-<div ecui="type:ecom-tab;id:tab;selected:1">
-    #foreach($i in [1..25])
-    #if ($i % 3 != 0)
-    <div #if($i == 5)style="display:none"#{end}>
-        <label>tab $i</label>
-        content $i
-    </div>
-    #else
-        <label>tab(title-only) $i</label>
-    #end
-    #end
-</div>
-
-<input type="button" name="some_name" value="删除" onclick="delCurSel()">
-#*
-<div id="foo">
-    #startTab
-        #foreach($i in [1..5])
-            #if($i == 3)
-                #set($current = true)
-            #else
-                #set($current = false)
-            #end
-            #startTabContent("标签$i" {"href":"http://www.baidu.com", "onlyTitle":true, "current":$current})     
-        #end
-    #endTab
-</div>
-    <div class="area-w"></div><div class="area-v"></div>
-    <div class="area">
-        内容
-    </div>
-	<div class="area-v"></div><div class="area-w"></div>
-
-    #startTab
-        #startTabContent("标签1")     
-            标签1的内容
-        #endTabContent
-        #startTabContent("标签2")     
-            标签2的内容
-        #endTabContent
-        #startTabContent("标签3" {"current":true})     
-            标签3的内容
-        #endTabContent
-        #startTabContent("标签4")     
-            标签4的内容
-        #endTabContent
-    #endTab
-*#
-
-## <div ecui="type:control;decorate:l-r-decorator(foolr)">test control</div>
-<script type="text/javascript" charset="utf-8">
-    var UI_TAB_ITEM_CLASS = ecui.ui.Tab.Item.prototype;
-    
-    function delCurSel() {
-        var t = ecui.get("tab");
-        t.remove(t.getSelected());
-    }
-
-    ecui.ext.Tween(ecui.ui.Tab.Button.prototype, {
-        pressStep: 10,
-        monitor: 'getParent().getBody().style.left'
-    });
-    
-</script>
+#startTab
+    #startTabContent("标签签签")     
+        标签1的内容
+    #endTabContent
+    #startTabContent("标签签签")     
+        标签2的内容
+    #endTabContent
+    #startTabContent("标签签签" {"current":true})     
+        标签3的内容
+        
+    #endTabContent
+    #startTabContent("标签签签签")     
+        #singleCal
+    #endTabContent
+#endTab
