@@ -9,7 +9,7 @@
 		{"chn":"操作","eval":'<a href="#">查布</a>', "width":"100px"}
 	])
 
-	#set ($fOptions = {"checkbox":"crmAccount", "hasOp":true, "width":"800px", "page":$page})
+	#set ($fOptions = {"checkbox":"crmAccount", "hasOp":true, "width":"800px", "page":$page, "syncOp":true})
 
 #table($lstTitles $page.dataList $fOptions)
 

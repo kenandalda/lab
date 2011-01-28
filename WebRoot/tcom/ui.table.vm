@@ -69,7 +69,6 @@
                 <tbody><tr><td></td></tr></tbody>
             </table>
         </div>
-        ## <div style="display:none" class="ec-ecom-pager-el"></div>
     #end
 </div>
 #end
@@ -133,7 +132,11 @@
                 <div ecui="type:checkbox;id:cball_$tbId"></div>
             #end
             }}} *#
+                #if ($options.custom)
+                <div class="cb-ctnr" data-id="$tbId" data-cbid="cball_$tbId">&nbsp;</div>
+                #else
                 <input type="checkbox" data-id="cball_$tbId" />
+                #end
             </th>
         #end
         #foreach($title in $lstTitles)
