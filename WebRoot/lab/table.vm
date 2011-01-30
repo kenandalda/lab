@@ -28,10 +28,13 @@
         <input type="button" value="查询" id="subForm" ecui="shield:simple(query)"/>
     </form>
     <div></div>
+    <form method="post">
     #tableWrapper ("0", {
         "defaultUrl": "table.tbcb.vm?id=0",
         "shield": "query"
     })
+    <input type="submit" value="提交表格数据" />
+    </form>
     
     <!--
     <div style="display:inline;zoom:1;border:1px solid red">

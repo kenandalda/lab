@@ -989,23 +989,25 @@ try {
         = function (el, params) {
         el.innerHTML = '<div class="' + params.type + '-content" style="position:absolute;z-index:32765">'
             + '<div><input type="checkbox" data-id="' + params.cbid + '"/>当前页</div>'
-            + '<div><input type="checkbox" name="' + params.allDataName + '" />整列表</div>'
-            + '</div>';
+            + '<div><input type="checkbox" />整列表</div>'
+            + '</div>'
+            + '<input type="hidden" name="' + params.allDataName + '" value="0" />';
         UI_CONTROL.call(this, el, params);    
         var body = first(el);
         this.$setBody(body);
         this.$initItems();
         document.body.appendChild(body);
         body.style.display = 'none';
+        this._eCheckAllData = first(el);
     },
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS = inherits(ECOM_TABLE_BODY_HEAD_POPUP, UI_CONTROL),
     ECOM_TABLE_BODY_HEAD_POPUP_ITEM = ECOM_TABLE_BODY_HEAD_POPUP.Item = function (el, params) {
         UI_ITEM.call(this, el, params);
-        var parent = this.getParent(),
+        var parent = params.parent,
             checkbox = first(el),
             cbid = checkbox.getAttribute('data-id');
         this._uCheckbox = createControl('checkbox', {
-            id: cbid || 'cbsall' + new Date().getTime(),
+            id: cbid || 'cbsall_' + new Date().getTime(),
             element: checkbox
         });
         if (cbid) {
@@ -1039,22 +1041,32 @@ try {
     ECOM_TABLE_BODY_HEAD_POPUP_ITEM_CLASS.$click = function (event) {
         UI_ITEM_CLASS.$click.call(this, event);    
         this._uCheckbox.click();
-        // this.getParent().hide();
+        var parent = this.getParent();
+        setTimeout(function () {
+            parent.getBody().style.display = 'none';
+        }, 50);
     };
     ECOM_TABLE_BODY_HEAD_POPUP_CLASS.$alterItems = blank;
+    // "当前页" checkbox 点击
     function ETBHP_ITEM_CPCLICK (event) {
         UI_CHECKBOX_CLASS.$click.call(this, event);
     }
+    // "整列表" checkbox 点击
     function ETBHP_ITEM_ADCLICK (event) {
         UI_CHECKBOX_CLASS.$click.call(this, event);
-        var table = this.getParent().getParent().getParent().getParent(),
+        var thead = this.getParent().getParent();
+            table = thead.getParent().getParent(),
             allDataChecked = this.isChecked(),
-            checkCurPage = table._cCheckCurPage;
+            checkCurPage = table._cCheckCurPage,
+            checkAllDataEl = thead._eCheckAllData;
 
         checkCurPage.setEnabled(!allDataChecked);
+        checkAllDataEl.value = allDataChecked ? '1' : '0';
         for (var i = 0, o, items = checkCurPage.getInferiors(); o = items[i++]; ) {
             o.setEnabled(!allDataChecked);
+            o.getInput().disabled = allDataChecked;
         }
+        // 预留给分页保持整列表选择的状态时使用
         table.getParent()._bAllDataChecked = allDataChecked;
     }
 

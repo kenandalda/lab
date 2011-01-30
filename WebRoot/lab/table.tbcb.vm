@@ -14,6 +14,6 @@
 		{"chn":"待后续任务数","eval":'&lt;a href="#">$item.waitProcessTaskCount&lt;/a>', "width":"120px"},
 		{"chn":"管理员","eval":'$item.managerCrmAccount', "width":"120px"}
 	])
-	#set ($fOptions = {"checkbox":"account", "hasOp":true, "width":"1500px", "page":$page, "custom":true})
+	#set ($fOptions = {"checkbox":"crmAccount", "hasOp":true, "width":"1500px", "page":$page, "custom":true})
 
     #tableData($lstTitles $page.dataList $fOptions)
