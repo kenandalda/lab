@@ -53,6 +53,7 @@
 ## <div ecui="type:control;decorate:l-r-decorator(foolr)">test control</div>
 <script type="text/javascript" charset="utf-8">
     var UI_TAB_ITEM_CLASS = ecui.ui.Tab.Item.prototype;
+    var SEARCH_URL = "http://cn.bing.com/search?q=";
     
     function delCurSel() {
         var t = ecui.get("tab");
@@ -61,21 +62,27 @@
 
     function addTab (url) {
         var t = ecui.get('tab');
-        t.addTab(
-            {   
-                params: {closable:true},
-                background: true,
-                title: url
-            }, 
-            function (newTab) {
-                var contentEl = newTab.getContent();
-                var ifr = document.createElement('iframe');
-                ifr.frameBorder = 'no';
-                ifr.src = 'http://www.baidu.com/s?wd=' + url;
-                baidu.dom.setStyles(ifr, {width:'960px',height:'600px'});
-                contentEl.appendChild(ifr);
-            }
-        );
+        if (t.getItems().length == 5) {
+            t.addTab(
+                {   
+                    params: {closable:true},
+                    background: true,
+                    title: url
+                }, 
+                function (newTab) {
+                    var contentEl = newTab.getContent();
+                    var ifr = document.createElement('iframe');
+                    ifr.frameBorder = 'no';
+                    ifr.src = SEARCH_URL + url;
+                    baidu.dom.setStyles(ifr, {width:'960px',height:'600px'});
+                    contentEl.appendChild(ifr);
+                }
+            );
+        }
+        else {
+            t.getItems()[5].getContent()
+                .getElementsByTagName('iframe')[0].src = SEARCH_URL + url;
+        }
     }
     
 </script>

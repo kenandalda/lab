@@ -14,7 +14,7 @@
             <filter class="load" name="staticRoot" value="/static" />
 		    <filter name="utils" class="org.lilystudio.test.UtilsFilter" className="com.baidu.rigel.util.StringUtilsForFE" />
 		    <filter name="dateUtils" class="org.lilystudio.test.UtilsFilter" className="org.lilystudio.test.DateUtils" />
-            <filter class="load" name="fDebug" value="true" />
+            <!--<filter class="load" name="fDebug" value="true" />-->
 			<import-dom name="lab.xml" />
 			<import-dom name="sandbox.xml" />
 			<import-dom name="veyron-tree.xml" />
