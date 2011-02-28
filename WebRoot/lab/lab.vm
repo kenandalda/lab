@@ -56,7 +56,6 @@
 		{"en":"localstorage", "cn":"本地储存"},
 		{"en":"listbox", "cn":"listbox"},
 		{"en":"table2", "cn":"列表2"},
-		{"en":"html", "cn":"html"},
 		{"en":"filter", "cn":"SF"},
 		{"en":"tableinctnr", "cn":"容器中的表格"},
 		{"en":"CS", "cn":"CS"},
@@ -72,6 +71,7 @@
 		{"en":"tab", "cn":"标签页"},
 		{"en":"multiselect", "cn":"多选下拉框"},
 		{"en":"floater", "cn":"浮动层"},
+		{"en":"html", "cn":"html"},
 		{"en":"pager", "cn":"分页"}
 	])
 	<div class="nav">

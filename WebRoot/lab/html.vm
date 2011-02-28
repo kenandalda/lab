@@ -1,4 +1,4 @@
-<table>
+<table id="tb">
 	<tr>
 		<th>Header</th>
 		<th>Header</th>
@@ -18,6 +18,7 @@
 		<td>Data</td>
 		<td>Data</td>
 	</tr>
+    #foreach($i in [1..5])
 	<tr>
 		<td>Data</td>
 		<td>Data</td>
@@ -26,11 +27,28 @@
 		<td>Data</td>
 		<td>Data</td>
 	</tr>
+    #end
 </table>
 </table>
 
 <input id="test" type="text" value="test" status="aaa"/>
 <script type="text/javascript" charset="utf-8">
-	alert(document.getElementById("test").getAttribute('status').match(/a/));
-	console.log("xx");
+	// alert(document.getElementById("test").getAttribute('status').match(/a/));
+	// console.log("xx");
+    var trs = baidu.dom.query('#tb tr');
+    baidu.array.each(trs, function (n, i) {
+
+        baidu.event.on(n, 'mouseover', function (e) {
+            changeColor(this);        
+        });
+
+        baidu.event.on(n, 'mouseout', function (e) {
+            changeColor(this, true);        
+        });
+
+    });
+
+    function changeColor (el, reset) {
+        baidu.dom.setStyle(el, 'backgroundColor', reset ? '' : 'red');
+    }
 </script>
