@@ -71,8 +71,11 @@ Tab - 定义分页选项卡的操作。
          * 动态添加新的选项卡
          * @public
          *
-         * @param {Object} options 选项
-         * @param {Function} callback 创建之后的回调函数
+         * @param {Object} options 选项, 属性说明如下
+         *      index   {Number}    插入的位置, 默认插到最后
+         *      title   {String}    tab上显示的标题, 默认'无标题'
+         *      background  {Boolean} 是否后台打开, 默认否
+         * @param {Function} callback 创建之后的回调函数, 参数为新增tab子控件, this指向tab控件
          */
         ECOM_TAB_CLASS.addTab = function (options, callback) {
             var el = createDom('', '', 'div'),
