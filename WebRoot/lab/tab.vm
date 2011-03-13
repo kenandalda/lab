@@ -1,4 +1,4 @@
-#startTab
+#startTab({"ecId":"tab"})
     #startTabContent("标签签签")     
         标签1的内容
     #endTabContent
@@ -13,3 +13,20 @@
         #singleCal
     #endTabContent
 #endTab
+<script type="text/javascript" charset="utf-8">
+    // 设置选中
+    ecui.ui.Tab.prototype.setSelected = function (index) {
+        this._uTitles.select(index);
+    };
+    // 获取选中的标签头, 
+    // 返回的是Titles的Item控件, 要获得对应的内容dom, 可以用: ecui.get("tab").getSelected()._eContent
+    ecui.ui.Tab.prototype.getSelected = function () {
+        var titles = this._uTitles;
+        return titles.getItems()[titles._nLastIndex];
+    };
+    // 获取选中的标签索引
+    ecui.ui.Tab.prototype.getSelectedIndex = function () {
+        return 0 + this._uTitles._nLastIndex; 
+    };
+
+</script>

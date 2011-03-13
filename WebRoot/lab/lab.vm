@@ -34,6 +34,10 @@
         .ec-img-scroll-title {height:61px}
         .ec-img-scroll-item {width:58px;height:58px;border:1px solid #EEE}
         .ec-img-scroll-item-selected {border-color:blue}
+
+
+        #calcal .ec-ecom-calendar-edit {width:10px;height:10px;background-image:none}
+        #calcal .ec-ecom-calendar-clear {display:none}
 	</style>
 	<!--<link rel="stylesheet" href="${staticRoot}/js/ui/ka-table/ka-table.css" type="text/css">-->
 	<style type="text/css" media="screen">

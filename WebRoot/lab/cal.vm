@@ -42,9 +42,16 @@
                -<input name="yyy" ecui="type:calendar-edit;calendartype:range;capture:false;id:rcal;" readonly="readonly" />
                -->
 
+               #*
                <div ecui="type:ecom-calendar-edit;cal-type:range;range:2y-3y;id:cal1;loose:true" style="float:left" class="ec-ecom-blue-calendar">
                     <input type="text" readonly="readonly" name="some_name" value="2010-01-09">
                </div>
+               *#
+
+
+                #singleCal ("selectDayFrom" "" {"range":"2y-5y", "ecId": "cal1"})
+                #singleCal ("selectDayTo" "2011-03-20" {"range":"2y-5y", "ecId": "cal2"})
+
     			<input type="submit" value="submit"/>
     			<input type="reset" value="reset"/>
     			</td>
@@ -87,5 +94,47 @@
         };
     });
     */
+
+    (function () {
+        var edit1 = ecui.get('cal1'),
+            cal = edit1.$getSection('Calendar'),
+            edit2 = ecui.get('cal2'),
+            _ondateclick = cal.ondateclick;
+
+        function setRange(edit, date) {
+            if (edit == edit1) {
+                edit2._oCalProps.range = baidu.date.format(date, 'yyyyMMdd') + '-' + cal.$cal$range.split('-')[1];
+            }
+            else if (edit == edit2) {
+                edit1._oCalProps.range = cal.$cal$range.split('-')[0] + '-' + baidu.date.format(date, 'yyyyMMdd');
+            }
+        }
+
+        baidu.array.each([edit1, edit2], function (n, i) {
+            n._sExtInitRange = '' + n._oCalProps.range; 
+            var val = n.$getSection('Edit').value;
+            val && setRange(n, baidu.date.parse(val));
+        });
+
+         cal.ondateclick = function (date) {
+            _ondateclick.call(this, date);
+            setRange(this._cWrapper, date);
+         }
+
+        var _onclearclick = edit1._uClear.onclick;
+        edit1.$getSection('Clear').onclick = edit2.$getSection('Clear').onclick = function () {
+            _onclearclick.call(this);
+            var parent = this.getParent();
+            parent._oCalProps.range = parent._sExtInitRange;
+
+            
+            var peer = [edit1, edit2][parent == edit1 ? 1 : 0];
+            if (peer._uEdit.value) {
+                peer.$getSection('Clear').onclick();
+            }
+
+        }
+
+     })();
 </script>
 <!-- vim:set fdm=marker: -->
