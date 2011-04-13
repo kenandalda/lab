@@ -1,6 +1,4 @@
 #foreach ($i in [1..3])
-
-
 <div ecui='value:asyn-$velocityCount' #if($i == 2)data-disableCheck='true'#end>
     <span class="tree-icon-d">动态加载节点$velocityCount</span>
 </div>

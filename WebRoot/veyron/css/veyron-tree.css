@@ -34,6 +34,7 @@
 .veyron-check-tree-fold {background:url(img/tree-icons.gif) 0px -30px no-repeat}
 .veyron-check-tree-nonleaf{background:url(img/tree-icons.gif) 0px 0px no-repeat;}
 .ec-check-tree-loading {background:url(img/tree-loading.gif) 0 0 no-repeat}
+.ec-check-tree-items .veyron-check-tree-asyncnode{background-position:22px -30px}
 .ec-check-tree-items .veyron-check-tree-fold{background-position:22px -30px}
 .ec-check-tree-items .veyron-check-tree-nonleaf{background-position:22px 0px}
 .ec-check-tree-items .ec-check-tree-loading{background-position:22px 0px}
